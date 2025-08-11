@@ -1,0 +1,56 @@
+.background-1 {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: rgb(30, 27, 24);
+}
+
+.background-1__layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-image:
+    repeating-linear-gradient(
+      100deg,
+      #0f67fb 10%,
+      #558bff 15%,
+      #6697d3 20%,
+      #5d9ff1 25%,
+      #aae1ff 30%
+    ),
+    repeating-linear-gradient(
+      100deg,
+      rgba(0, 0, 0, 0.9) 0%,
+      rgba(0, 0, 0, 0.9) 15%,
+      rgba(0, 0, 0, 0) 18%,
+      rgba(0, 0, 0, 0) 20%,
+      rgba(0, 0, 0, 0.85) 28%,
+      rgba(0, 0, 0, 1) 40%
+    );
+  background-size: 300% 200%;
+  animation: auroraMove 45s ease-in-out infinite;
+  mask-image: radial-gradient(
+    ellipse at 0% 0%,
+    rgb(30, 27, 24) 15%,
+    transparent 70%
+  );
+}
+
+.background-1__blur-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  backdrop-filter: blur(30px) saturate(120%);
+  z-index: 2;
+}
+
+@keyframes auroraMove {
+  0%, 100% {
+    background-position: 50% 50%, 50% 50%;
+  }
+  50% {
+    background-position: 100% 100%, 80% 60%;
+  }
+}

@@ -1,0 +1,133 @@
+.btn-icon {
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  transform: scale(1.05);
+}
+
+.btn-icon:active {
+  transform: scale(0.95);
+}
+
+.small {
+  --size: 38px;
+  width: var(--size);
+  height: var(--size);
+}
+
+.medium {
+  --size: 46px;
+  width: var(--size);
+  height: var(--size);
+}
+
+.large {
+  --size: 52px;
+  width: var(--size);
+  height: var(--size);
+}
+
+.small mat-icon {
+  --size: 28px;
+  width: var(--size);
+  height: var(--size);
+  font-size: var(--size);
+}
+
+.medium mat-icon {
+  --size: 36px;
+  width: var(--size);
+  height: var(--size);
+  font-size: var(--size);
+}
+
+.large mat-icon {
+  --size: 42px;
+  width: var(--size);
+  height: var(--size);
+  font-size: var(--size);
+}
+
+@media (max-width: 900px) {
+  .small {
+    --size: 32px;
+    width: var(--size);
+    height: var(--size);
+  }
+
+  .medium {
+    --size: 40px;
+    width: var(--size);
+    height: var(--size);
+  }
+
+  .large {
+    --size: 46px;
+    width: var(--size);
+    height: var(--size);
+  }
+
+  .small mat-icon {
+    --size: 26px;
+    width: var(--size);
+    height: var(--size);
+    font-size: var(--size);
+  }
+
+  .medium mat-icon {
+    --size: 32px;
+    width: var(--size);
+    height: var(--size);
+    font-size: var(--size);
+  }
+
+  .large mat-icon {
+    --size: 38px;
+    width: var(--size);
+    height: var(--size);
+    font-size: var(--size);
+  }
+}
+
+.radius-normal {
+  border-radius: 6px;
+}
+
+.radius-circle {
+  border-radius: 50%;
+}
+
+.auto {
+  background-color: var(--secondary);
+  color: var(--foreground);
+}
+
+.dark {
+  background-color: black;
+  color: white;
+}
+
+.light {
+  background-color: white;
+  color: black;
+}
+
+.transparent {
+  background-color: transparent;
+  color: var(--foreground);
+}
+
+.transparent:hover {
+  background-color: color-mix(in srgb, var(--background), transparent 60%);
+}
+
+.danger {
+  background-color: red;
+  color: white;
+}

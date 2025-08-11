@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e8f45975-c921-47e7-a19e-5a614a02f88f" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/application/public/Logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/application/public/fonts/Manrope-Variable.ttf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/application/src/styles/colors.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/application/src/styles/fonts.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/application/src/styles/icons.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/application/src/styles/sizes.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/angular.json" beforeDir="false" afterPath="$PROJECT_DIR$/application/angular.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/application/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/application/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/src/app/app.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/src/app/app.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/src/app/app.spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/src/app/app.ts" beforeDir="false" afterPath="$PROJECT_DIR$/application/src/app/app.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/src/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/src/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/application/src/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/application/src/styles.css" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="CSS File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/application" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="3111VVIPSVnVhxRqT57A9AhUvgF" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "JavaScript Debug.app.html.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
+    "Shell Script.run.executor": "Run",
+    "git-widget-placeholder": "master",
+    "list.type.of.created.stylesheet": "CSS",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "C:\\Users\\ignac\\Desktop\\aura-frontend\\application\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\ignac\Desktop\aura-frontend\application\src\app\features" />
+      <recent name="C:\Users\ignac\Desktop\aura-frontend\application\public\fonts" />
+      <recent name="C:\Users\ignac\Desktop\aura-frontend\application\public" />
+      <recent name="C:\Users\ignac\Desktop\aura-frontend\application\src\styles" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="run" type="ShConfigurationType">
+      <option name="SCRIPT_TEXT" value="" />
+      <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+      <option name="SCRIPT_PATH" value="ng serve --open" />
+      <option name="SCRIPT_OPTIONS" value="" />
+      <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="false" />
+      <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$/application" />
+      <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+      <option name="INTERPRETER_PATH" value="powershell.exe" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="EXECUTE_IN_TERMINAL" value="true" />
+      <option name="EXECUTE_SCRIPT_FILE" value="true" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-WS-251.26927.40" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="e8f45975-c921-47e7-a19e-5a614a02f88f" name="Changes" comment="" />
+      <created>1754676789124</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1754676789124</updated>
+      <workItem from="1754676790540" duration="4094000" />
+      <workItem from="1754742766357" duration="9167000" />
+      <workItem from="1754777860970" duration="365000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

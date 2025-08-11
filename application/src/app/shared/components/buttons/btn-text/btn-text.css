@@ -1,0 +1,53 @@
+.btn-text {
+  width: 100%;
+  padding: 10px 15px;
+  border-radius: 6px;
+  transition: all .2s ease-in-out;
+}
+
+.btn-text:hover {
+  opacity: 0.7;
+}
+
+.btn-text span {
+  font-size: 16px;
+}
+
+.normal {
+  border: none;
+}
+
+.normal.blue {
+  background-color: var(--color-blue-ribbon-500);
+}
+
+.normal.red {
+  background-color: var(--color-coral-red-500);
+}
+
+.normal mat-icon,
+.normal span {
+  color: white;
+}
+
+.outline {
+  background-color: transparent;
+}
+
+.outline.blue {
+  border: 2px solid var(--color-blue-ribbon-500);
+}
+
+.outline.red {
+  border: 2px solid var(--color-coral-red-500);
+}
+
+.outline.blue mat-icon,
+.outline.blue span {
+  color: var(--color-blue-ribbon-500);
+}
+
+.outline.red mat-icon,
+.outline.red span {
+  color: var(--color-coral-red-500);
+}

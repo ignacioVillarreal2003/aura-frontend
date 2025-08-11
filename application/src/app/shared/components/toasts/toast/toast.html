@@ -1,0 +1,22 @@
+<div class="toast"
+     [ngClass]="data.type">
+  <header class="toast__header">
+    @if (data.type == 'error') {
+      <div class="toast__state">
+        <mat-icon class="material-symbols-rounded filled">error</mat-icon>
+        <span>Error</span>
+      </div>
+    }
+    @else if (data.type == 'success') {
+      <div class="toast__state">
+        <mat-icon class="material-symbols-rounded filled">check_circle</mat-icon>
+        <span>Success</span>
+      </div>
+    }
+    <button class="toast__close-btn"
+            (click)="close()">
+      <mat-icon class="material-symbols-rounded filled">close</mat-icon>
+    </button>
+  </header>
+  <span class="toast__message">{{ data.message }}</span>
+</div>
