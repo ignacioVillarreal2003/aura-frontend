@@ -12,6 +12,7 @@ export class InputText {
   @Input() label: string | undefined;
   @Input() error: string | undefined;
   @Input() disabled: boolean = false;
+  @Input() type: 'text' | 'password' = 'text';
 
   ngOnInit(): void {
     this.id = crypto.randomUUID();

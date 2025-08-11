@@ -1,8 +1,8 @@
-@if (text) {
+@if (label) {
   <button class="btn-text"
-          [ngClass]="[color, style]"
+          [ngClass]="[variant, colorScheme, size]"
           [type]="type"
           [disabled]="disabled">
-    <span>{{text}}</span>
+    <span>{{ label }}</span>
   </button>
 }

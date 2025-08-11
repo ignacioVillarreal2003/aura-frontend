@@ -1,0 +1,19 @@
+<section class="login-form">
+  <header class="login-form__header">
+    <h1 class="login-form__title">Tu asistente inteligente para consultas documentales</h1>
+  </header>
+  <div class="login-form__container">
+    <form class="login-form__form">
+      <app-input-text [label]="'Your email'"
+                      [placeholder]="'Your email'"></app-input-text>
+      <app-input-text [label]="'Your password'"
+                      [type]="'password'"
+                      [placeholder]="'Your password'"></app-input-text>
+      <app-btn-text [type]="'submit'"
+                    [label]="'Ingresar'"></app-btn-text>
+    </form>
+    <span class="login-form__separator"></span>
+    <app-btn-text [label]="'Ingresa como administrador'"
+                  [colorScheme]="'auto'"></app-btn-text>
+  </div>
+</section>
