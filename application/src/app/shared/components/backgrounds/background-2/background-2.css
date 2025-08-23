@@ -1,0 +1,75 @@
+.background-2 {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: rgb(30, 27, 24);
+}
+
+.background-2__layer {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  background-image:
+    repeating-linear-gradient(
+      100deg,
+      #000 0%,
+      #000 3%,
+      transparent 6%,
+      transparent 12%,
+      #000 15%,
+      #000 18%,
+      transparent 22%
+    ),
+    repeating-linear-gradient(
+      100deg,
+      #111 0%,
+      #111 2%,
+      transparent 5%,
+      transparent 10%,
+      #111 13%,
+      #111 16%,
+      transparent 20%
+    ),
+    repeating-linear-gradient(
+      100deg,
+      #2b5aef 0%,
+      #3176f1 6%,
+      #517fd1 12%,
+      #3a7bff 18%,
+      #5a96ff 24%,
+      #7fb3ff 30%
+    );
+
+  background-size: 350% 200%, 400% 200%, 400% 200%;
+  background-position: 50% 50%, 52% 48%, 50% 50%;
+  opacity: 0.5;
+  mix-blend-mode: screen;
+
+  filter: saturate(1.4) brightness(1.05);
+  mask-image: linear-gradient(to right, black 50%, rgba(0,0,0,0.5) 65%, transparent 80%);
+  transition: background-position 0.1s linear, background-size 0.1s linear;
+}
+
+@keyframes aurora {
+  0%, 100% {
+    background-position: 50% 50%, 50% 50%;
+  }
+  50% {
+    background-position: 100% 100%, 100% 100%;
+  }
+}
+
+.background-2__blur-overlay {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  backdrop-filter: blur(30px);
+  pointer-events: none;
+}

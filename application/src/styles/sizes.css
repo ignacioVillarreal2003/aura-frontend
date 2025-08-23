@@ -1,0 +1,26 @@
+:root {
+  --padding-none: 0;
+  --padding-xs: 0.25rem;
+  --padding-sm: 0.5rem;
+  --padding-md: 0.75rem;
+  --padding-lg: 1rem;
+  --padding-xl: 1.5rem;
+  --padding-2xl: 2rem;
+  --padding-3xl: 3rem;
+  --margin-none: 0;
+  --margin-xs: 0.25rem;
+  --margin-sm: 0.5rem;
+  --margin-md: 0.75rem;
+  --margin-lg: 1rem;
+  --margin-xl: 1.5rem;
+  --margin-2xl: 2rem;
+  --margin-3xl: 3rem;
+  --radius-none: 0;
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-full: 9999px;
+}

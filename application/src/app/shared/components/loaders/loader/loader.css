@@ -1,0 +1,39 @@
+.loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.loader__ball {
+  --size: 16px;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  animation: 2s bounce ease infinite;
+}
+
+.blue {
+  background-color: #1149ff;
+}
+
+.red {
+  background-color: #e42a2a;
+  animation-delay: 0.25s;
+}
+
+.yellow {
+  background-color: #f3da2b;
+  animation-delay: 0.5s;
+}
+
+.green {
+  background-color: #1da81d;
+  animation-delay: 0.75s;
+}
+
+@keyframes bounce {
+  50% {
+    transform: translateY(25px);
+  }
+}

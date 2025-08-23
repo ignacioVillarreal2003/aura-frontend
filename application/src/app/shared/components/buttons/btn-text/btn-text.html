@@ -1,0 +1,8 @@
+@if (label) {
+  <button class="btn-text"
+          [ngClass]="[variant, colorScheme, size]"
+          [type]="type"
+          [disabled]="disabled">
+    <span>{{ label }}</span>
+  </button>
+}

@@ -1,0 +1,15 @@
+@if (id) {
+  <div class="input-text">
+    @if (label) {
+      <label [for]="id">{{label}}</label>
+    }
+    <input [id]="id"
+           [type]="type"
+           [disabled]="disabled"
+           [placeholder]="placeholder">
+    @if (error) {
+      <span>{{error}}</span>
+    }
+  </div>
+}
+

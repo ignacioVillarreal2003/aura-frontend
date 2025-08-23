@@ -1,0 +1,30 @@
+.input-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.input-text label {
+  font-size: 16px;
+  color: var(--foreground);
+}
+
+.input-text input {
+  padding: 10px;
+  width: 100%;
+  border-radius: 6px;
+  font-size: 16px;
+  border: 2px solid var(--color-blue-ribbon-500);
+  color: var(--foreground);
+  background-color: transparent;
+}
+
+.input-text input:focus-visible {
+  outline: none;
+}
+
+.input-text span {
+  font-size: 14px;
+  color: var(--color-coral-red-500);
+}
