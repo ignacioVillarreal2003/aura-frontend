@@ -16,3 +16,22 @@ body {
 button {
   cursor: pointer;
 }
+
+:root {
+  --app-viewport-height: 100dvh;
+
+  --sidebar-width: 92px;                 /* ancho cerrado */
+  --sidebar-open-width: 253px;           /* ancho abierto */
+  --sidebar-border: 1px;
+  --sidebar-gap-y: 24px;
+  --sidebar-padding-x: 24px;
+  --sidebar-padding-t: 15px;
+  --sidebar-padding-b: 22px;
+  --sidebar-border-radius: 24px;
+
+  --sidebar-content-width: calc(
+    var(--sidebar-width) - 2 * var(--sidebar-padding-x) - 2 * var(--sidebar-border)
+  );
+
+  --topbar-height: 120px;
+}
