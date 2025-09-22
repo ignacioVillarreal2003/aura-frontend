@@ -1,0 +1,13 @@
+.chat-flex {
+  display: grid;
+  grid-template-rows: 100dvh;
+  min-height: 100dvh;
+}
+.chat-content {
+  min-width: 0;
+  overflow: auto;
+  background: #0f0f0f;
+}
+@media (max-width: 1024px) {
+  .chat-grid { grid-template-columns: 1fr; }
+}
