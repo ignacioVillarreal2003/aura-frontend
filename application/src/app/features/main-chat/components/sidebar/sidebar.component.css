@@ -152,6 +152,7 @@
   width: 20px;
   height: 20px;
 }
+
 .items-row__icon i.pi {
   width: 18px;
   height: 16px;
@@ -188,8 +189,9 @@
 .sidebar-nav[data-state="closed"] .items-row__icon {
   width: 32px;
   height: 32px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .sidebar-nav[data-state="closed"] .items-row:hover .items-row__icon i.pi {
   transform: scale(1.12);
@@ -238,7 +240,6 @@
   font-weight: 600;
   font-size: 12px;
   flex-shrink: 0;
-  margin-right: 8px;
 }
 
 /* Utilidades */
