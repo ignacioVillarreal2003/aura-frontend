@@ -4,13 +4,13 @@ import { Router, RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../components/sidebar/sidebar.component';
 
 @Component({
-  selector: 'app-main-chat',
+  selector: 'app-main-container',
   standalone: true,
   imports: [CommonModule, RouterOutlet, SidebarComponent],
-  templateUrl: './main-chat.component.html',
-  styleUrls: ['./main-chat.component.css'],
+  templateUrl: './main-container.component.html',
+  styleUrls: ['./main-container.component.css'],
 })
-export class MainChatComponent {
+export class MainContainerComponent {
   private router = inject(Router);
   collapsed = signal(false);
   activeId = signal<string | null>('inbox');

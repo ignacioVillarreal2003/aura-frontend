@@ -35,6 +35,6 @@ export class LoginForm {
       const email = this.readValue(this.emailField);
       const pass  = this.readValue(this.passField);
       this.auth.loginHardcoded(email, pass);
-      this.router.navigateByUrl('/main-chat');
+      this.router.navigateByUrl('/main-container');
   }
 }

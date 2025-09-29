@@ -34,7 +34,8 @@
 .toggle-button {
   position: absolute;
   top: calc(var(--topbar-height) / 2 - 35px);
-  right: -20px;
+  right: 0px;
+  transform: translateX(50%);
   z-index: 50;
 }
 .toggle-button__container {
@@ -42,16 +43,13 @@
   height: 40px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 1), 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .toggle-button__container app-btn-icon {
   border-radius: 8px;
-}
-.toggle-button__container app-btn-icon:hover {
-  background: #f9fafb;
 }
 
 /* HEADER / LOGO */
@@ -166,13 +164,13 @@
 .items-row__btn span {
   font-family: 'Sora', sans-serif;
   font-weight: 300;
-  font-size: 14px;
+  font-size: 12px;
   color: #1D1D1B;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
-  max-width: 100%;
+  max-width: calc(var(--sidebar-open-width) - 60px)
 }
 
 /* Variante “cerrado”: centramos iconos, quitamos hover/outline del contenedor */
@@ -252,5 +250,3 @@
   background: transparent;
   outline: none;
 }
-
-
