@@ -40,6 +40,16 @@
       </div>
     </div>
 
+    <div class="items-row has-icon" (click)="toggleChatMode()">
+      <div class="items-row__icon">
+        <i class="pi pi-users" *ngIf="chatMode === 'grupal'"></i>
+        <i class="pi pi-user" *ngIf="chatMode === 'individual'"></i>
+      </div>
+      @if (isOpen()) {
+        <span class="items-row__text">{{ chatMode === 'individual' ? 'Individual' : 'Grupal' }}</span>
+      }
+    </div>
+
     <div class="items-row has-icon" (click)="emitNewClick()">
       <div class="items-row__icon">
         <i class="pi pi-plus"></i>
@@ -79,7 +89,7 @@
       </div>
       @if (isOpen()) {
         <div class="items-row__text user-info">
-          <span class="user-email">{{ userEmail() }}</span>
+          <span class="user-email">{{ userName() }}</span>
           <span class="user-meta">{{ userRol() }}</span>
         </div>
       }

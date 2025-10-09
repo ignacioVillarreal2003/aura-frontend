@@ -140,17 +140,17 @@
 
 /* Estado activo */
 .items-row.active {
-  color: #054FE1;
-  background: #EEF3FF;
-  outline: 1px solid #D9E5FF;
+  background: transparent;
+  outline: none;
 }
+
 .items-row.active i.pi {
-  color: #054FE1 !important;
+  color: #fff !important;
 }
 
 /* Separación especial para el perfil del usuario */
 .items-row.has-icon .items-row__icon {
-  margin-right: 4px;
+  margin-right: 6px;
 }
 
 /* Más separación del borde izquierdo para el perfil */

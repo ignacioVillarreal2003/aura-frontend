@@ -17,11 +17,15 @@ export class SidebarComponent {
   @Input() activeId: string | null = null;
 
   @Input() userEmailInput = 'usuario@ejemplo.com';
+  @Input() userNameInput = 'Emiliano Fau';
   @Input() userRolInput = 'Operador';
 
   @Output() toggle = new EventEmitter<boolean>();
   @Output() select = new EventEmitter<string>();
   @Output() newClick = new EventEmitter<void>();
+  @Output() chatModeChange = new EventEmitter<string>();
+
+  chatMode: 'individual' | 'grupal' = 'individual';
 
   chats: ChatRow[] = [
     { id: '101', title: 'Consulta sobre epidemotitis aguda de tercer grado', route: '/chat/101' },
@@ -45,11 +49,16 @@ export class SidebarComponent {
   emitSelect(id: string) { this.select.emit(id); }
   emitNewClick() { this.newClick.emit(); }
 
-  userInitials() {
-    const e = this.userEmailInput?.trim?.() || 'U';
-    return e.charAt(0).toUpperCase();
+  toggleChatMode() {
+    this.chatMode = this.chatMode === 'individual' ? 'grupal' : 'individual';
+    this.chatModeChange.emit(this.chatMode);
   }
 
-  userEmail() { return this.userEmailInput; }
+  userInitials() {
+    const n = this.userNameInput?.trim?.() || 'U';
+    return n.charAt(0).toUpperCase();
+  }
+
+  userName() { return this.userNameInput; }
   userRol() { return this.userRolInput; }
 }
