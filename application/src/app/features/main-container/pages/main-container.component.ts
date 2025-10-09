@@ -13,7 +13,7 @@ import { SidebarComponent } from '../components/sidebar/sidebar.component';
 export class MainContainerComponent {
   private router = inject(Router);
   collapsed = signal(false);
-  activeId = signal<string | null>('inbox');
+  activeId = signal<string | null>('new-chat');
   gridCols = computed(() => this.collapsed() ? '72px 1fr' : '280px 1fr');
 
   onSelect(id: string) {
@@ -24,6 +24,7 @@ export class MainContainerComponent {
   }
 
   onNewChat() {
-    this.router.navigate(['/chat', 'new']);
+    this.activeId.set('new-chat');
+    this.router.navigate(['/main-container/new-chat']);
   }
 }

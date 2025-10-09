@@ -2,14 +2,13 @@ import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
-import { BtnText } from '../../../../shared/components/buttons/btn-text/btn-text';
 
 type ChatRow = { id: string; title: string; route: string };
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, BtnIcon, BtnText],
+  imports: [CommonModule, BtnIcon],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css'],
 })
