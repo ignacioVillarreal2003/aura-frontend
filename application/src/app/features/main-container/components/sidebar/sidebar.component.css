@@ -1,0 +1,281 @@
+:host {
+  display: block;
+  height: var(--app-viewport-height);
+}
+
+/* NAV CONTENEDOR */
+.sidebar-nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: var(--app-viewport-height);
+  max-height: var(--app-viewport-height);
+  gap: var(--sidebar-gap-y);
+  padding: var(--sidebar-padding-t) var(--sidebar-padding-x) var(--sidebar-padding-b);
+  background-color: #2C2825;
+  border: calc(var(--sidebar-border)) solid #d1d1d1;
+
+  /* transición unificada y suave */
+  transition:
+    width .28s ease,
+    background-color .2s ease,
+    border-color .2s ease;
+}
+
+/* anchos por estado (sin duplicar transitions) */
+.sidebar-nav[data-state="open"] {
+  width: var(--sidebar-open-width);
+}
+.sidebar-nav[data-state="closed"] {
+  width: var(--sidebar-width);
+}
+
+/* BOTÓN FLOTANTE PARA ABRIR/CERRAR */
+.toggle-button {
+  position: absolute;
+  top: calc(var(--topbar-height) / 2 - 35px);
+  right: 0px;
+  transform: translateX(50%);
+  z-index: 50;
+}
+.toggle-button__container {
+  width: 40px;
+  height: 40px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toggle-button__container app-btn-icon {
+  border-radius: 8px;
+}
+
+/* HEADER / LOGO */
+.sidebar-header {
+  width: 100%;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar-header__logo-container {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.sidebar-header__logo-container img.sidebar-logo {
+  height: 50px;
+  width: auto;
+  display: block;
+  transition: height .18s ease;
+}
+
+.sidebar-nav[data-state="open"] .sidebar-header__logo-container img.sidebar-logo {
+  height: 55px;
+}
+
+/* DIVISOR */
+.sidebar-divider {
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background-color: #9ca3af;
+  margin: 15px 0;
+}
+/* al estar cerrado, achicamos visualmente el divisor para alinearlo con los íconos */
+.sidebar-nav[data-state="closed"] .sidebar-divider {
+  width: var(--sidebar-content-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* BODY & FOOTER */
+.sidebar-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sidebar-gap-y);
+}
+
+.sidebar-footer {
+  flex: 0 0 auto;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background: transparent;
+}
+
+.sidebar-nav[data-state="closed"] .sidebar-footer {
+  background: transparent;
+}
+
+/* FILAS DE ITEMS (icono + texto) → FLEX */
+.items-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 100%;
+  border-radius: 10px;
+  padding: 10px 6px;
+  cursor: pointer;
+  transition:
+    background-color .15s ease,
+    color .15s ease;
+}
+
+/* Más espacio entre los primeros elementos */
+.items-row:first-of-type {
+  margin-bottom: 12px;
+}
+
+/* Hover solo cuando está abierto (cuando está cerrado no coloreamos toda la fila) */
+.sidebar-nav[data-state="open"] .items-row:hover {
+  background: #3a3632;
+}
+
+/* Estado activo */
+.items-row.active {
+  color: #054FE1;
+  background: #EEF3FF;
+  outline: 1px solid #D9E5FF;
+}
+.items-row.active i.pi {
+  color: #054FE1 !important;
+}
+
+/* Separación especial para el perfil del usuario */
+.items-row.has-icon .items-row__icon {
+  margin-right: 4px;
+}
+
+/* Más separación del borde izquierdo para el perfil */
+.sidebar-footer .items-row {
+  padding-left: 12px;
+}
+
+.items-row__icon i.pi {
+  width: 18px;
+  height: 18px;
+  font-size: 16px;
+  color: #fff;
+  line-height: 1;
+  transition: transform .15s ease, color .15s ease;
+}
+
+/* Texto/botón */
+.items-row__text {
+  font-family: 'Sora', sans-serif;
+  font-weight: 300;
+  font-size: 16px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: calc(var(--sidebar-open-width) - 40px);
+  line-height: 1.2;
+}
+
+/* Cuando no hay icono, el texto puede ocupar más espacio */
+.items-row:not(.has-icon) .items-row__text {
+  max-width: calc(var(--sidebar-open-width) - 30px);
+}
+
+/* Sección de chats */
+.chats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chats-title {
+  font-family: 'Sora', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #9ca3af;
+  padding: 10px 6px 5px 6px;
+  text-align: left;
+}
+
+/* Variante "cerrado": centramos iconos, quitamos hover/outline del contenedor */
+.sidebar-nav[data-state="closed"] .items-row {
+  justify-content: center;
+  padding: 8px 6px;
+  background: transparent;
+  outline: none;
+}
+.sidebar-nav[data-state="closed"] .items-row:hover {
+  background: transparent;
+}
+/* icono un poco más grande y con “pulse” sutil al hover */
+.sidebar-nav[data-state="closed"] .items-row__icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar-nav[data-state="closed"] .items-row:hover .items-row__icon i.pi {
+  transform: scale(1.12);
+}
+
+/* Texto del usuario en el footer */
+.items-row__text.user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.user-email {
+  font-weight: 400;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: #fff;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.user-meta {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: #fff;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sidebar-nav[data-state="closed"] .items-row__text {
+  display: none;
+}
+
+/* Avatar */
+.avatar-fallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #111827;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* Utilidades */
+.icon-swap { position: relative; }
+.icon-swap .icon-home,
+.icon-swap .icon-open { transition: opacity .15s ease; }
+.icon-swap .icon-open { position: absolute; inset: 0; opacity: 0; }
+
+.sidebar-nav[data-state="closed"] .items-row.active {
+  background: transparent;
+  outline: none;
+}

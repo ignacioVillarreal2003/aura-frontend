@@ -6,6 +6,7 @@ import {LoginForm} from '../login-form/login-form';
 
 @Component({
   selector: 'app-auth-page',
+  standalone: true,
   imports: [
     Background1,
     Background2,

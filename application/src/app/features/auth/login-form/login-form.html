@@ -3,10 +3,12 @@
     <h1 class="login-form__title">Tu asistente inteligente para consultas documentales</h1>
   </header>
   <div class="login-form__container">
-    <form class="login-form__form">
-      <app-input-text [label]="'Your email'"
+    <form class="login-form__form" (ngSubmit)="onSubmit($event)">
+      <app-input-text #emailField
+                      [label]="'Your email'"
                       [placeholder]="'Your email'"></app-input-text>
-      <app-input-text [label]="'Your password'"
+      <app-input-text #passField
+                      [label]="'Your password'"
                       [type]="'password'"
                       [placeholder]="'Your password'"></app-input-text>
       <app-btn-text [type]="'submit'"

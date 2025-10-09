@@ -1,0 +1,88 @@
+<nav class="sidebar-nav"
+     [class.open]="isOpen()"
+     [class.closed]="!isOpen()"
+     [attr.data-state]="isOpen() ? 'open' : 'closed'">
+
+  @if (isOpen()) {
+    <div class="toggle-button">
+      <div class="toggle-button__container">
+        <app-btn-icon
+          size="medium"
+          style="transparent"
+          rounded="radius-normal"
+          icon="chevron_left"
+          (click)="onOpenClose()"
+        ></app-btn-icon>
+      </div>
+    </div>
+  }
+
+  <div class="sidebar-header">
+    <div class="sidebar-header__logo-container">
+      <img [src]="isOpen() ? 'assets/images/logo-aura-prueba.png' : 'assets/images/logo.png'"
+           [alt]="isOpen() ? 'AURA' : 'logo'"
+           class="sidebar-logo"/>
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-body">
+    <div class="toggle-button">
+      <div class="toggle-button__container">
+        <app-btn-icon
+          size="medium"
+          rounded="radius-normal"
+          [icon]="isOpen() ? 'chevron_left' : 'chevron_right'"
+          [attr.aria-label]="isOpen() ? 'Cerrar sidebar' : 'Abrir sidebar'"
+          (click)="onOpenClose()"
+        ></app-btn-icon>
+      </div>
+    </div>
+
+    <div class="items-row has-icon" (click)="emitNewClick()">
+      <div class="items-row__icon">
+        <i class="pi pi-plus"></i>
+      </div>
+      @if (isOpen()) {
+        <span class="items-row__text">Nuevo chat</span>
+      }
+    </div>
+
+    <div class="items-row has-icon" [class.active]="activeId === 'search'" (click)="emitSelect('search')">
+      <div class="items-row__icon">
+        <i class="pi pi-search"></i>
+      </div>
+      @if (isOpen()) {
+        <span class="items-row__text">Buscar</span>
+      }
+    </div>
+
+    @if (isOpen()) {
+      <div class="chats-section">
+        <div class="chats-title">Chats</div>
+        @for (c of chats; track c.id) {
+          <div class="items-row" [class.active]="activeId === c.id" (click)="emitSelect(c.id)">
+            <span class="items-row__text">{{ c.title }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-divider"></div>
+
+    <div class="items-row has-icon" [class.active]="activeId === 'profile'" (click)="emitSelect('profile')">
+      <div class="items-row__icon">
+        <div class="avatar-fallback">{{ userInitials() }}</div>
+      </div>
+      @if (isOpen()) {
+        <div class="items-row__text user-info">
+          <span class="user-email">{{ userEmail() }}</span>
+          <span class="user-meta">{{ userRol() }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</nav>
