@@ -1,0 +1,72 @@
+<div class="search-modal-overlay" (click)="onClose()">
+  <div class="search-modal" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">Buscar chats</h2>
+      <button class="close-button" (click)="onClose()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-input-container">
+      <div class="search-input">
+        <i class="pi pi-search search-icon"></i>
+        <input 
+          type="text" 
+          placeholder="Buscar chats..."
+          [(ngModel)]="searchQuery"
+          class="search-field"
+        />
+      </div>
+    </div>
+
+    <!-- New Chat Button -->
+    <button class="new-chat-button" (click)="onNewChat()">
+      <i class="pi pi-pencil"></i>
+      <span>Nuevo chat</span>
+    </button>
+
+    <!-- Chat History -->
+    <div class="chat-history">
+      <!-- Hoy -->
+      <div class="chat-section">
+        <h3 class="section-title">Hoy</h3>
+        <div class="chat-list">
+          @for (chat of chats.hoy; track chat.id) {
+            <div class="chat-item" (click)="onChatSelect(chat.id)">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Ayer -->
+      <div class="chat-section">
+        <h3 class="section-title">Ayer</h3>
+        <div class="chat-list">
+          @for (chat of chats.ayer; track chat.id) {
+            <div class="chat-item" (click)="onChatSelect(chat.id)">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- 7 días anteriores -->
+      <div class="chat-section">
+        <h3 class="section-title">7 días anteriores</h3>
+        <div class="chat-list">
+          @for (chat of chats.semana; track chat.id) {
+            <div class="chat-item" (click)="onChatSelect(chat.id)">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

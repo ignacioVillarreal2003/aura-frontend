@@ -3,12 +3,17 @@
     [collapsed]="collapsed()"
     [activeId]="activeId()"
     (toggle)="collapsed.set($event)"
-    (select)="activeId.set($event)"
-    (newClick)="onNewChat()">
+    (select)="onSelect($event)"
+    (newClick)="onNewChat()"
+    (chatModeChange)="onChatModeChange($event)">
   </app-sidebar>
 
   <main class="chat-content">
     <router-outlet></router-outlet>
-
   </main>
+
+  <!-- Search Modal -->
+  @if (showSearchModal()) {
+    <app-search-chat (close)="onCloseSearchModal()"></app-search-chat>
+  }
 </div>
