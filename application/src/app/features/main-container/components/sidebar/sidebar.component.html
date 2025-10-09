@@ -40,45 +40,45 @@
       </div>
     </div>
 
-    <div class="items-row" (click)="emitNewClick()">
+    <div class="items-row has-icon" (click)="emitNewClick()">
       <div class="items-row__icon">
         <i class="pi pi-plus"></i>
       </div>
       @if (isOpen()) {
-        <app-btn-text class="items-row__btn" [label]="'Nuevo chat'" variant="ghost" colorScheme="auto" size="lg"></app-btn-text>
+        <span class="items-row__text">Nuevo chat</span>
       }
     </div>
 
-    <div class="items-row" [class.active]="activeId === 'search'" (click)="emitSelect('search')">
+    <div class="items-row has-icon" [class.active]="activeId === 'search'" (click)="emitSelect('search')">
       <div class="items-row__icon">
         <i class="pi pi-search"></i>
       </div>
       @if (isOpen()) {
-        <app-btn-text class="items-row__btn" [label]="'Buscar'" variant="ghost" colorScheme="auto" size="lg"></app-btn-text>
+        <span class="items-row__text">Buscar</span>
       }
     </div>
 
     @if (isOpen()) {
-      @for (c of chats; track c.id) {
-        <div class="items-row" [class.active]="activeId === c.id" (click)="emitSelect(c.id)">
-          <div class="items-row__icon">
-            <i class="pi pi-comments"></i>
+      <div class="chats-section">
+        <div class="chats-title">Chats</div>
+        @for (c of chats; track c.id) {
+          <div class="items-row" [class.active]="activeId === c.id" (click)="emitSelect(c.id)">
+            <span class="items-row__text">{{ c.title }}</span>
           </div>
-          <app-btn-text class="items-row__btn" [label]="c.title" variant="ghost" colorScheme="auto" size="lg"></app-btn-text>
-        </div>
-      }
+        }
+      </div>
     }
   </div>
 
   <div class="sidebar-footer">
     <div class="sidebar-divider"></div>
 
-    <div class="items-row" [class.active]="activeId === 'profile'" (click)="emitSelect('profile')">
+    <div class="items-row has-icon" [class.active]="activeId === 'profile'" (click)="emitSelect('profile')">
       <div class="items-row__icon">
         <div class="avatar-fallback">{{ userInitials() }}</div>
       </div>
       @if (isOpen()) {
-        <div class="items-row__text">
+        <div class="items-row__text user-info">
           <span class="user-email">{{ userEmail() }}</span>
           <span class="user-meta">{{ userRol() }}</span>
         </div>

@@ -84,7 +84,7 @@
   height: 2px;
   border-radius: 2px;
   background-color: #9ca3af;
-  margin: 8px 0;
+  margin: 15px 0;
 }
 /* al estar cerrado, achicamos visualmente el divisor para alinearlo con los íconos */
 .sidebar-nav[data-state="closed"] .sidebar-divider {
@@ -117,19 +117,25 @@
 .items-row {
   display: flex;
   align-items: center;
-  gap: var(--sidebar-gap-y);
+  justify-content: flex-start;
+  gap: 4px;
   width: 100%;
   border-radius: 10px;
-  padding: 6px 4px;
+  padding: 10px 6px;
   cursor: pointer;
   transition:
     background-color .15s ease,
     color .15s ease;
 }
 
+/* Más espacio entre los primeros elementos */
+.items-row:first-of-type {
+  margin-bottom: 12px;
+}
+
 /* Hover solo cuando está abierto (cuando está cerrado no coloreamos toda la fila) */
 .sidebar-nav[data-state="open"] .items-row:hover {
-  background: #f8fafc;
+  background: #3a3632;
 }
 
 /* Estado activo */
@@ -142,18 +148,19 @@
   color: #054FE1 !important;
 }
 
-/* Ícono en la fila */
-.items-row__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
+/* Separación especial para el perfil del usuario */
+.items-row.has-icon .items-row__icon {
+  margin-right: 4px;
+}
+
+/* Más separación del borde izquierdo para el perfil */
+.sidebar-footer .items-row {
+  padding-left: 12px;
 }
 
 .items-row__icon i.pi {
   width: 18px;
-  height: 16px;
+  height: 18px;
   font-size: 16px;
   color: #fff;
   line-height: 1;
@@ -161,22 +168,44 @@
 }
 
 /* Texto/botón */
-.items-row__btn span {
+.items-row__text {
   font-family: 'Sora', sans-serif;
   font-weight: 300;
-  font-size: 12px;
-  color: #1D1D1B;
+  font-size: 16px;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
-  max-width: calc(var(--sidebar-open-width) - 60px)
+  max-width: calc(var(--sidebar-open-width) - 40px);
+  line-height: 1.2;
 }
 
-/* Variante “cerrado”: centramos iconos, quitamos hover/outline del contenedor */
+/* Cuando no hay icono, el texto puede ocupar más espacio */
+.items-row:not(.has-icon) .items-row__text {
+  max-width: calc(var(--sidebar-open-width) - 30px);
+}
+
+/* Sección de chats */
+.chats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chats-title {
+  font-family: 'Sora', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #9ca3af;
+  padding: 10px 6px 5px 6px;
+  text-align: left;
+}
+
+/* Variante "cerrado": centramos iconos, quitamos hover/outline del contenedor */
 .sidebar-nav[data-state="closed"] .items-row {
   justify-content: center;
-  padding: 8px 0;
+  padding: 8px 6px;
   background: transparent;
   outline: none;
 }
@@ -196,7 +225,7 @@
 }
 
 /* Texto del usuario en el footer */
-.items-row__text {
+.items-row__text.user-info {
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -204,8 +233,8 @@
 }
 
 .user-email {
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 400;
+  font-size: 16px;
   white-space: nowrap;
   overflow: hidden;
   color: #fff;
@@ -214,10 +243,10 @@
 }
 
 .user-meta {
-  font-size: 11px;
-  color: #fff;
+  font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
+  color: #fff;
   text-overflow: ellipsis;
   max-width: 100%;
 }
