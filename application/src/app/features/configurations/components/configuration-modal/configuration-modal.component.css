@@ -75,7 +75,6 @@
   padding: 1rem;
 }
 
-/* Scrollbar personalizado */
 .modal-content::-webkit-scrollbar {
   width: 8px;
 }
@@ -206,7 +205,6 @@
   border-color: #667eea;
 }
 
-/* Estilos para las opciones del select */
 .select-field option {
   background: #2C2825;
   color: #d1d5db;
