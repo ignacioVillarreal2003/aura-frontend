@@ -4,11 +4,12 @@ import { Router, RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../components/sidebar/sidebar.component';
 import { SearchChatComponent } from '../../search-chat/pages/search-chat/search-chat.component';
 import { EventOptionsMenuComponent } from '../components/event-options-menu/event-options-menu.component';
+import { ConfigurationModalComponent } from '../../configurations/components/configuration-modal/configuration-modal.component';
 
 @Component({
   selector: 'app-main-container',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, SearchChatComponent, EventOptionsMenuComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, SearchChatComponent, EventOptionsMenuComponent, ConfigurationModalComponent],
   templateUrl: './main-container.component.html',
   styleUrls: ['./main-container.component.css'],
 })
@@ -18,6 +19,7 @@ export class MainContainerComponent {
   activeId = signal<string | null>('new-chat');
   showSearchModal = signal(false);
   showProfileMenu = signal(false);
+  showConfigModal = signal(false);
   gridCols = computed(() => this.collapsed() ? '72px 1fr' : '280px 1fr');
 
   onSelect(id: string) {
@@ -44,6 +46,10 @@ export class MainContainerComponent {
     this.showProfileMenu.set(false);
   }
 
+  onCloseConfigModal() {
+    this.showConfigModal.set(false);
+  }
+
   onProfileMenuOption(optionId: string) {
     console.log('Opción seleccionada:', optionId);
     switch(optionId) {
@@ -54,7 +60,7 @@ export class MainContainerComponent {
         this.router.navigate(['/main-container/notifications']);
         break;
       case 'settings':
-        console.log('Abrir modal de configuración');
+        this.showConfigModal.set(true);
         break;
       case 'logout':
         console.log('Cerrando sesión...');
