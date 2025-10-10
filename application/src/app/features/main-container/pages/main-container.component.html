@@ -12,8 +12,16 @@
     <router-outlet></router-outlet>
   </main>
 
-  <!-- Search Modal -->
+  <!-- Modal de Búsqueda -->
   @if (showSearchModal()) {
     <app-search-chat (close)="onCloseSearchModal()"></app-search-chat>
+  }
+
+  <!-- Menu del Perfil-->
+  @if (showProfileMenu()) {
+    <app-event-options-menu 
+      (close)="onCloseProfileMenu()"
+      (optionSelected)="onProfileMenuOption($event)">
+    </app-event-options-menu>
   }
 </div>
