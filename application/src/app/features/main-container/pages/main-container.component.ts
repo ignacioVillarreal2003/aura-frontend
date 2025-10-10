@@ -48,19 +48,15 @@ export class MainContainerComponent {
     console.log('Opción seleccionada:', optionId);
     switch(optionId) {
       case 'profile':
-        // Navegar a perfil de usuario
         this.router.navigate(['/main-container/user-profile']);
         break;
       case 'notifications':
-        // Navegar a notificaciones
         this.router.navigate(['/main-container/notifications']);
         break;
       case 'settings':
-        // Abrir modal de configuración
         console.log('Abrir modal de configuración');
         break;
       case 'logout':
-        // Cerrar sesión
         console.log('Cerrando sesión...');
         this.router.navigate(['/login']);
         break;
@@ -69,7 +65,5 @@ export class MainContainerComponent {
 
   onChatModeChange(mode: string) {
     console.log('Modo de chat cambiado a:', mode);
-    // Aquí puedes agregar la lógica para cambiar el comportamiento según el modo
-    // Por ejemplo, cambiar la interfaz, los estilos, etc.
   }
 }
