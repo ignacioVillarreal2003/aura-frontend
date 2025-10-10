@@ -11,8 +11,3 @@
   background: #151515;
 }
 
-@media (max-width: 1024px) {
-  .chat-flex { 
-    grid-template-columns: 1fr; 
-  }
-}

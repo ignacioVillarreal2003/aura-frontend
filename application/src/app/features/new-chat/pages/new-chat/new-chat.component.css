@@ -111,14 +111,3 @@
   transform: translateY(1px);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .welcome-title {
-    font-size: 2rem;
-  }
-  
-  .new-chat-content {
-    padding: 1rem;
-    gap: 2rem;
-  }
-}

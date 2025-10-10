@@ -1,0 +1,74 @@
+<div class="notifications-container">
+  <div class="notifications-header">
+    <h1 class="notifications-title">
+      <i class="pi pi-bell"></i>
+      Notificaciones
+    </h1>
+    <div class="notifications-actions">
+      <span class="unread-count" *ngIf="getUnreadCount() > 0">
+        {{ getUnreadCount() }} sin leer
+      </span>
+      <button class="mark-all-read-btn" (click)="markAllAsRead()" *ngIf="getUnreadCount() > 0">
+        <i class="pi pi-check"></i>
+        Marcar todas como leídas
+      </button>
+    </div>
+  </div>
+
+  <div class="notifications-content">
+    @if (notifications.length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-bell-slash"></i>
+        <h3>No hay notificaciones</h3>
+        <p>Cuando recibas notificaciones, aparecerán aquí.</p>
+      </div>
+    } @else {
+      <div class="notifications-list">
+        @for (notification of notifications; track notification.id) {
+          <div class="notification-item" [class.unread]="!notification.isRead">
+            <div class="notification-icon">
+              <span class="sender-initials">{{ getSenderInitials(notification.sender) }}</span>
+            </div>
+            
+            <div class="notification-content">
+              <div class="notification-header">
+                <div class="sender-info">
+                  <span class="sender-name">{{ notification.sender }}</span>
+                  @if (notification.senderEmail) {
+                    <span class="sender-email">{{ notification.senderEmail }}</span>
+                  }
+                </div>
+                <div class="notification-meta">
+                  <span class="notification-type">{{ notification.title }}</span>
+                  <span class="notification-time">{{ getTimeAgo(notification.timestamp) }}</span>
+                </div>
+              </div>
+              
+              @if (notification.description) {
+                <div class="notification-description">
+                  {{ notification.description }}
+                </div>
+              }
+            </div>
+
+            <div class="notification-actions">
+              @for (action of notification.actions; track action.id) {
+                <button 
+                  class="action-btn" 
+                  [class.primary]="action.type === 'primary'"
+                  [class.secondary]="action.type === 'secondary'"
+                  [class.danger]="action.type === 'danger'"
+                  (click)="action.action()">
+                  {{ action.label }}
+                </button>
+              }
+              <button class="delete-btn" (click)="deleteNotification(notification.id)">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

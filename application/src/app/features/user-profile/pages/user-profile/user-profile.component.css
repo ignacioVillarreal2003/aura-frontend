@@ -312,27 +312,3 @@
   margin-top: 0.25rem;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .user-profile-container {
-    padding: 1rem;
-  }
-  
-  .profile-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .edit-actions {
-    flex-direction: column;
-  }
-}

@@ -16,6 +16,11 @@ export const routes: Routes = [
         path: 'user-profile',
         loadChildren: () =>
           import('../user-profile/user-profile.routes').then(m => m.userProfileRoutes)
+      },
+      {
+        path: 'notifications',
+        loadChildren: () =>
+          import('../notifications/notifications.routes').then(m => m.notificationsRoutes)
       }
     ]
   },
