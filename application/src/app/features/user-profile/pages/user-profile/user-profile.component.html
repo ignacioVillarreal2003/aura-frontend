@@ -1,0 +1,213 @@
+<div class="user-profile-container">
+  <div class="profile-header">
+    <div class="profile-avatar">
+      <span class="avatar-text">{{ user.avatar }}</span>
+    </div>
+    <div class="profile-info">
+      <h1 class="profile-name">{{ user.name }}</h1>
+      <p class="profile-role">{{ user.role }}</p>
+      <p class="profile-department">{{ user.department }}</p>
+    </div>
+    <button class="edit-button" (click)="toggleEdit()">
+      <i class="pi pi-pencil"></i>
+      {{ isEditing ? 'Cancelar' : 'Editar' }}
+    </button>
+  </div>
+
+  <div class="profile-content-wrapper">
+    <div class="profile-content">
+      <!-- Información Personal -->
+      <div class="profile-section">
+      <h2 class="section-title">
+        <i class="pi pi-user"></i>
+        Información Personal
+      </h2>
+      
+      <div class="info-grid">
+        <div class="info-item">
+          <label class="info-label">Nombre completo</label>
+          @if (isEditing) {
+            <input type="text" [(ngModel)]="editedUser.name" class="info-input">
+          } @else {
+            <span class="info-value">{{ user.name }}</span>
+          }
+        </div>
+
+        <div class="info-item">
+          <label class="info-label">Email</label>
+          @if (isEditing) {
+            <input type="email" [(ngModel)]="editedUser.email" class="info-input">
+          } @else {
+            <span class="info-value">{{ user.email }}</span>
+          }
+        </div>
+
+        <div class="info-item">
+          <label class="info-label">Teléfono</label>
+          @if (isEditing) {
+            <input type="tel" [(ngModel)]="editedUser.phone" class="info-input">
+          } @else {
+            <span class="info-value">{{ user.phone }}</span>
+          }
+        </div>
+
+        <div class="info-item">
+          <label class="info-label">Ubicación</label>
+          @if (isEditing) {
+            <input type="text" [(ngModel)]="editedUser.location" class="info-input">
+          } @else {
+            <span class="info-value">{{ user.location }}</span>
+          }
+        </div>
+
+        <div class="info-item">
+          <label class="info-label">Fecha de ingreso</label>
+          <span class="info-value">{{ user.joinDate }}</span>
+        </div>
+
+        <div class="info-item">
+          <label class="info-label">Departamento</label>
+          <span class="info-value">{{ user.department }}</span>
+        </div>
+
+        <div class="info-item">
+          <label class="info-label">Rol</label>
+          <span class="info-value">{{ user.role }}</span>
+        </div>
+      </div>
+
+      @if (isEditing) {
+        <div class="edit-actions">
+          <button class="save-button" (click)="saveChanges()">
+            <i class="pi pi-check"></i>
+            Guardar cambios
+          </button>
+          <button class="cancel-button" (click)="cancelEdit()">
+            <i class="pi pi-times"></i>
+            Cancelar
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Configuraciones -->
+    <div class="profile-section">
+      <h2 class="section-title">
+        <i class="pi pi-cog"></i>
+        Configuraciones
+      </h2>
+
+      <div class="settings-group">
+        <h3 class="group-title">Notificaciones</h3>
+        <div class="setting-item">
+          <label class="setting-label">
+            <i class="pi pi-envelope"></i>
+            Notificaciones por email
+          </label>
+          <input type="checkbox" 
+                 [(ngModel)]="profileSettings.notifications.email"
+                 (change)="updateNotificationSetting('email', $event.target.checked)"
+                 class="setting-toggle">
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <i class="pi pi-bell"></i>
+            Notificaciones push
+          </label>
+          <input type="checkbox" 
+                 [(ngModel)]="profileSettings.notifications.push"
+                 (change)="updateNotificationSetting('push', $event.target.checked)"
+                 class="setting-toggle">
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <i class="pi pi-mobile"></i>
+            Notificaciones SMS
+          </label>
+          <input type="checkbox" 
+                 [(ngModel)]="profileSettings.notifications.sms"
+                 (change)="updateNotificationSetting('sms', $event.target.checked)"
+                 class="setting-toggle">
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h3 class="group-title">Privacidad</h3>
+        <div class="setting-item">
+          <label class="setting-label">
+            <i class="pi pi-eye"></i>
+            Mostrar email públicamente
+          </label>
+          <input type="checkbox" 
+                 [(ngModel)]="profileSettings.privacy.showEmail"
+                 (change)="updatePrivacySetting('showEmail', $event.target.checked)"
+                 class="setting-toggle">
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <i class="pi pi-phone"></i>
+            Mostrar teléfono públicamente
+          </label>
+          <input type="checkbox" 
+                 [(ngModel)]="profileSettings.privacy.showPhone"
+                 (change)="updatePrivacySetting('showPhone', $event.target.checked)"
+                 class="setting-toggle">
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <i class="pi pi-map-marker"></i>
+            Mostrar ubicación públicamente
+          </label>
+          <input type="checkbox" 
+                 [(ngModel)]="profileSettings.privacy.showLocation"
+                 (change)="updatePrivacySetting('showLocation', $event.target.checked)"
+                 class="setting-toggle">
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="profile-section">
+      <h2 class="section-title">
+        <i class="pi pi-chart-bar"></i>
+        Estadísticas
+      </h2>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-user"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">156</span>
+            <span class="stat-label">Chats individuales</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-users"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">91</span>
+            <span class="stat-label">Chats grupales</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="pi pi-file"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">324</span>
+            <span class="stat-label">Documentos consultados</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

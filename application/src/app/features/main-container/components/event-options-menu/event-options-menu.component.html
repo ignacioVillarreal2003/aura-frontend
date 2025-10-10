@@ -1,0 +1,16 @@
+<div class="menu-overlay" (click)="onClose()">
+  <div class="menu-container" (click)="$event.stopPropagation()">
+    <div class="menu-list">
+      @for (option of menuOptions; track option.id) {
+        <button 
+          class="menu-item"
+          [class.danger]="option.danger"
+          (click)="onOptionClick(option.id)">
+          <i class="pi {{ option.icon }} menu-icon"></i>
+          <span class="menu-label">{{ option.label }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
