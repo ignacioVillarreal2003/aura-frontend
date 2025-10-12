@@ -26,4 +26,11 @@
   @if (showConfigModal()) {
     <app-configuration-modal (close)="onCloseConfigModal()"></app-configuration-modal>
   }
+
+  @if (showLogoutModal()) {
+    <app-logout-confirmation-modal 
+      (close)="onCloseLogoutModal()"
+      (confirm)="onConfirmLogout()">
+    </app-logout-confirmation-modal>
+  }
 </div>

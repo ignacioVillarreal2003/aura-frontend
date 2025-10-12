@@ -1,0 +1,35 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">
+        <i class="pi pi-sign-out"></i>
+        Cerrar sesión
+      </h2>
+      <button class="close-button" (click)="onClose()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-content">
+      <div class="logout-icon">
+        <i class="pi pi-sign-out"></i>
+      </div>
+      
+      <div class="logout-message">
+        <p class="logout-question">¿Estás seguro que querés cerrar sesión?</p>
+        <p class="logout-description">Tendrás que iniciar sesión nuevamente para acceder a tu cuenta.</p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-button" (click)="onCancel()">
+        <i class="pi pi-times"></i>
+        Cancelar
+      </button>
+      <button class="logout-button" (click)="onConfirm()">
+        <i class="pi pi-sign-out"></i>
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+</div>
