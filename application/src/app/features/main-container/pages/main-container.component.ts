@@ -5,21 +5,25 @@ import { SidebarComponent } from '../components/sidebar/sidebar.component';
 import { SearchChatComponent } from '../../search-chat/pages/search-chat/search-chat.component';
 import { EventOptionsMenuComponent } from '../components/event-options-menu/event-options-menu.component';
 import { ConfigurationModalComponent } from '../../configurations/components/configuration-modal/configuration-modal.component';
+import { LogoutConfirmationModalComponent } from '../components/logout-confirmation-modal/logout-confirmation-modal.component';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-main-container',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, SearchChatComponent, EventOptionsMenuComponent, ConfigurationModalComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, SearchChatComponent, EventOptionsMenuComponent, ConfigurationModalComponent, LogoutConfirmationModalComponent],
   templateUrl: './main-container.component.html',
   styleUrls: ['./main-container.component.css'],
 })
 export class MainContainerComponent {
   private router = inject(Router);
+  private authService = inject(AuthService);
   collapsed = signal(false);
   activeId = signal<string | null>('new-chat');
   showSearchModal = signal(false);
   showProfileMenu = signal(false);
   showConfigModal = signal(false);
+  showLogoutModal = signal(false);
   gridCols = computed(() => this.collapsed() ? '72px 1fr' : '280px 1fr');
 
   onSelect(id: string) {
@@ -63,13 +67,22 @@ export class MainContainerComponent {
         this.showConfigModal.set(true);
         break;
       case 'logout':
-        console.log('Cerrando sesión...');
-        this.router.navigate(['/login']);
+        this.showLogoutModal.set(true);
         break;
     }
   }
 
   onChatModeChange(mode: string) {
     console.log('Modo de chat cambiado a:', mode);
+  }
+
+  onCloseLogoutModal() {
+    this.showLogoutModal.set(false);
+  }
+
+  onConfirmLogout() {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+    this.showLogoutModal.set(false);
   }
 }
