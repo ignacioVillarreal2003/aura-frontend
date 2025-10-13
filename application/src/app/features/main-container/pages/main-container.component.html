@@ -5,7 +5,8 @@
     (toggle)="collapsed.set($event)"
     (select)="onSelect($event)"
     (newClick)="onNewChat()"
-    (chatModeChange)="onChatModeChange($event)">
+    (chatModeChange)="onChatModeChange($event)"
+    (chatAction)="onChatAction($event)">
   </app-sidebar>
 
   <main class="chat-content">

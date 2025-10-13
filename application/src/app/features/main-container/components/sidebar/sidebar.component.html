@@ -72,8 +72,19 @@
       <div class="chats-section">
         <div class="chats-title">Chats</div>
         @for (c of chats; track c.id) {
-          <div class="items-row" [class.active]="activeId === c.id" (click)="emitSelect(c.id)">
-            <span class="items-row__text">{{ c.title }}</span>
+          <div class="items-row chat-row" 
+               [class.active]="activeId === c.id" 
+               (click)="emitSelect(c.id)"
+               (mouseenter)="onChatMouseEnter(c.id)"
+               (mouseleave)="onChatMouseLeave()">
+            <span class="items-row__text chat-title">{{ c.title }}</span>
+            @if (hoveredChatId() === c.id) {
+              <button class="chat-options-btn" 
+                      (click)="onChatOptionsClick($event, c.id)"
+                      [attr.aria-label]="'Opciones del chat ' + c.title">
+                <i class="pi pi-ellipsis-h"></i>
+              </button>
+            }
           </div>
         }
       </div>
@@ -95,4 +106,17 @@
       }
     </div>
   </div>
+
+  <!-- Menú de opciones de chat -->
+  @if (showChatMenu()) {
+    <app-chat-options-menu 
+      [chatId]="showChatMenu()!.chatId"
+      [chatTitle]="getChatTitle(showChatMenu()!.chatId)"
+      [style.position]="'fixed'"
+      [style.left.px]="showChatMenu()!.position.x"
+      [style.top.px]="showChatMenu()!.position.y"
+      (close)="onCloseChatMenu()"
+      (optionSelected)="onChatActionSelected($event)">
+    </app-chat-options-menu>
+  }
 </nav>
