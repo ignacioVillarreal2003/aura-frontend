@@ -4,7 +4,7 @@ import { Router, RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../components/sidebar/sidebar.component';
 import { SearchChatComponent } from '../../search-chat/pages/search-chat/search-chat.component';
 import { EventOptionsMenuComponent } from '../components/event-options-menu/event-options-menu.component';
-import { ConfigurationModalComponent } from '../../configurations/components/configuration-modal/configuration-modal.component';
+import { ConfigurationModalComponent } from '../components/configuration-modal/configuration-modal.component';
 import { LogoutConfirmationModalComponent } from '../components/logout-confirmation-modal/logout-confirmation-modal.component';
 import { AuthService } from '../../../core/services/auth.service';
 

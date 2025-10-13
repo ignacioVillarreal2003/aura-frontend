@@ -16,9 +16,8 @@
 .modal-container {
   background: #2C2825;
   border-radius: 16px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 70vh;
+  width: 900px;
+  height: 600px;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   border: 1px solid #404040;
@@ -71,8 +70,8 @@
 
 .modal-content {
   flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
+  overflow: hidden;
+  display: flex;
 }
 
 .modal-content::-webkit-scrollbar {
@@ -89,7 +88,73 @@
   border-radius: 4px;
 }
 
-.modal-content::-webkit-scrollbar-thumb:hover {
+/* Navegación lateral */
+.settings-nav {
+  width: 280px;
+  background: #1a1a1a;
+  border-right: 1px solid #404040;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  flex-shrink: 0;
+}
+
+.nav-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.nav-section:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.nav-section.active {
+  background: #3a3632;
+  color: #fff;
+  border-right: 3px solid #667eea;
+}
+
+.nav-section i {
+  font-size: 1.1rem;
+  width: 20px;
+}
+
+/* Contenido principal */
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  background: #2C2825;
+  min-height: 0;
+}
+
+.settings-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-content::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
   background: #525252;
 }
 
@@ -148,6 +213,26 @@
 }
 
 .input-field:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #2C2825;
+}
+
+.textarea-field {
+  background: #1a1a1a;
+  border: 1px solid #404040;
+  color: #fff;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: 'Sora', sans-serif;
+  transition: border-color 0.2s ease;
+  width: 100%;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.textarea-field:focus {
   outline: none;
   border-color: #667eea;
   background: #2C2825;
@@ -338,6 +423,15 @@ input:checked + .toggle-slider:before {
   padding: 1.5rem 2rem;
   border-top: 1px solid #404040;
   background: #1a1a1a;
+  flex-shrink: 0;
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  width: 100%;
 }
 
 .cancel-button {
@@ -377,4 +471,91 @@ input:checked + .toggle-slider:before {
 
 .save-button:hover {
   background: #5a67d8;
+}
+
+/* Estilos para la sección de control de datos */
+.data-control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.data-control-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #404040;
+}
+
+.data-control-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.data-control-label {
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.manage-btn {
+  background: transparent;
+  border: 1px solid #404040;
+  color: #9ca3af;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.manage-btn:hover {
+  background: #404040;
+  color: #fff;
+  border-color: #525252;
+}
+
+.danger-btn {
+  background: transparent;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.danger-btn:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+.export-btn {
+  background: transparent;
+  border: 1px solid #667eea;
+  color: #667eea;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.export-btn:hover {
+  background: #667eea;
+  color: #fff;
+}
+
+.general-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }

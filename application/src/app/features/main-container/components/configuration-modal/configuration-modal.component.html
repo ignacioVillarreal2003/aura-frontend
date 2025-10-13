@@ -1,0 +1,264 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">
+        <i class="pi pi-cog"></i>
+        Configuración
+      </h2>
+      <button class="close-button" (click)="onClose()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-content">
+      <!-- Navegación lateral -->
+      <div class="settings-nav">
+        <div class="nav-section" 
+             [class.active]="selectedSection === 'general'"
+             (click)="selectSection('general')">
+          <i class="pi pi-cog"></i>
+          <span>General</span>
+        </div>
+        
+        <div class="nav-section" 
+             [class.active]="selectedSection === 'notifications'"
+             (click)="selectSection('notifications')">
+          <i class="pi pi-bell"></i>
+          <span>Notificaciones</span>
+        </div>
+        
+        
+        <div class="nav-section" 
+             [class.active]="selectedSection === 'privacy'"
+             (click)="selectSection('privacy')">
+          <i class="pi pi-shield"></i>
+          <span>Privacidad</span>
+        </div>
+        
+        <div class="nav-section" 
+             [class.active]="selectedSection === 'security'"
+             (click)="selectSection('security')">
+          <i class="pi pi-lock"></i>
+          <span>Seguridad</span>
+        </div>
+        
+        <div class="nav-section" 
+             [class.active]="selectedSection === 'data-control'"
+             (click)="selectSection('data-control')">
+          <i class="pi pi-database"></i>
+          <span>Control de datos</span>
+        </div>
+      </div>
+
+      <!-- Contenido de configuración -->
+      <div class="settings-content">
+        <!-- Sección General -->
+        <div *ngIf="selectedSection === 'general'" class="config-section">
+          <h3 class="section-title">General</h3>
+          <div class="general-section">
+            <div class="input-group">
+              <label class="input-label">Tema</label>
+              <select [(ngModel)]="settings.theme" class="select-field">
+                @for (option of themeOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección Notificaciones -->
+        <div *ngIf="selectedSection === 'notifications'" class="config-section">
+          <h3 class="section-title">Notificaciones</h3>
+          <div class="notifications-section">
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Notificaciones por email</span>
+                <span class="toggle-description">Recibir notificaciones importantes por correo</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="settings.notifications.email" (change)="toggleNotification('email')">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Sonido en notificaciones</span>
+                <span class="toggle-description">Reproducir sonido cuando lleguen notificaciones</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="settings.notifications.sound" (change)="toggleNotification('sound')">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Sección Privacidad -->
+        <div *ngIf="selectedSection === 'privacy'" class="config-section">
+          <h3 class="section-title">Privacidad</h3>
+          <div class="privacy-section">
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Permitir mensajes directos</span>
+                <span class="toggle-description">Recibir mensajes de usuarios no contactados</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="settings.privacy.allowDirectMessages" (change)="togglePrivacy('allowDirectMessages')">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección Seguridad -->
+        <div *ngIf="selectedSection === 'security'" class="config-section">
+          <h3 class="section-title">Seguridad</h3>
+          <div class="password-section">
+            <div class="input-group">
+              <label class="input-label">Contraseña actual</label>
+              <div class="password-input-wrapper">
+                <input [type]="showPasswords.current ? 'text' : 'password'" 
+                       [(ngModel)]="passwordFields.current" 
+                       class="input-field" 
+                       placeholder="Ingresa tu contraseña actual">
+                <button type="button" class="password-toggle" (click)="togglePasswordVisibility('current')">
+                  <i [class]="showPasswords.current ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="input-group">
+              <label class="input-label">Nueva contraseña</label>
+              <div class="password-input-wrapper">
+                <input [type]="showPasswords.new ? 'text' : 'password'" 
+                       [(ngModel)]="passwordFields.new" 
+                       class="input-field" 
+                       placeholder="Ingresa tu nueva contraseña">
+                <button type="button" class="password-toggle" (click)="togglePasswordVisibility('new')">
+                  <i [class]="showPasswords.new ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="input-group">
+              <label class="input-label">Confirmar nueva contraseña</label>
+              <div class="password-input-wrapper">
+                <input [type]="showPasswords.confirm ? 'text' : 'password'" 
+                       [(ngModel)]="passwordFields.confirm" 
+                       class="input-field" 
+                       placeholder="Confirma tu nueva contraseña">
+                <button type="button" class="password-toggle" (click)="togglePasswordVisibility('confirm')">
+                  <i [class]="showPasswords.confirm ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                </button>
+              </div>
+            </div>
+            
+            <button class="change-password-btn" (click)="onPasswordChange()">
+              <i class="pi pi-key"></i>
+              Cambiar contraseña
+            </button>
+          </div>
+        </div>
+
+        <!-- Sección Control de Datos -->
+        <div *ngIf="selectedSection === 'data-control'" class="config-section">
+          <h3 class="section-title">Control de datos</h3>
+          <div class="data-control-section">
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Enlaces compartidos</span>
+              </div>
+              <button class="manage-btn">Administrar</button>
+            </div>
+            
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Chats archivados</span>
+              </div>
+              <button class="manage-btn">Administrar</button>
+            </div>
+            
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Archivar todos los chats</span>
+              </div>
+              <button class="danger-btn">Archivar todo</button>
+            </div>
+            
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Eliminar todos los chats</span>
+              </div>
+              <button class="danger-btn">Eliminar todo</button>
+            </div>
+            
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Exportar datos</span>
+              </div>
+              <button class="export-btn">Exportar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <!-- Footer para General -->
+      <div *ngIf="selectedSection === 'general'" class="footer-content">
+        <button class="cancel-button" (click)="onCancel()">
+          <i class="pi pi-times"></i>
+          Cancelar
+        </button>
+        <button class="save-button" (click)="onSave()">
+          <i class="pi pi-check"></i>
+          Guardar cambios
+        </button>
+      </div>
+
+      <!-- Footer para Notificaciones -->
+      <div *ngIf="selectedSection === 'notifications'" class="footer-content">
+        <button class="cancel-button" (click)="onCancel()">
+          <i class="pi pi-times"></i>
+          Cancelar
+        </button>
+        <button class="save-button" (click)="onSave()">
+          <i class="pi pi-check"></i>
+          Guardar cambios
+        </button>
+      </div>
+
+      <!-- Footer para Privacidad -->
+      <div *ngIf="selectedSection === 'privacy'" class="footer-content">
+        <button class="cancel-button" (click)="onCancel()">
+          <i class="pi pi-times"></i>
+          Cancelar
+        </button>
+        <button class="save-button" (click)="onSave()">
+          <i class="pi pi-check"></i>
+          Guardar cambios
+        </button>
+      </div>
+
+      <!-- Footer para Seguridad -->
+      <div *ngIf="selectedSection === 'security'" class="footer-content">
+        <button class="cancel-button" (click)="onCancel()">
+          <i class="pi pi-times"></i>
+          Cancelar
+        </button>
+        <button class="save-button" (click)="onSave()">
+          <i class="pi pi-check"></i>
+          Guardar cambios
+        </button>
+      </div>
+
+      <!-- Footer para Control de datos (sin botones, como ChatGPT) -->
+      <div *ngIf="selectedSection === 'data-control'" class="footer-content">
+        <!-- Sin botones para esta sección -->
+      </div>
+    </div>
+  </div>
+</div>
