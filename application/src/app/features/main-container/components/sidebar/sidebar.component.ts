@@ -2,14 +2,13 @@ import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
-import { ChatOptionsMenuComponent } from '../chat-options-menu/chat-options-menu.component';
 
 type ChatRow = { id: string; title: string; route: string };
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, BtnIcon, ChatOptionsMenuComponent],
+  imports: [CommonModule, BtnIcon],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css'],
 })
@@ -38,7 +37,8 @@ export class SidebarComponent {
 
   // Estado para el menú de opciones
   hoveredChatId = signal<string | null>(null);
-  showChatMenu = signal<{chatId: string, position: {x: number, y: number}} | null>(null);
+  showChatMenu = signal<string | null>(null);
+  menuPosition = signal<{x: number, y: number}>({x: 0, y: 0});
 
   isOpen() { return !this.collapsed; }
   onOpenClose() { this.toggle.emit(!this.collapsed); }
@@ -81,34 +81,22 @@ export class SidebarComponent {
 
   onChatOptionsClick(event: MouseEvent, chatId: string) {
     event.stopPropagation();
-    const button = event.currentTarget as HTMLElement;
-    const rect = button.getBoundingClientRect();
     
-    // Posicionar el menú debajo del botón, alineado a la derecha
-    const menuWidth = 200; // Ancho del menú según CSS
-    const menuHeight = 180; // Altura aproximada del menú
-    const padding = 8; // Espacio entre el botón y el menú
-    
-    // Calcular posición X: alineado a la derecha del botón
-    let x = rect.right - menuWidth;
-    
-    // Calcular posición Y: debajo del botón
-    let y = rect.bottom + padding;
-    
-    // Verificar si el menú se sale por la derecha del viewport
-    if (x < 8) {
-      x = 8; // Mínimo 8px del borde izquierdo
+    // Si ya está abierto este menú, cerrarlo; si no, abrirlo
+    if (this.showChatMenu() === chatId) {
+      this.showChatMenu.set(null);
+    } else {
+      // Calcular posición del menú
+      const button = event.currentTarget as HTMLElement;
+      const rect = button.getBoundingClientRect();
+      
+      // Posición: empieza donde comienza el ícono de ...
+      const x = rect.left; // Empieza exactamente donde comienza el botón
+      const y = rect.bottom + 12; // 12px más abajo
+      
+      this.menuPosition.set({ x, y });
+      this.showChatMenu.set(chatId);
     }
-    
-    // Verificar si el menú se sale por abajo del viewport
-    if (y + menuHeight > window.innerHeight - 8) {
-      y = rect.top - menuHeight - padding; // Mostrar arriba si no cabe abajo
-    }
-    
-    this.showChatMenu.set({
-      chatId,
-      position: { x, y }
-    });
   }
 
   onCloseChatMenu() {
