@@ -12,10 +12,13 @@ import { FormsModule } from '@angular/forms';
 export class ConfigurationModalComponent {
   @Output() close = new EventEmitter<void>();
 
+  selectedSection = 'general';
+
   settings = {
     theme: 'dark',
     notifications: {
-      email: true
+      email: true,
+      sound: false
     },
     privacy: {
       allowDirectMessages: true
@@ -27,6 +30,7 @@ export class ConfigurationModalComponent {
     { value: 'light', label: 'Tema claro' },
     { value: 'system', label: 'Sistema' }
   ];
+
 
   passwordFields = {
     current: '',
@@ -73,5 +77,34 @@ export class ConfigurationModalComponent {
 
   togglePasswordVisibility(field: 'current' | 'new' | 'confirm') {
     this.showPasswords[field] = !this.showPasswords[field];
+  }
+
+  selectSection(section: string) {
+    this.selectedSection = section;
+  }
+
+  onManageSharedLinks() {
+    console.log('Administrando enlaces compartidos...');
+    // Aquí iría la lógica para administrar enlaces compartidos
+  }
+
+  onManageArchivedChats() {
+    console.log('Administrando chats archivados...');
+    // Aquí iría la lógica para administrar chats archivados
+  }
+
+  onArchiveAllChats() {
+    console.log('Archivando todos los chats...');
+    // Aquí iría la lógica para archivar todos los chats
+  }
+
+  onDeleteAllChats() {
+    console.log('Eliminando todos los chats...');
+    // Aquí iría la lógica para eliminar todos los chats
+  }
+
+  onExportData() {
+    console.log('Exportando datos del usuario...');
+    // Aquí iría la lógica para exportar datos
   }
 }
