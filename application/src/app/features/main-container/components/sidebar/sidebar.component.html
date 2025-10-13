@@ -72,8 +72,21 @@
       <div class="chats-section">
         <div class="chats-title">Chats</div>
         @for (c of chats; track c.id) {
-          <div class="items-row" [class.active]="activeId === c.id" (click)="emitSelect(c.id)">
+          <div class="items-row chat-row" 
+               [class.active]="activeId === c.id" 
+               (click)="emitSelect(c.id)"
+               (mouseenter)="onChatMouseEnter(c.id)"
+               (mouseleave)="onChatMouseLeave()">
             <span class="items-row__text">{{ c.title }}</span>
+            <div class="chat-options-container">
+              <button class="chat-options-btn" 
+                      [class.visible]="hoveredChatId() === c.id"
+                      (click)="onChatOptionsClick($event, c.id)"
+                      [attr.aria-label]="'Opciones del chat ' + c.title">
+                <i class="pi pi-ellipsis-h"></i>
+              </button>
+              
+            </div>
           </div>
         }
       </div>
@@ -95,4 +108,33 @@
       }
     </div>
   </div>
+
 </nav>
+
+<!-- Menú de opciones de chat - Fuera del sidebar para evitar overflow -->
+@if (showChatMenu()) {
+  <div class="chat-menu-overlay" (click)="onCloseChatMenu()"></div>
+  
+  <div class="chat-options-menu-fixed"
+       [style.left.px]="menuPosition().x"
+       [style.top.px]="menuPosition().y">
+    <div class="chat-menu-list">
+      <button class="chat-menu-item" (click)="onChatActionSelected({chatId: showChatMenu()!, action: 'share'})">
+        <i class="pi pi-share-alt chat-menu-icon"></i>
+        <span class="chat-menu-label">Compartir</span>
+      </button>
+      <button class="chat-menu-item" (click)="onChatActionSelected({chatId: showChatMenu()!, action: 'rename'})">
+        <i class="pi pi-pencil chat-menu-icon"></i>
+        <span class="chat-menu-label">Cambiar el nombre</span>
+      </button>
+      <button class="chat-menu-item" (click)="onChatActionSelected({chatId: showChatMenu()!, action: 'archive'})">
+        <i class="pi pi-archive chat-menu-icon"></i>
+        <span class="chat-menu-label">Archivar</span>
+      </button>
+      <button class="chat-menu-item danger" (click)="onChatActionSelected({chatId: showChatMenu()!, action: 'delete'})">
+        <i class="pi pi-trash chat-menu-icon"></i>
+        <span class="chat-menu-label">Eliminar</span>
+      </button>
+    </div>
+  </div>
+}

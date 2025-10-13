@@ -85,4 +85,27 @@ export class MainContainerComponent {
     this.router.navigate(['/login']);
     this.showLogoutModal.set(false);
   }
+
+  onChatAction(data: {chatId: string, action: string}) {
+    console.log('Acción de chat:', data);
+    
+    switch (data.action) {
+      case 'share':
+        console.log('Compartir chat:', data.chatId);
+        // TODO: Implementar compartir chat
+        break;
+      case 'rename':
+        console.log('Renombrar chat:', data.chatId);
+        // TODO: Implementar renombrar chat
+        break;
+      case 'archive':
+        console.log('Archivar chat:', data.chatId);
+        // TODO: Implementar archivar chat
+        break;
+      case 'delete':
+        console.log('Eliminar chat:', data.chatId);
+        // TODO: Implementar eliminar chat
+        break;
+    }
+  }
 }

@@ -1,0 +1,15 @@
+<div class="chat-menu-overlay" (click)="onClose()">
+  <div class="chat-menu-container" (click)="$event.stopPropagation()">
+    <div class="chat-menu-list">
+      @for (option of menuOptions; track option.id) {
+        <button 
+          class="chat-menu-item"
+          [class.danger]="option.danger"
+          (click)="onOptionClick(option.action)">
+          <i class="{{ option.icon }} chat-menu-icon"></i>
+          <span class="chat-menu-label">{{ option.label }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>
