@@ -77,14 +77,13 @@
                (click)="emitSelect(c.id)"
                (mouseenter)="onChatMouseEnter(c.id)"
                (mouseleave)="onChatMouseLeave()">
-            <span class="items-row__text chat-title">{{ c.title }}</span>
-            @if (hoveredChatId() === c.id) {
-              <button class="chat-options-btn" 
-                      (click)="onChatOptionsClick($event, c.id)"
-                      [attr.aria-label]="'Opciones del chat ' + c.title">
-                <i class="pi pi-ellipsis-h"></i>
-              </button>
-            }
+            <span class="items-row__text">{{ c.title }}</span>
+            <button class="chat-options-btn" 
+                    [class.visible]="hoveredChatId() === c.id"
+                    (click)="onChatOptionsClick($event, c.id)"
+                    [attr.aria-label]="'Opciones del chat ' + c.title">
+              <i class="pi pi-ellipsis-h"></i>
+            </button>
           </div>
         }
       </div>

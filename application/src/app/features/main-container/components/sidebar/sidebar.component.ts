@@ -86,14 +86,28 @@ export class SidebarComponent {
     
     // Posicionar el menú debajo del botón, alineado a la derecha
     const menuWidth = 200; // Ancho del menú según CSS
-    const padding = 4; // Pequeño espacio entre el botón y el menú
+    const menuHeight = 180; // Altura aproximada del menú
+    const padding = 8; // Espacio entre el botón y el menú
+    
+    // Calcular posición X: alineado a la derecha del botón
+    let x = rect.right - menuWidth;
+    
+    // Calcular posición Y: debajo del botón
+    let y = rect.bottom + padding;
+    
+    // Verificar si el menú se sale por la derecha del viewport
+    if (x < 8) {
+      x = 8; // Mínimo 8px del borde izquierdo
+    }
+    
+    // Verificar si el menú se sale por abajo del viewport
+    if (y + menuHeight > window.innerHeight - 8) {
+      y = rect.top - menuHeight - padding; // Mostrar arriba si no cabe abajo
+    }
     
     this.showChatMenu.set({
       chatId,
-      position: { 
-        x: rect.right - menuWidth, // Alineado a la derecha del botón
-        y: rect.bottom + padding   // Debajo del botón
-      }
+      position: { x, y }
     });
   }
 

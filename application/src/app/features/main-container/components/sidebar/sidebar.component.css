@@ -207,18 +207,22 @@
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
 }
 
-.chat-title {
+.chat-row .items-row__text {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-right: 8px;
+  margin-right: 32px; /* Espacio suficiente para el botón de opciones */
+  padding-right: 4px;
 }
 
 .chat-options-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   background: transparent;
   border: none;
   color: #9ca3af;
@@ -229,12 +233,15 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s ease;
-  flex-shrink: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  width: 20px;
+  height: 20px;
 }
 
-.chat-row:hover .chat-options-btn {
+.chat-options-btn.visible {
   opacity: 1;
+  visibility: visible;
 }
 
 .chat-options-btn:hover {
@@ -243,7 +250,7 @@
 }
 
 .chat-options-btn i {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 /* Variante "cerrado": centramos iconos, quitamos hover/outline del contenedor */
