@@ -7,6 +7,7 @@ import { EventOptionsMenuComponent } from '../components/event-options-menu/even
 import { ConfigurationModalComponent } from '../components/configuration-modal/configuration-modal.component';
 import { LogoutConfirmationModalComponent } from '../components/logout-confirmation-modal/logout-confirmation-modal.component';
 import { AuthService } from '../../../core/services/auth.service';
+import { ChatModeService } from '../../../core/services/chat-mode.service';
 
 @Component({
   selector: 'app-main-container',
@@ -18,6 +19,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class MainContainerComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
+  private chatModeService = inject(ChatModeService);
   collapsed = signal(false);
   activeId = signal<string | null>('new-chat');
   showSearchModal = signal(false);
@@ -74,6 +76,7 @@ export class MainContainerComponent {
 
   onChatModeChange(mode: string) {
     console.log('Modo de chat cambiado a:', mode);
+    this.chatModeService.setChatMode(mode as 'individual' | 'grupal');
   }
 
   onCloseLogoutModal() {

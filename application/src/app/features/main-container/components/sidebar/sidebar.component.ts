@@ -1,7 +1,8 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
+import { ChatModeService } from '../../../../core/services/chat-mode.service';
 
 type ChatRow = { id: string; title: string; route: string };
 
@@ -13,6 +14,8 @@ type ChatRow = { id: string; title: string; route: string };
   styleUrls: ['./sidebar.component.css'],
 })
 export class SidebarComponent {
+  private chatModeService = inject(ChatModeService);
+  
   @Input() collapsed = false;
   @Input() activeId: string | null = null;
 
@@ -26,7 +29,9 @@ export class SidebarComponent {
   @Output() chatModeChange = new EventEmitter<string>();
   @Output() chatAction = new EventEmitter<{chatId: string, action: string}>();
 
-  chatMode: 'individual' | 'grupal' = 'individual';
+  get chatMode() {
+    return this.chatModeService.chatMode();
+  }
 
   chats: ChatRow[] = [
     { id: '101', title: 'Consulta sobre epidemotitis aguda de tercer grado', route: '/chat/101' },
@@ -56,7 +61,7 @@ export class SidebarComponent {
   emitNewClick() { this.newClick.emit(); }
 
   toggleChatMode() {
-    this.chatMode = this.chatMode === 'individual' ? 'grupal' : 'individual';
+    this.chatModeService.toggleChatMode();
     this.chatModeChange.emit(this.chatMode);
   }
 

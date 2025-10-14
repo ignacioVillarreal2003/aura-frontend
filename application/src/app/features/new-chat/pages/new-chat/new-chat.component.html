@@ -1,4 +1,5 @@
-<div class="new-chat-container">
+<!-- Modo Individual -->
+<div class="new-chat-container" *ngIf="chatMode === 'individual'">
   <div class="new-chat-content">
     <div class="welcome-section">
       <h1 class="welcome-title">¿En qué estás trabajando?</h1>
@@ -20,6 +21,138 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modo Grupal -->
+<div class="group-chat-container" *ngIf="chatMode === 'grupal'">
+  <div class="group-chat-content">
+    <div class="welcome-section">
+      <div class="welcome-icon">
+        <i class="pi pi-users"></i>
+      </div>
+      <h1 class="welcome-title">Crea tu equipo perfecto</h1>
+      <p class="welcome-subtitle">Conecta con las personas que importan y construye algo increíble juntos</p>
+    </div>
+    
+    <div class="group-form-section">
+      <!-- Nombre del grupo -->
+      <div class="form-group">
+        <label class="form-label">
+          <i class="pi pi-tag"></i>
+          Nombre del grupo
+        </label>
+        <input 
+          type="text" 
+          [(ngModel)]="groupName"
+          placeholder="¿Cómo se llamará tu equipo?"
+          class="group-input"
+        />
+      </div>
+      
+      <!-- Búsqueda de personas -->
+      <div class="form-group">
+        <label class="form-label">
+          <i class="pi pi-search"></i>
+          Invitar colaboradores
+        </label>
+        <div class="search-container">
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery"
+            (input)="onSearchUsers()"
+            placeholder="Buscar por nombre o email..."
+            class="search-input"
+          />
+          <i class="pi pi-user-plus search-icon"></i>
+        </div>
+        
+        <!-- Resultados de búsqueda -->
+        <div class="search-results" *ngIf="searchResults().length > 0">
+          <div 
+            class="search-result-item"
+            *ngFor="let user of searchResults()"
+            (click)="onSelectUser(user)"
+          >
+            <span class="user-name">{{ user }}</span>
+            <i class="pi pi-plus add-icon"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Miembros seleccionados -->
+      <div class="selected-members" *ngIf="selectedMembers().length > 0">
+        <div 
+          class="member-tag"
+          *ngFor="let member of selectedMembers()"
+        >
+          <span class="member-name">{{ member }}</span>
+          <button 
+            class="remove-member"
+            (click)="onRemoveMember(member)"
+          >
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Botón crear grupo -->
+      <div class="create-group-section">
+        <button 
+          class="create-group-btn"
+          [disabled]="!groupName().trim() || selectedMembers().length === 0"
+          (click)="onCreateGroup()"
+        >
+          <i class="pi pi-rocket"></i>
+          <span>¡Crear equipo!</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla de Grupo Creado -->
+<div class="group-created-container" *ngIf="chatMode === 'grupal' && groupCreated()">
+  <div class="group-created-content">
+    <div class="welcome-section">
+      <div class="success-icon">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <h1 class="welcome-title">¡Equipo creado exitosamente!</h1>
+      <div class="team-name-display">
+        <i class="pi pi-users"></i>
+        <span class="team-name">{{ createdGroupName() }}</span>
+      </div>
+    </div>
+    
+    <div class="group-welcome-messages">
+      <div class="welcome-card">
+        <div class="card-icon">
+          <i class="pi pi-lightbulb"></i>
+        </div>
+        <div class="card-content">
+          <h3>¡Comienza la colaboración!</h3>
+          <p>Tu equipo está listo para crear cosas increíbles juntos. ¿En qué proyecto trabajarán hoy?</p>
+        </div>
+      </div>
+      
+      <div class="welcome-card">
+        <div class="card-icon">
+          <i class="pi pi-comments"></i>
+        </div>
+        <div class="card-content">
+          <h3>Comunicación fluida</h3>
+          <p>Mantén a todo tu equipo sincronizado con conversaciones organizadas y productivas.</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="group-actions">
+      <button class="new-group-btn" (click)="onCreateNewGroup()">
+        <i class="pi pi-plus"></i>
+        <span>Crear otro equipo</span>
+      </button>
     </div>
   </div>
 </div>
