@@ -97,7 +97,6 @@
 .sidebar-body {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--sidebar-gap-y);
@@ -128,10 +127,6 @@
     color .15s ease;
 }
 
-/* Más espacio entre los primeros elementos */
-.items-row:first-of-type {
-  margin-bottom: 12px;
-}
 
 /* Hover solo cuando está abierto (cuando está cerrado no coloreamos toda la fila) */
 .sidebar-nav[data-state="open"] .items-row:hover {
@@ -190,7 +185,44 @@
 .chats-section {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Lista de chats con scroll */
+.chats-list {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Estilos de scrollbar para la lista de chats (igual que el perfil) */
+.chats-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chats-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chats-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.chats-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Para Firefox */
+.chats-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .chats-title {
@@ -344,6 +376,19 @@
   backdrop-filter: blur(20px);
   min-width: 200px;
   overflow: hidden;
+  transform-origin: top center;
+  animation: menuSlideIn 0.2s ease-out;
+}
+
+@keyframes menuSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .chat-options-menu-fixed .chat-menu-list {
