@@ -1,16 +1,10 @@
 <div class="modal-overlay" (click)="onClose()">
   <div class="modal-container" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h2 class="modal-title">
-        <i class="pi pi-cog"></i>
-        Configuración
-      </h2>
-      <button class="close-button" (click)="onClose()">
+    <div class="modal-content">
+      <!-- Botón de cerrar dentro del modal -->
+      <button class="close-button-internal" (click)="onClose()">
         <i class="pi pi-times"></i>
       </button>
-    </div>
-
-    <div class="modal-content">
       <!-- Navegación lateral -->
       <div class="settings-nav">
         <div class="nav-section" 
@@ -26,7 +20,6 @@
           <i class="pi pi-bell"></i>
           <span>Notificaciones</span>
         </div>
-        
         
         <div class="nav-section" 
              [class.active]="selectedSection === 'privacy'"
@@ -203,61 +196,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <!-- Footer para General -->
-      <div *ngIf="selectedSection === 'general'" class="footer-content">
-        <button class="cancel-button" (click)="onCancel()">
-          <i class="pi pi-times"></i>
-          Cancelar
-        </button>
-        <button class="save-button" (click)="onSave()">
-          <i class="pi pi-check"></i>
-          Guardar cambios
-        </button>
-      </div>
-
-      <!-- Footer para Notificaciones -->
-      <div *ngIf="selectedSection === 'notifications'" class="footer-content">
-        <button class="cancel-button" (click)="onCancel()">
-          <i class="pi pi-times"></i>
-          Cancelar
-        </button>
-        <button class="save-button" (click)="onSave()">
-          <i class="pi pi-check"></i>
-          Guardar cambios
-        </button>
-      </div>
-
-      <!-- Footer para Privacidad -->
-      <div *ngIf="selectedSection === 'privacy'" class="footer-content">
-        <button class="cancel-button" (click)="onCancel()">
-          <i class="pi pi-times"></i>
-          Cancelar
-        </button>
-        <button class="save-button" (click)="onSave()">
-          <i class="pi pi-check"></i>
-          Guardar cambios
-        </button>
-      </div>
-
-      <!-- Footer para Seguridad -->
-      <div *ngIf="selectedSection === 'security'" class="footer-content">
-        <button class="cancel-button" (click)="onCancel()">
-          <i class="pi pi-times"></i>
-          Cancelar
-        </button>
-        <button class="save-button" (click)="onSave()">
-          <i class="pi pi-check"></i>
-          Guardar cambios
-        </button>
-      </div>
-
-      <!-- Footer para Control de datos (sin botones, como ChatGPT) -->
-      <div *ngIf="selectedSection === 'data-control'" class="footer-content">
-        <!-- Sin botones para esta sección -->
       </div>
     </div>
   </div>
