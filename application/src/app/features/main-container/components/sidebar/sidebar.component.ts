@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
+import { GroupChatService } from '../../../../core/services/group-chat.service';
 
-type ChatRow = { id: string; title: string; route: string };
+type ChatRow = { id: string; title: string; route: string; isGroup?: boolean };
 
 @Component({
   selector: 'app-sidebar',
@@ -12,7 +13,8 @@ type ChatRow = { id: string; title: string; route: string };
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css'],
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
+  private groupChatService = inject(GroupChatService);
   @Input() collapsed = false;
   @Input() activeId: string | null = null;
 
@@ -23,37 +25,58 @@ export class SidebarComponent {
   @Output() toggle = new EventEmitter<boolean>();
   @Output() select = new EventEmitter<string>();
   @Output() newClick = new EventEmitter<void>();
-  @Output() chatModeChange = new EventEmitter<string>();
+  @Output() newGroupChatClick = new EventEmitter<void>();
   @Output() chatAction = new EventEmitter<{chatId: string, action: string}>();
 
-  chatMode: 'individual' | 'grupal' = 'individual';
-
-  chats: ChatRow[] = [
-    { id: '101', title: 'Consulta sobre epidemotitis aguda de tercer grado', route: '/chat/101' },
-    { id: '102', title: 'AURA – tesis', route: '/chat/102' },
-    { id: '103', title: 'Ithaka flow', route: '/chat/103' },
-    { id: '104', title: 'Notas BCP', route: '/chat/104' },
-    { id: '105', title: 'Proyecto React Dashboard', route: '/chat/105' },
-    { id: '106', title: 'API REST con Node.js', route: '/chat/106' },
-    { id: '107', title: 'Diseño UI/UX para mobile', route: '/chat/107' },
-    { id: '108', title: 'Base de datos PostgreSQL', route: '/chat/108' },
-    { id: '109', title: 'Configuración Docker', route: '/chat/109' },
-    { id: '110', title: 'Testing con Jest y Cypress', route: '/chat/110' },
-    { id: '111', title: 'Deploy en AWS', route: '/chat/111' },
-    { id: '112', title: 'Optimización de performance', route: '/chat/112' },
-    { id: '113', title: 'Integración con Stripe', route: '/chat/113' },
-    { id: '114', title: 'Sistema de autenticación', route: '/chat/114' },
-    { id: '115', title: 'Microservicios con Kubernetes', route: '/chat/115' },
-    { id: '116', title: 'Machine Learning con Python', route: '/chat/116' },
-    { id: '117', title: 'GraphQL y Apollo', route: '/chat/117' },
-    { id: '118', title: 'PWA con Service Workers', route: '/chat/118' },
+  individualChats: ChatRow[] = [
+    { id: '101', title: 'Consulta sobre epidemotitis aguda de tercer grado', route: '/chat/101', isGroup: false },
+    { id: '102', title: 'AURA – tesis', route: '/chat/102', isGroup: false },
+    { id: '103', title: 'Ithaka flow', route: '/chat/103', isGroup: false },
+    { id: '104', title: 'Notas BCP', route: '/chat/104', isGroup: false },
+    { id: '105', title: 'Proyecto React Dashboard', route: '/chat/105', isGroup: false },
+    { id: '106', title: 'API REST con Node.js', route: '/chat/106', isGroup: false },
+    { id: '107', title: 'Diseño UI/UX para mobile', route: '/chat/107', isGroup: false },
+    { id: '108', title: 'Base de datos PostgreSQL', route: '/chat/108', isGroup: false },
+    { id: '109', title: 'Configuración Docker', route: '/chat/109', isGroup: false },
+    { id: '110', title: 'Testing con Jest y Cypress', route: '/chat/110', isGroup: false },
+    { id: '111', title: 'Deploy en AWS', route: '/chat/111', isGroup: false },
+    { id: '112', title: 'Optimización de performance', route: '/chat/112', isGroup: false },
+    { id: '113', title: 'Integración con Stripe', route: '/chat/113', isGroup: false },
+    { id: '114', title: 'Sistema de autenticación', route: '/chat/114', isGroup: false },
+    { id: '115', title: 'Microservicios con Kubernetes', route: '/chat/115', isGroup: false },
+    { id: '116', title: 'Machine Learning con Python', route: '/chat/116', isGroup: false },
+    { id: '117', title: 'GraphQL y Apollo', route: '/chat/117', isGroup: false },
+    { id: '118', title: 'PWA con Service Workers', route: '/chat/118', isGroup: false },
   ];
+
+  groupChats: ChatRow[] = [];
+  
+  chats: ChatRow[] = [];
 
   // Estado para el menú de opciones
   hoveredChatId = signal<string | null>(null);
   showChatMenu = signal<string | null>(null);
   menuPosition = signal<{x: number, y: number}>({x: 0, y: 0});
   visibleChats = signal<string[]>([]);
+
+  ngOnInit(): void {
+    this.loadAllChats();
+  }
+
+  loadAllChats(): void {
+    const userEmail = 'usuario@ejemplo.com'; // TODO: Obtener del AuthService
+    const userGroupChats = this.groupChatService.getUserGroupChats(userEmail);
+    
+    this.groupChats = userGroupChats.map(gc => ({
+      id: gc.id,
+      title: gc.title,
+      route: `/main-container/group-chat/${gc.id}`,
+      isGroup: true
+    }));
+
+    // Combinar chats individuales y grupales
+    this.chats = [...this.groupChats, ...this.individualChats];
+  }
 
   isOpen() { return !this.collapsed; }
   onOpenClose() { this.toggle.emit(!this.collapsed); }
@@ -69,10 +92,8 @@ export class SidebarComponent {
 
   emitSelect(id: string) { this.select.emit(id); }
   emitNewClick() { this.newClick.emit(); }
-
-  toggleChatMode() {
-    this.chatMode = this.chatMode === 'individual' ? 'grupal' : 'individual';
-    this.chatModeChange.emit(this.chatMode);
+  emitNewGroupChatClick() { 
+    this.newGroupChatClick.emit(); 
   }
 
   userInitials() {

@@ -1,0 +1,26 @@
+<app-modal title="Enlace del grupo" (onClose)="close()">
+  <div class="group-link-content">
+    <div class="link-container">
+      <input 
+        type="text" 
+        class="link-input" 
+        [value]="shareLink" 
+        readonly
+        (click)="copyLink()"
+      />
+      <p class="link-helper">Cualquiera con este enlace puede unirse al grupo.</p>
+    </div>
+    <div class="actions">
+      <button class="ghost-button" (click)="close()">Cancelar</button>
+      <button 
+        class="copy-button"
+        (click)="copyLink()"
+        [class.copied]="linkCopied"
+      >
+        <i [class]="linkCopied ? 'pi pi-check' : 'pi pi-copy'"></i>
+        <span>{{ linkCopied ? 'Copiado' : 'Copiar enlace' }}</span>
+      </button>
+    </div>
+  </div>
+</app-modal>
+

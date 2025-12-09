@@ -13,6 +13,11 @@ export const routes: Routes = [
           import('../new-chat/new-chat.routes').then(m => m.NEW_CHAT_ROUTES)
       },
       {
+        path: 'group-chat',
+        loadChildren: () =>
+          import('../group-chat/group-chat.routes').then(m => m.groupChatRoutes)
+      },
+      {
         path: 'user-profile',
         loadChildren: () =>
           import('../user-profile/user-profile.routes').then(m => m.userProfileRoutes)

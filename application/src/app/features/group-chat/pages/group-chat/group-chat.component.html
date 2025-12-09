@@ -1,0 +1,97 @@
+<div class="group-chat-container">
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Cargando chat...</p>
+    </div>
+  } @else if (groupChat) {
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="header-left">
+        <div class="group-avatar">
+          <i class="pi pi-users"></i>
+        </div>
+        <div class="group-info">
+          <h2 class="group-title">{{ groupChat.title }}</h2>
+          <p class="group-members">{{ groupChat.members.length }} miembro{{ groupChat.members.length !== 1 ? 's' : '' }}</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <app-btn-icon
+          icon="share_alt"
+          size="medium"
+          variant="transparent"
+          rounded="radius-normal"
+          title="Compartir enlace"
+          (click)="showShareModal()"
+        ></app-btn-icon>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-container">
+      @if (messages().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="pi pi-comments"></i>
+          </div>
+          <h3>¡Comienza la conversación!</h3>
+          <p>Envía el primer mensaje a este grupo</p>
+        </div>
+      } @else {
+        <div class="messages-list">
+          @for (message of messages(); track message.id) {
+            <div class="message" [class.own-message]="isCurrentUser(message.sender)">
+              @if (!isCurrentUser(message.sender)) {
+                <div class="message-avatar">
+                  {{ getSenderInitials(message.senderName) }}
+                </div>
+              }
+              <div class="message-content">
+                @if (!isCurrentUser(message.sender)) {
+                  <div class="message-sender">{{ message.senderName }}</div>
+                }
+                <div class="message-bubble">
+                  <p class="message-text">{{ message.content }}</p>
+                  <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-container">
+      <div class="input-wrapper">
+        <textarea
+          class="message-input"
+          placeholder="Escribe un mensaje..."
+          [(ngModel)]="newMessage"
+          (keydown)="onEnterKey($event)"
+          rows="1"
+        ></textarea>
+        <button 
+          class="send-button"
+          [disabled]="!newMessage.trim()"
+          (click)="sendMessage()"
+        >
+          <i class="pi pi-send"></i>
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Modal para compartir enlace -->
+@if (showLinkModal && groupChat) {
+  <app-group-chat-link-modal
+    [shareLink]="shareLink"
+    [groupChat]="groupChat"
+    (onClose)="closeShareModal()"
+  ></app-group-chat-link-modal>
+}
+
+
+

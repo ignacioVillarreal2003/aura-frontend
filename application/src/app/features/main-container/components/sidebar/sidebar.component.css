@@ -239,6 +239,13 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.chat-type-icon {
+  font-size: 14px;
+  color: #9ca3af;
+  flex-shrink: 0;
 }
 
 .chat-row .items-row__text {

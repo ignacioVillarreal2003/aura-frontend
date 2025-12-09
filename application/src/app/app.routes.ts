@@ -17,5 +17,11 @@ export const routes: Routes = [
     // canActivate: [authGuard]
   },
 
+  {
+    path: 'join-group/:linkId',
+    loadChildren: () =>
+      import('./features/join-group-chat/join-group-chat.routes').then(m => m.joinGroupChatRoutes)
+  },
+
   { path: '**', redirectTo: 'login' }
 ];
