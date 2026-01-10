@@ -181,54 +181,52 @@
   max-width: calc(var(--sidebar-open-width) - 30px);
 }
 
-/* Sección de chats */
-.chats-section {
+.chats-container {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
-/* Lista de chats con scroll */
-.chats-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* Estilos de scrollbar para la lista de chats (igual que el perfil) */
-.chats-list::-webkit-scrollbar {
+.chats-container::-webkit-scrollbar {
   width: 6px;
 }
 
-.chats-list::-webkit-scrollbar-track {
+.chats-container::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.chats-list::-webkit-scrollbar-thumb {
+.chats-container::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
   transition: background 0.2s ease;
 }
 
-.chats-list::-webkit-scrollbar-thumb:hover {
+.chats-container::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Para Firefox */
-.chats-list {
+.chats-container {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.chats-section-header {
+  flex-shrink: 0;
+}
+
+.chats-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .chats-title {
   font-family: 'Sora', sans-serif;
   font-weight: 400;
-  font-size: 16px;
+  font-size: 14px;
   color: #9ca3af;
   padding: 10px 6px 5px 6px;
   text-align: left;
@@ -239,6 +237,13 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.chat-type-icon {
+  font-size: 14px;
+  color: #9ca3af;
+  flex-shrink: 0;
 }
 
 .chat-row .items-row__text {

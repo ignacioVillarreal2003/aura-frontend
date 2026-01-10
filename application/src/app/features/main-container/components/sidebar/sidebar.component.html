@@ -40,22 +40,21 @@
       </div>
     </div>
 
-    <div class="items-row has-icon" (click)="toggleChatMode()">
-      <div class="items-row__icon">
-        <i class="pi pi-users" *ngIf="chatMode === 'grupal'"></i>
-        <i class="pi pi-user" *ngIf="chatMode === 'individual'"></i>
-      </div>
-      @if (isOpen()) {
-        <span class="items-row__text">{{ chatMode === 'individual' ? 'Individual' : 'Grupal' }}</span>
-      }
-    </div>
-
     <div class="items-row has-icon" (click)="emitNewClick()">
       <div class="items-row__icon">
         <i class="pi pi-plus"></i>
       </div>
       @if (isOpen()) {
         <span class="items-row__text">Nuevo chat</span>
+      }
+    </div>
+
+    <div class="items-row has-icon" (click)="emitNewGroupChatClick()">
+      <div class="items-row__icon">
+        <i class="pi pi-users"></i>
+      </div>
+      @if (isOpen()) {
+        <span class="items-row__text">Nuevo chat grupal</span>
       }
     </div>
 
@@ -69,10 +68,39 @@
     </div>
 
     @if (isOpen()) {
-      <div class="chats-section">
-        <div class="chats-title">Chats</div>
-        <div class="chats-list">
-          @for (c of chats; track c.id) {
+      <div class="chats-container">
+        @if (groupChats.length > 0) {
+          <div class="chats-section-header">
+            <div class="chats-title">Chats grupales</div>
+          </div>
+          <div class="chats-group">
+            @for (c of groupChats; track c.id) {
+              <div class="items-row chat-row" 
+                   [class.active]="activeId === c.id" 
+                   [attr.data-chat-id]="c.id"
+                   (click)="emitSelect(c.id)"
+                   (mouseenter)="onChatMouseEnter(c.id)"
+                   (mouseleave)="onChatMouseLeave()">
+                <i class="pi pi-users chat-type-icon"></i>
+                <span class="items-row__text">{{ c.title }}</span>
+                <div class="chat-options-container">
+                  <button class="chat-options-btn" 
+                          [class.visible]="hoveredChatId() === c.id"
+                          (click)="onChatOptionsClick($event, c.id)"
+                          [attr.aria-label]="'Opciones del chat ' + c.title">
+                    <i class="pi pi-ellipsis-h"></i>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="chats-section-header">
+          <div class="chats-title">Tus chats</div>
+        </div>
+        <div class="chats-group">
+          @for (c of individualChats; track c.id) {
             <div class="items-row chat-row" 
                  [class.active]="activeId === c.id" 
                  [attr.data-chat-id]="c.id"
@@ -87,7 +115,6 @@
                         [attr.aria-label]="'Opciones del chat ' + c.title">
                   <i class="pi pi-ellipsis-h"></i>
                 </button>
-                
               </div>
             </div>
           }

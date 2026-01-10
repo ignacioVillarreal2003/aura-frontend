@@ -5,7 +5,7 @@
     (toggle)="collapsed.set($event)"
     (select)="onSelect($event)"
     (newClick)="onNewChat()"
-    (chatModeChange)="onChatModeChange($event)"
+    (newGroupChatClick)="onNewGroupChat()"
     (chatAction)="onChatAction($event)">
   </app-sidebar>
 
@@ -33,5 +33,13 @@
       (close)="onCloseLogoutModal()"
       (confirm)="onConfirmLogout()">
     </app-logout-confirmation-modal>
+  }
+
+  @if (showGroupLinkModal() && currentGroupChat()) {
+    <app-group-chat-link-modal
+      [shareLink]="groupShareLink()"
+      [groupChat]="currentGroupChat()"
+      (onClose)="onCloseGroupLinkModal()">
+    </app-group-chat-link-modal>
   }
 </div>

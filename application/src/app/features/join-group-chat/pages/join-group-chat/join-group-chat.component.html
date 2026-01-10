@@ -1,0 +1,107 @@
+<div class="join-group-container">
+  <div class="join-group-card">
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando información del grupo...</p>
+      </div>
+    } @else if (error) {
+      <div class="error-state">
+        <div class="error-icon">
+          <i class="pi pi-exclamation-circle"></i>
+        </div>
+        <h2>Error</h2>
+        <p>{{ error }}</p>
+          <div class="actions">
+            <app-btn-text
+              label="Volver al inicio"
+              variant="solid"
+              size="md"
+              (click)="cancel()"
+            ></app-btn-text>
+          </div>
+      </div>
+    } @else if (groupChat) {
+      <div class="success-state">
+        <div class="group-icon">
+          <i class="pi pi-users"></i>
+        </div>
+        
+        <h1>{{ groupChat.title }}</h1>
+        
+        <div class="group-info">
+          <div class="info-item">
+            <i class="pi pi-calendar"></i>
+            <span>Creado {{ formatDate(groupChat.createdAt) }}</span>
+          </div>
+          <div class="info-item">
+            <i class="pi pi-users"></i>
+            <span>{{ groupChat.members.length }} miembro{{ groupChat.members.length !== 1 ? 's' : '' }}</span>
+          </div>
+        </div>
+
+        @if (groupChat.members.length > 0) {
+          <div class="members-preview">
+            <div class="members-avatars">
+              @for (member of groupChat.members.slice(0, 5); track member) {
+                <div class="member-avatar" [title]="groupChat.memberNames?.[member] || member">
+                  {{ getMemberInitials(member) }}
+                </div>
+              }
+              @if (groupChat.members.length > 5) {
+                <div class="member-avatar more">
+                  +{{ groupChat.members.length - 5 }}
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (alreadyMember) {
+          <div class="already-member-message">
+            <i class="pi pi-check-circle"></i>
+            <span>Ya eres miembro de este grupo</span>
+          </div>
+          <div class="actions">
+            <app-btn-text
+              label="Ir al chat"
+              variant="solid"
+              size="md"
+              (click)="goToGroupChat()"
+            ></app-btn-text>
+            <app-btn-text
+              label="Cancelar"
+              variant="outline"
+              size="md"
+              (click)="cancel()"
+            ></app-btn-text>
+          </div>
+        } @else {
+          <div class="join-message">
+            <p>¿Quieres unirte a este chat grupal?</p>
+            <p class="join-description">
+              Podrás ver y participar en la conversación con todos los miembros del grupo.
+            </p>
+          </div>
+          <div class="actions">
+            <app-btn-text
+              [label]="joining ? 'Uniéndose...' : 'Unirse al grupo'"
+              variant="solid"
+              size="md"
+              [disabled]="joining"
+              (click)="joinChat()"
+            ></app-btn-text>
+            <app-btn-text
+              label="Cancelar"
+              variant="outline"
+              size="md"
+              [disabled]="joining"
+              (click)="cancel()"
+            ></app-btn-text>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+

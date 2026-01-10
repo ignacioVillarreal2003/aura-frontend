@@ -1,0 +1,168 @@
+/* Override modal styles to make it smaller and centered */
+:host ::ng-deep .modal {
+  align-items: center !important;
+  padding: 16px !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+}
+
+:host ::ng-deep .modal__container {
+  width: min(480px, calc(100% - 32px)) !important;
+  max-width: 480px !important;
+  min-height: auto !important;
+  margin-top: 0 !important;
+  background: linear-gradient(180deg, rgba(22, 22, 24, 0.94), rgba(16, 16, 18, 0.96)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45) !important;
+  border-radius: 12px !important;
+  padding: 24px !important;
+  gap: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+:host ::ng-deep .modal__header {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  border-bottom: none !important;
+  min-height: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+:host ::ng-deep .modal__title {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #f5f5f7 !important;
+  margin: 0 !important;
+}
+
+/* Neutralizar el botón de cerrar rojo */
+:host ::ng-deep .modal__header app-btn-icon button.btn-icon.danger {
+  background-color: transparent !important;
+  color: #9ca3af !important;
+  border: none !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+:host ::ng-deep .modal__header app-btn-icon button.btn-icon.danger mat-icon {
+  font-size: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+:host ::ng-deep .modal__header app-btn-icon button.btn-icon.danger:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f5f5f7 !important;
+}
+
+.group-link-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.link-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.link-input:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.link-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.link-helper {
+  font-size: 14px;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.ghost-button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.ghost-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 130px;
+}
+
+.copy-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.copy-button:active {
+  transform: translateY(0);
+}
+
+.copy-button.copied {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.copy-button i {
+  font-size: 18px;
+}
