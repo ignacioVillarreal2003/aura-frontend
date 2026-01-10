@@ -53,7 +53,6 @@ export class SidebarComponent implements OnInit {
   
   chats: ChatRow[] = [];
 
-  // Estado para el menú de opciones
   hoveredChatId = signal<string | null>(null);
   showChatMenu = signal<string | null>(null);
   menuPosition = signal<{x: number, y: number}>({x: 0, y: 0});
@@ -74,7 +73,6 @@ export class SidebarComponent implements OnInit {
       isGroup: true
     }));
 
-    // Combinar chats individuales y grupales
     this.chats = [...this.groupChats, ...this.individualChats];
   }
 
@@ -104,7 +102,6 @@ export class SidebarComponent implements OnInit {
   userName() { return this.userNameInput; }
   userRol() { return this.userRolInput; }
 
-  // Métodos para el manejo del menú de opciones
   onChatMouseEnter(chatId: string) {
     if (this.isOpen()) {
       this.hoveredChatId.set(chatId);
@@ -118,19 +115,19 @@ export class SidebarComponent implements OnInit {
   onChatOptionsClick(event: MouseEvent, chatId: string) {
     event.stopPropagation();
     
-    // Si ya está abierto este menú, cerrarlo; si no, abrirlo
     if (this.showChatMenu() === chatId) {
       this.showChatMenu.set(null);
     } else {
-      // Calcular posición del menú
       const button = event.currentTarget as HTMLElement;
       const rect = button.getBoundingClientRect();
       
-      // Determinar si debe aparecer arriba o abajo
-      const shouldShowAbove = this.shouldShowMenuAbove(chatId);
+      const menuHeight = 190;
       
-      const x = rect.left; // Empieza exactamente donde comienza el botón
-      const y = shouldShowAbove ? rect.top - 190 : rect.bottom + 12; // Arriba a 190px o abajo
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const shouldShowAbove = spaceBelow < menuHeight + 20; 
+      
+      const x = rect.left; 
+      const y = shouldShowAbove ? rect.top - menuHeight : rect.bottom + 12;
       
       this.menuPosition.set({ x, y });
       this.showChatMenu.set(chatId);
@@ -138,35 +135,7 @@ export class SidebarComponent implements OnInit {
   }
 
   shouldShowMenuAbove(chatId: string): boolean {
-    // Obtener todos los chats visibles
-    const chatsList = document.querySelector('.chats-list');
-    if (!chatsList) return false;
-
-    const chatElements = chatsList.querySelectorAll('.chat-row');
-    const visibleChats: string[] = [];
-    
-    chatElements.forEach((element) => {
-      const rect = element.getBoundingClientRect();
-      const listRect = chatsList.getBoundingClientRect();
-      
-      // Verificar si el chat está visible dentro del contenedor
-      if (rect.top >= listRect.top && rect.bottom <= listRect.bottom) {
-        const chatRow = element as HTMLElement;
-        const chatIdAttr = chatRow.getAttribute('data-chat-id');
-        if (chatIdAttr) {
-          visibleChats.push(chatIdAttr);
-        }
-      }
-    });
-
-    // Si hay 4 o menos chats visibles, no mostrar arriba
-    if (visibleChats.length <= 4) return false;
-
-    // Obtener los últimos 4 chats visibles
-    const lastFourVisibleChats = visibleChats.slice(-4);
-    
-    // Si el chat actual está en los últimos 4, mostrar arriba
-    return lastFourVisibleChats.includes(chatId);
+    return false;
   }
 
   onCloseChatMenu() {
