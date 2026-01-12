@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { GroupChatService } from '../../../../core/services/group-chat.service';
+import { ChatService } from '../../../../core/services/chat.service';
 
 type ChatRow = { id: string; title: string; route: string; isGroup?: boolean };
 
@@ -15,6 +16,8 @@ type ChatRow = { id: string; title: string; route: string; isGroup?: boolean };
 })
 export class SidebarComponent implements OnInit {
   private groupChatService = inject(GroupChatService);
+  private chatService = inject(ChatService);
+  
   @Input() collapsed = false;
   @Input() activeId: string | null = null;
 
@@ -27,30 +30,10 @@ export class SidebarComponent implements OnInit {
   @Output() newClick = new EventEmitter<void>();
   @Output() newGroupChatClick = new EventEmitter<void>();
   @Output() chatAction = new EventEmitter<{chatId: string, action: string}>();
+  @Output() chatSelect = new EventEmitter<{id: string, isGroup: boolean}>();
 
-  individualChats: ChatRow[] = [
-    { id: '101', title: 'Consulta sobre epidemotitis aguda de tercer grado', route: '/chat/101', isGroup: false },
-    { id: '102', title: 'AURA – tesis', route: '/chat/102', isGroup: false },
-    { id: '103', title: 'Ithaka flow', route: '/chat/103', isGroup: false },
-    { id: '104', title: 'Notas BCP', route: '/chat/104', isGroup: false },
-    { id: '105', title: 'Proyecto React Dashboard', route: '/chat/105', isGroup: false },
-    { id: '106', title: 'API REST con Node.js', route: '/chat/106', isGroup: false },
-    { id: '107', title: 'Diseño UI/UX para mobile', route: '/chat/107', isGroup: false },
-    { id: '108', title: 'Base de datos PostgreSQL', route: '/chat/108', isGroup: false },
-    { id: '109', title: 'Configuración Docker', route: '/chat/109', isGroup: false },
-    { id: '110', title: 'Testing con Jest y Cypress', route: '/chat/110', isGroup: false },
-    { id: '111', title: 'Deploy en AWS', route: '/chat/111', isGroup: false },
-    { id: '112', title: 'Optimización de performance', route: '/chat/112', isGroup: false },
-    { id: '113', title: 'Integración con Stripe', route: '/chat/113', isGroup: false },
-    { id: '114', title: 'Sistema de autenticación', route: '/chat/114', isGroup: false },
-    { id: '115', title: 'Microservicios con Kubernetes', route: '/chat/115', isGroup: false },
-    { id: '116', title: 'Machine Learning con Python', route: '/chat/116', isGroup: false },
-    { id: '117', title: 'GraphQL y Apollo', route: '/chat/117', isGroup: false },
-    { id: '118', title: 'PWA con Service Workers', route: '/chat/118', isGroup: false },
-  ];
-
+  individualChats: ChatRow[] = [];
   groupChats: ChatRow[] = [];
-  
   chats: ChatRow[] = [];
 
   hoveredChatId = signal<string | null>(null);
@@ -63,7 +46,7 @@ export class SidebarComponent implements OnInit {
   }
 
   loadAllChats(): void {
-    const userEmail = 'usuario@ejemplo.com'; // TODO: Obtener del AuthService
+    const userEmail = 'usuario@ejemplo.com';
     const userGroupChats = this.groupChatService.getUserGroupChats(userEmail);
     
     this.groupChats = userGroupChats.map(gc => ({
@@ -73,7 +56,20 @@ export class SidebarComponent implements OnInit {
       isGroup: true
     }));
 
+    const userChats = this.chatService.getAllChats();
+    this.individualChats = userChats.map(c => ({
+      id: c.id,
+      title: c.title,
+      route: `/main-container/chat/${c.id}`,
+      isGroup: false
+    }));
+
     this.chats = [...this.groupChats, ...this.individualChats];
+  }
+
+  onChatClick(chat: ChatRow): void {
+    this.activeId = chat.id;
+    this.chatSelect.emit({ id: chat.id, isGroup: chat.isGroup ?? false });
   }
 
   isOpen() { return !this.collapsed; }

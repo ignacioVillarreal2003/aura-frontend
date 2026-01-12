@@ -1,0 +1,84 @@
+<div class="chat-container">
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Cargando chat...</p>
+    </div>
+  } @else if (chat) {
+    <div class="chat-header">
+      <div class="header-left">
+        <div class="chat-avatar">
+          <i class="pi pi-comment"></i>
+        </div>
+        <div class="chat-info">
+          <h2 class="chat-title">{{ chat.title }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="messages-container">
+      @if (messages().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="pi pi-comments"></i>
+          </div>
+          <h3>¡Comienza la conversación!</h3>
+          <p>Envía tu primer mensaje</p>
+        </div>
+      } @else {
+        <div class="messages-list">
+          @for (message of messages(); track message.id) {
+            <div class="message" [class.user-message]="message.sender === 'user'" [class.assistant-message]="message.sender === 'assistant'">
+              @if (message.sender === 'assistant') {
+                <div class="message-avatar assistant-avatar">
+                  <i class="pi pi-sparkles"></i>
+                </div>
+              }
+              <div class="message-content">
+                <div class="message-bubble">
+                  <p class="message-text">{{ message.content }}</p>
+                  <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                </div>
+              </div>
+            </div>
+          }
+          @if (isTyping()) {
+            <div class="message assistant-message">
+              <div class="message-avatar assistant-avatar">
+                <i class="pi pi-sparkles"></i>
+              </div>
+              <div class="message-content">
+                <div class="message-bubble typing-indicator">
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="chat-input-container">
+      <div class="input-wrapper">
+        <textarea
+          class="message-input"
+          placeholder="Escribe un mensaje..."
+          [(ngModel)]="newMessage"
+          (keydown)="onEnterKey($event)"
+          rows="1"
+        ></textarea>
+        <button
+          class="send-button"
+          [disabled]="!newMessage.trim() || isTyping()"
+          (click)="sendMessage()"
+        >
+          <i class="pi pi-send"></i>
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+

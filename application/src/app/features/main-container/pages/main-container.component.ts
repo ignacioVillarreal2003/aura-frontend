@@ -9,6 +9,7 @@ import { LogoutConfirmationModalComponent } from '../components/logout-confirmat
 import { GroupChatLinkModalComponent } from '../components/group-chat-link-modal/group-chat-link-modal.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { GroupChatService, GroupChat } from '../../../core/services/group-chat.service';
+import { ChatService } from '../../../core/services/chat.service';
 
 @Component({
   selector: 'app-main-container',
@@ -21,6 +22,8 @@ export class MainContainerComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
   private groupChatService = inject(GroupChatService);
+  private chatService = inject(ChatService);
+  
   collapsed = signal(false);
   activeId = signal<string | null>('new-chat');
   showSearchModal = signal(false);
@@ -40,7 +43,15 @@ export class MainContainerComponent {
     if (id === 'search') {
       this.showSearchModal.set(true);
     }
-    if (id === 'main')    this.router.navigate(['/chat', 0]);
+  }
+
+  onChatSelect(data: {id: string, isGroup: boolean}) {
+    this.activeId.set(data.id);
+    if (data.isGroup) {
+      this.router.navigate(['/main-container/group-chat', data.id]);
+    } else {
+      this.router.navigate(['/main-container/chat', data.id]);
+    }
   }
 
   onNewChat() {
