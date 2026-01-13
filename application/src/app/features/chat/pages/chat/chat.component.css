@@ -176,6 +176,11 @@
   gap: 4px;
 }
 
+.message-bubble.typing-indicator {
+  flex-direction: row !important;
+  align-items: center;
+}
+
 .user-message .message-bubble {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -211,9 +216,11 @@
 }
 
 .typing-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
   padding: 16px 18px;
 }
 
@@ -223,6 +230,7 @@
   background: var(--text-tertiary, #9ca3af);
   border-radius: 50%;
   animation: bounce 1.4s infinite ease-in-out both;
+  display: inline-block;
 }
 
 .typing-indicator .dot:nth-child(1) {
@@ -345,5 +353,6 @@
     padding: 12px 16px;
   }
 }
+
 
 
