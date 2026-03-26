@@ -2,7 +2,10 @@ import { Component, OnInit, signal, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { tap, map } from 'rxjs/operators';
 import { ChatService, Chat, ChatMessage } from '../../../../core/services/chat.service';
+import { AuraChatApiService } from '../../../../core/services/aura-chat-api.service';
 
 @Component({
   selector: 'app-chat',
@@ -15,6 +18,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private chatService = inject(ChatService);
+  private api = inject(AuraChatApiService);
 
   chat: Chat | null = null;
   messages = signal<ChatMessage[]>([]);
@@ -50,7 +54,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   }
 
   sendMessage(): void {
-    if (!this.newMessage.trim() || !this.chat) return;
+    if (!this.newMessage.trim() || !this.chat || this.isTyping()) return;
 
     const userMessage = this.chatService.addMessage(this.chat.id, this.newMessage, 'user');
     if (userMessage) {
@@ -59,10 +63,37 @@ export class ChatComponent implements OnInit, OnDestroy {
 
     const userInput = this.newMessage;
     this.newMessage = '';
-
+    this.isTyping.set(true);
     setTimeout(() => this.scrollToBottom(), 100);
 
-    this.simulateAssistantResponse(userInput);
+    this.getOrCreateBackendChat().subscribe({
+      next: (backendChatId) => {
+        if (!this.chat) return;
+        this.api.sendMessage(backendChatId, userInput).subscribe({
+          next: (response) => {
+            if (!this.chat) return;
+            const assistantMessage = this.chatService.addMessage(
+              this.chat.id,
+              response.message,
+              'assistant'
+            );
+            if (assistantMessage) {
+              this.messages.update(msgs => [...msgs, assistantMessage]);
+            }
+            this.isTyping.set(false);
+            setTimeout(() => this.scrollToBottom(), 100);
+          },
+          error: (err) => {
+            console.error('Error calling LLM service:', err);
+            this.isTyping.set(false);
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Error creating backend chat:', err);
+        this.isTyping.set(false);
+      }
+    });
   }
 
   onEnterKey(event: KeyboardEvent): void {
@@ -79,33 +110,25 @@ export class ChatComponent implements OnInit, OnDestroy {
     return `${hours}:${minutes}`;
   }
 
-  private simulateAssistantResponse(userInput: string): void {
-    this.isTyping.set(true);
-
-    setTimeout(() => {
-      if (!this.chat) return;
-
-      const response = this.generateMockResponse(userInput);
-      const assistantMessage = this.chatService.addMessage(this.chat.id, response, 'assistant');
-
-      if (assistantMessage) {
-        this.messages.update(msgs => [...msgs, assistantMessage]);
-      }
-
-      this.isTyping.set(false);
-      setTimeout(() => this.scrollToBottom(), 100);
-    }, 1000 + Math.random() * 1500);
-  }
-
-  private generateMockResponse(input: string): string {
-    const responses = [
-      'Entiendo tu consulta. Déjame ayudarte con eso.',
-      'Esa es una excelente pregunta. Aquí está mi respuesta...',
-      'Gracias por compartir eso. Basándome en lo que mencionas, te sugiero...',
-      'He analizado tu solicitud. Esto es lo que puedo decirte...',
-      'Interesante punto. Permíteme elaborar una respuesta para ti.'
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+  /**
+   * Returns the backend chat ID, creating the chat on the backend if needed.
+   * The backend ID is cached in chat.backendChatId after the first call.
+   */
+  private getOrCreateBackendChat(): Observable<number> {
+    if (this.chat?.backendChatId) {
+      return of(this.chat.backendChatId);
+    }
+    const title = this.chat!.title;
+    const localId = this.chat!.id;
+    return this.api.createChat(title).pipe(
+      tap(backendChat => {
+        this.chatService.setBackendChatId(localId, backendChat.id);
+        if (this.chat) {
+          this.chat = { ...this.chat, backendChatId: backendChat.id };
+        }
+      }),
+      map(backendChat => backendChat.id)
+    );
   }
 
   private scrollToBottom(): void {
@@ -115,6 +138,3 @@ export class ChatComponent implements OnInit, OnDestroy {
     }
   }
 }
-
-
-

@@ -14,6 +14,8 @@ export interface Chat {
   createdAt: Date;
   updatedAt: Date;
   messages: ChatMessage[];
+  /** Numeric ID assigned by the backend (assigned lazily on first message). */
+  backendChatId?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -229,6 +231,13 @@ export class ChatService {
 
   deleteChat(id: string): void {
     this.chats.update(chats => chats.filter(chat => chat.id !== id));
+    this.saveChatsToStorage();
+  }
+
+  setBackendChatId(chatId: string, backendId: number): void {
+    this.chats.update(chats =>
+      chats.map(c => c.id === chatId ? { ...c, backendChatId: backendId } : c)
+    );
     this.saveChatsToStorage();
   }
 
