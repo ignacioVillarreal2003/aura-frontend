@@ -141,10 +141,21 @@ export class MainContainerComponent {
         // TODO: Implementar archivar chat
         break;
       case 'delete':
-        console.log('Eliminar chat:', data.chatId);
-        const chatToDelete = this.groupChatService.getGroupChatById(data.chatId);
-        if (chatToDelete) {
-          this.groupChatService.deleteGroupChat(data.chatId);
+        const chatIdNum = parseInt(data.chatId, 10);
+        if (!isNaN(chatIdNum) && this.chatService.getChatById(chatIdNum)) {
+          this.chatService.deleteChat(chatIdNum).subscribe({
+            next: () => {
+              if (this.activeId() === data.chatId) {
+                this.router.navigate(['/main-container/new-chat']);
+                this.activeId.set('new-chat');
+              }
+            }
+          });
+        } else {
+          const groupChatToDelete = this.groupChatService.getGroupChatById(data.chatId);
+          if (groupChatToDelete) {
+            this.groupChatService.deleteGroupChat(data.chatId);
+          }
         }
         break;
     }

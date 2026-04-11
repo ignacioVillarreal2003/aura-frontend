@@ -3,19 +3,22 @@
     <div class="welcome-section">
       <h1 class="welcome-title">¿En qué estás trabajando?</h1>
     </div>
-    
+
     <div class="input-section">
       <div class="input-container">
         <div class="input-field">
           <button class="attach-button">
             <i class="pi pi-plus"></i>
           </button>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="¿Cómo puedo ayudarte hoy?"
             class="message-input"
+            [(ngModel)]="message"
+            (keydown)="onEnterKey($event)"
+            [disabled]="loading()"
           />
-          <button class="send-button">
+          <button class="send-button" (click)="send()" [disabled]="!message.trim() || loading()">
             <i class="pi pi-send"></i>
           </button>
         </div>

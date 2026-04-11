@@ -69,12 +69,12 @@
 
     @if (isOpen()) {
       <div class="chats-container">
-        @if (groupChats.length > 0) {
+        @if (groupChats().length > 0) {
           <div class="chats-section-header">
             <div class="chats-title">Chats grupales</div>
           </div>
           <div class="chats-group">
-            @for (c of groupChats; track c.id) {
+            @for (c of groupChats(); track c.id) {
               <div class="items-row chat-row" 
                    [class.active]="activeId === c.id" 
                    [attr.data-chat-id]="c.id"
@@ -96,12 +96,12 @@
           </div>
         }
 
-        @if (individualChats.length > 0) {
+        @if (individualChats().length > 0) {
           <div class="chats-section-header">
             <div class="chats-title">Tus chats</div>
           </div>
           <div class="chats-group">
-            @for (c of individualChats; track c.id) {
+            @for (c of individualChats(); track c.id) {
               <div class="items-row chat-row" 
                    [class.active]="activeId === c.id" 
                    [attr.data-chat-id]="c.id"

@@ -15,11 +15,20 @@ export interface BackendChat {
   updated_at: string | null;
 }
 
+export interface BackendChatSummary {
+  id: number;
+  name: string;
+  chat_type: 'individual' | 'group';
+  member_count: number;
+  last_message_at: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
 export interface BackendMessage {
   id: number;
   chat_id: number;
   message: string;
-  /** "user" = human message, "system" = assistant reply */
   sender_type: 'user' | 'system';
   created_by: number | null;
   created_at: string;
@@ -38,18 +47,26 @@ export class AuraChatApiService {
     });
   }
 
-  createChat(name: string): Observable<BackendChat> {
-    return this.http.post<BackendChat>(
-      `${this.base}/chats`,
-      { name },
-      { headers: this.headers }
-    );
+  listChats(limit = 100): Observable<{ data: BackendChatSummary[]; pagination: { has_more: boolean; next_cursor: string | null } }> {
+    return this.http.get<any>(`${this.base}/chats?limit=${limit}`, { headers: this.headers });
   }
 
-  /**
-   * Send a user message. The backend persists it, calls the LLM, and
-   * returns the assistant reply as the response body.
-   */
+  createChat(name: string): Observable<BackendChat> {
+    return this.http.post<BackendChat>(`${this.base}/chats`, { name }, { headers: this.headers });
+  }
+
+  getChat(chatId: number): Observable<BackendChat> {
+    return this.http.get<BackendChat>(`${this.base}/chats/${chatId}`, { headers: this.headers });
+  }
+
+  updateChat(chatId: number, name: string): Observable<BackendChat> {
+    return this.http.patch<BackendChat>(`${this.base}/chats/${chatId}`, { name }, { headers: this.headers });
+  }
+
+  deleteChat(chatId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/chats/${chatId}`, { headers: this.headers });
+  }
+
   sendMessage(chatId: number, message: string): Observable<BackendMessage> {
     return this.http.post<BackendMessage>(
       `${this.base}/chats/${chatId}/messages`,
@@ -63,5 +80,12 @@ export class AuraChatApiService {
       `${this.base}/chats/${chatId}/messages?limit=${limit}`,
       { headers: this.headers }
     );
+  }
+
+  openWebSocket(chatId: number): WebSocket {
+    const wsBase = environment.chatApiUrl
+      .replace('https://', 'wss://')
+      .replace('http://', 'ws://');
+    return new WebSocket(`${wsBase}/api/v1/ws/chats/${chatId}?token=${environment.devToken}`);
   }
 }
