@@ -1,0 +1,63 @@
+<section class="chats-panel" aria-label="Lista de chats">
+  <header class="chats-panel-header">
+    <h2 class="chats-panel-title">Chats</h2>
+    <button type="button" class="close-button" (click)="goBack()" aria-label="Volver al inicio">
+      <i class="pi pi-times"></i>
+    </button>
+  </header>
+
+  <div class="search-input-container">
+    <div class="search-input">
+      <i class="pi pi-search search-icon"></i>
+      <input
+        type="text"
+        placeholder="Buscar chats..."
+        [(ngModel)]="searchQuery"
+        class="search-field"
+      />
+    </div>
+  </div>
+
+  <button type="button" class="new-chat-button" (click)="onNewChat()">
+    <i class="pi pi-pencil"></i>
+    <span>Nuevo chat</span>
+  </button>
+
+  <div class="chat-history">
+    <div class="chat-section">
+      <h3 class="section-title">Hoy</h3>
+      <div class="chat-list">
+        @for (chat of chats.hoy; track chat.id) {
+          <div class="chat-item" (click)="onChatSelect(chat.id)">
+            <i class="pi pi-comments chat-icon"></i>
+            <span class="chat-title">{{ chat.title }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="chat-section">
+      <h3 class="section-title">Ayer</h3>
+      <div class="chat-list">
+        @for (chat of chats.ayer; track chat.id) {
+          <div class="chat-item" (click)="onChatSelect(chat.id)">
+            <i class="pi pi-comments chat-icon"></i>
+            <span class="chat-title">{{ chat.title }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="chat-section">
+      <h3 class="section-title">7 días anteriores</h3>
+      <div class="chat-list">
+        @for (chat of chats.semana; track chat.id) {
+          <div class="chat-item" (click)="onChatSelect(chat.id)">
+            <i class="pi pi-comments chat-icon"></i>
+            <span class="chat-title">{{ chat.title }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</section>

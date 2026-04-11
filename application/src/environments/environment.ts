@@ -1,5 +1,2 @@
-export const environment = {
-  production: false,
-  chatApiUrl: 'http://localhost:8003',
-  devToken: 'user_token_123',
-};
+/** Default entry used by the TypeScript program; CLI `fileReplacements` swap this at build time. */
+export { environment } from './environment.development';

@@ -1,0 +1,147 @@
+<nav
+  class="sidebar-nav"
+  [class.open]="isOpen()"
+  [class.closed]="!isOpen()"
+  [attr.data-state]="isOpen() ? 'open' : 'closed'">
+  <header class="sidebar-header" [class.sidebar-header--compact]="!isOpen()">
+    @if (isOpen()) {
+      <div class="sidebar-header__logo">
+        <img src="assets/images/logo.png" alt="AURA" class="sidebar-logo" />
+      </div>
+    }
+    <div class="sidebar-header__toggle">
+      <div class="sidebar-header__toggle-inner">
+        <app-btn-icon
+          size="medium"
+          [style]="'transparent'"
+          rounded="radius-normal"
+          [icon]="isOpen() ? 'chevron_left' : 'chevron_right'"
+          [attr.aria-label]="isOpen() ? 'Cerrar sidebar' : 'Abrir sidebar'"
+          (click)="onOpenClose()"
+        ></app-btn-icon>
+      </div>
+    </div>
+  </header>
+
+  <div class="sidebar-divider" role="presentation"></div>
+
+  <div class="sidebar-body">
+    <nav class="sidebar-nav-links" aria-label="Acciones principales">
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId === 'new-chat'"
+        (click)="emitNewClick()">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        @if (isOpen()) {
+          <span class="sidebar-link__text">Nuevo chat</span>
+        }
+      </button>
+
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId === 'chats' || activeId === 'search'"
+        (click)="emitSelect('chats')">
+        <i class="pi pi-comments" aria-hidden="true"></i>
+        @if (isOpen()) {
+          <span class="sidebar-link__text">Chats</span>
+        }
+      </button>
+
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId === 'tools'"
+        (click)="emitSelect('tools')">
+        <i class="pi pi-wrench" aria-hidden="true"></i>
+        @if (isOpen()) {
+          <span class="sidebar-link__text">Herramientas</span>
+        }
+      </button>
+    </nav>
+
+    @if (isOpen() && chats.length > 0) {
+      <div class="sidebar-chats-block">
+        <div class="sidebar-chats-separator" role="presentation"></div>
+        <div class="sidebar-chats-inner">
+          <p class="chats-section-label">Recientes</p>
+          <div class="chats-container">
+            <div class="sidebar-nav-links sidebar-nav-links--recents" role="list">
+              @for (c of chats; track c.id) {
+                <div
+                  class="sidebar-chat-item"
+                  role="listitem"
+                  [class.menu-open]="showChatMenu() === c.id">
+                  <button
+                    type="button"
+                    class="sidebar-link sidebar-link--chat"
+                    [class.is-active]="activeId === c.id"
+                    (click)="onChatClick(c)">
+                    <i class="pi pi-comments" aria-hidden="true"></i>
+                    <span class="sidebar-link__text">{{ c.title }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="sidebar-link-more"
+                    [attr.aria-label]="'Opciones del chat ' + c.title"
+                    (click)="onChatOptionsClick($event, c.id)">
+                    <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-divider" role="presentation"></div>
+
+    <nav class="sidebar-nav-links sidebar-nav-links--footer" aria-label="Cuenta">
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId === 'profile'"
+        (click)="emitSelect('profile')">
+        <span class="avatar-fallback" aria-hidden="true">{{ userInitials() }}</span>
+        @if (isOpen()) {
+          <span class="sidebar-link__stack">
+            <span class="user-email">{{ userName() }}</span>
+            <span class="user-meta">{{ userRol() }}</span>
+          </span>
+        }
+      </button>
+    </nav>
+  </div>
+</nav>
+
+@if (showChatMenu()) {
+  <div class="chat-menu-overlay" (click)="onCloseChatMenu()"></div>
+
+  <div
+    class="chat-options-menu-fixed"
+    [style.left.px]="menuPosition().x"
+    [style.top.px]="menuPosition().y">
+    <div class="chat-menu-list">
+      <button type="button" class="chat-menu-item" (click)="onChatActionSelected({ chatId: showChatMenu()!, action: 'share' })">
+        <i class="pi pi-share-alt chat-menu-icon"></i>
+        <span class="chat-menu-label">Compartir</span>
+      </button>
+      <button type="button" class="chat-menu-item" (click)="onChatActionSelected({ chatId: showChatMenu()!, action: 'rename' })">
+        <i class="pi pi-pencil chat-menu-icon"></i>
+        <span class="chat-menu-label">Cambiar el nombre</span>
+      </button>
+      <button type="button" class="chat-menu-item" (click)="onChatActionSelected({ chatId: showChatMenu()!, action: 'archive' })">
+        <i class="pi pi-inbox chat-menu-icon"></i>
+        <span class="chat-menu-label">Archivar</span>
+      </button>
+      <button type="button" class="chat-menu-item danger" (click)="onChatActionSelected({ chatId: showChatMenu()!, action: 'delete' })">
+        <i class="pi pi-trash chat-menu-icon"></i>
+        <span class="chat-menu-label">Eliminar</span>
+      </button>
+    </div>
+  </div>
+}

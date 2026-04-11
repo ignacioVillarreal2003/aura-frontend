@@ -1,0 +1,130 @@
+.user-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100dvh;
+  height: 100dvh;
+  background: #151515;
+  color: #fff;
+  font-family: 'Sora', sans-serif;
+}
+
+.user-shell__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1rem;
+  background: #2c2825;
+  border-right: 1px solid #404040;
+}
+
+.user-shell__back {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  color: #e5e7eb;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background-color 0.15s ease;
+}
+
+.user-shell__back:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.user-shell__links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.user-shell__link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 8px;
+  color: #e5e7eb;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.user-shell__link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.user-shell__link.is-active {
+  background: rgba(102, 126, 234, 0.2);
+  color: #fff;
+}
+
+.user-shell__link i {
+  color: #9ca3af;
+  font-size: 1rem;
+}
+
+.user-shell__link.is-active i {
+  color: #a5b4fc;
+}
+
+.user-shell__logout {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: auto;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  background: transparent;
+  color: #fca5a5;
+  font-family: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.user-shell__logout:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
+}
+
+.user-shell__main {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  background: #151515;
+}
+
+@media (max-width: 768px) {
+  .user-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .user-shell__nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    border-right: none;
+    border-bottom: 1px solid #404040;
+  }
+
+  .user-shell__links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+  }
+
+  .user-shell__logout {
+    margin-top: 0;
+  }
+}

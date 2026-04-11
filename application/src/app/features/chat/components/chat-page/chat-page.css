@@ -1,0 +1,31 @@
+.chat-flex {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 100dvh;
+  min-height: 100dvh;
+  position: relative;
+}
+
+.chat-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #151515;
+}
+
+.chat-main-outlet {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* El componente cargado en el outlet queda como hermano del router-outlet */
+.chat-main-outlet > router-outlet + * {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

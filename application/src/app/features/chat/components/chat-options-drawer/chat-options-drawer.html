@@ -1,0 +1,42 @@
+<div
+  class="drawer-root"
+  [attr.aria-hidden]="!isOpen()"
+>
+  <button
+    type="button"
+    class="drawer-backdrop"
+    tabindex="-1"
+    aria-label="Cerrar panel"
+    (click)="close()"
+  ></button>
+
+  <aside
+    class="drawer-panel"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'chat-drawer-title'"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="drawer-panel__header">
+      <h2 id="chat-drawer-title" class="drawer-panel__title">{{ panelTitle() }}</h2>
+      <app-btn-icon
+        [icon]="'close'"
+        [style]="'transparent'"
+        [rounded]="'radius-circle'"
+        (click)="close()"
+      />
+    </header>
+
+    <div class="drawer-panel__body">
+      <p class="drawer-panel__intro">
+        Opciones del chat (placeholder). Aquí irán acciones reales cuando conectes el backend.
+      </p>
+      <ul class="drawer-panel__options">
+        <li><button type="button" class="drawer-option">Renombrar conversación</button></li>
+        <li><button type="button" class="drawer-option">Archivar</button></li>
+        <li><button type="button" class="drawer-option">Buscar en el chat</button></li>
+        <li><button type="button" class="drawer-option">Detalles del chat</button></li>
+      </ul>
+    </div>
+  </aside>
+</div>

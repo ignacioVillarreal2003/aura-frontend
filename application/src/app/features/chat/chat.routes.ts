@@ -4,7 +4,9 @@ export const chatRoutes: Routes = [
   {
     path: ':id',
     loadComponent: () =>
-      import('./pages/chat/chat.component').then(m => m.ChatComponent)
+      import('./pages/conversation-page/conversation-page').then(
+        (m) => m.ConversationPageComponent
+      )
   }
 ];
 
