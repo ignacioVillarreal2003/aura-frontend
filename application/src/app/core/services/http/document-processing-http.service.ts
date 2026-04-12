@@ -7,7 +7,7 @@ import type { CreateDocumentRequest, CreateDocumentResponse } from '@core/models
 @Injectable({ providedIn: 'root' })
 export class DocumentProcessingHttpService {
   private readonly http = inject(HttpClient);
-  private readonly base = environment.authenticationApiUrl;
+  private readonly base = environment.documentProcessingUrl.replace(/\/$/, '');
 
   createDocument(body: CreateDocumentRequest): Observable<CreateDocumentResponse> {
     const preferDocling = body.prefer_docling ?? false;

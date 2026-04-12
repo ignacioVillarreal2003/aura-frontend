@@ -16,11 +16,14 @@ export class ChatOptionsDrawerComponent {
   readonly isOpenChange = output<boolean>();
   readonly panelTitle = input<string>('Opciones del chat');
 
-  /** Si hay id, el cuerpo muestra acciones de lista (sidebar); si no, el placeholder de sesión. */
   readonly actionMenuChatId = input<string | null>(null);
   readonly actionMenuChatTitle = input<string>('');
 
+  readonly showDocumentUpload = input(false);
+  readonly uploadDisabled = input(false);
+
   readonly menuAction = output<{ chatId: string; action: string }>();
+  readonly documentSelected = output<File>();
 
   close(): void {
     this.isOpenChange.emit(false);
@@ -32,6 +35,15 @@ export class ChatOptionsDrawerComponent {
       this.menuAction.emit({ chatId: id, action });
     }
     this.close();
+  }
+
+  onDocumentInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      this.documentSelected.emit(file);
+    }
+    input.value = '';
   }
 
   @HostListener('document:keydown', ['$event'])

@@ -43,7 +43,7 @@
               type="button"
               class="chat-home-send"
               aria-label="Enviar mensaje"
-              [disabled]="!message().trim()"
+              [disabled]="!message().trim() || submitting()"
               (click)="onSend()">
               <i class="pi pi-send" aria-hidden="true"></i>
             </button>

@@ -1,16 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import type { ChatApiMessage } from '@core/models/types/chat.types';
-import { ChatService } from '@core/services/chat.service';
+import { AuraChatApiService } from '@core/services/aura-chat-api.service';
+import { ToastService } from '@core/components/toast-service';
+import type { ChatSummary } from '@core/models/types/chat.types';
 
-type ChatListRow = { id: string; title: string; lastTs: number };
-
-function lastActivityTs(messages: ChatApiMessage[]): number {
-  if (!messages.length) return 0;
-  return messages.reduce((max, m) => Math.max(max, new Date(m.created_at).getTime()), 0);
-}
+type ChatListItem = { id: string; title: string; sortKey: number };
 
 @Component({
   selector: 'app-chat-search',
@@ -20,46 +16,70 @@ function lastActivityTs(messages: ChatApiMessage[]): number {
   styleUrls: ['./chat-search.component.css'],
 })
 export class ChatSearchComponent implements OnInit {
-  private chatService = inject(ChatService);
+  private readonly api = inject(AuraChatApiService);
+  private readonly toast = inject(ToastService);
 
   searchQuery = '';
-  private rows: ChatListRow[] = [];
+  private readonly allChats = signal<ChatSummary[]>([]);
+
+  readonly grouped = signal<{
+    hoy: ChatListItem[];
+    ayer: ChatListItem[];
+    semana: ChatListItem[];
+  }>({ hoy: [], ayer: [], semana: [] });
 
   ngOnInit(): void {
-    this.refreshFromService();
+    this.api.listMyChats({ page_size: 100 }).subscribe({
+      next: (page) => {
+        this.allChats.set(page.data);
+        this.rebuildGrouped();
+      },
+      error: () => this.toast.show('No se pudieron cargar los chats.', 'error'),
+    });
   }
 
-  private refreshFromService(): void {
-    this.rows = this.chatService
-      .getAllSessions()
-      .map((s) => ({
-        id: s.routeKey,
-        title: s.detail.name,
-        lastTs: lastActivityTs(s.messages),
-      }))
-      .sort((a, b) => b.lastTs - a.lastTs);
+  onSearchChange(): void {
+    this.rebuildGrouped();
   }
 
-  /** Sesiones filtradas por búsqueda y agrupadas por antigüedad (misma fuente que el sidebar). */
-  get groupedChats(): { hoy: ChatListRow[]; ayer: ChatListRow[]; semana: ChatListRow[] } {
+  private rebuildGrouped(): void {
     const q = this.searchQuery.trim().toLowerCase();
-    const filtered = q ? this.rows.filter((r) => r.title.toLowerCase().includes(q)) : [...this.rows];
+    const filtered = this.allChats().filter((c) => !q || c.name.toLowerCase().includes(q));
+    const hoy: ChatListItem[] = [];
+    const ayer: ChatListItem[] = [];
+    const semana: ChatListItem[] = [];
 
-    const now = new Date();
-    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const startYesterday = startToday - 86400000;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - 7);
 
-    const hoy: ChatListRow[] = [];
-    const ayer: ChatListRow[] = [];
-    const semana: ChatListRow[] = [];
-
-    for (const r of filtered) {
-      const t = r.lastTs > 0 ? r.lastTs : Date.now();
-      if (t >= startToday) hoy.push(r);
-      else if (t >= startYesterday) ayer.push(r);
-      else semana.push(r);
+    for (const c of filtered) {
+      const raw = c.last_message_at ?? c.created_at;
+      const d = new Date(raw);
+      const item: ChatListItem = {
+        id: String(c.id),
+        title: c.name,
+        sortKey: d.getTime(),
+      };
+      if (d >= startOfToday) {
+        hoy.push(item);
+      } else if (d >= startOfYesterday) {
+        ayer.push(item);
+      } else if (d >= startOfWeek) {
+        semana.push(item);
+      } else {
+        semana.push(item);
+      }
     }
 
-    return { hoy, ayer, semana };
+    const byRecent = (a: ChatListItem, b: ChatListItem) => b.sortKey - a.sortKey;
+    hoy.sort(byRecent);
+    ayer.sort(byRecent);
+    semana.sort(byRecent);
+
+    this.grouped.set({ hoy, ayer, semana });
   }
 }

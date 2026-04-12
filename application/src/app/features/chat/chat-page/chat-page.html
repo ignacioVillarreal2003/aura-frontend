@@ -1,5 +1,6 @@
 <div class="chat-flex" [attr.data-state]="collapsed() ? 'closed' : 'open'">
   <app-chat-sidebar
+    #chatSidebar
     [collapsed]="collapsed()"
     [activeId]="activeId()"
     (toggle)="collapsed.set($event)"

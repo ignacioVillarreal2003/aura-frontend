@@ -10,6 +10,7 @@
         type="text"
         placeholder="Buscar chats..."
         [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
         class="search-field"
       />
     </div>
@@ -21,11 +22,11 @@
   </a>
 
   <div class="chat-history">
-    @if (groupedChats.hoy.length > 0) {
+    @if (grouped().hoy.length > 0) {
       <div class="chat-section">
         <h3 class="section-title">Hoy</h3>
         <div class="chat-list">
-          @for (chat of groupedChats.hoy; track chat.id) {
+          @for (chat of grouped().hoy; track chat.id) {
             <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
               <i class="pi pi-comments chat-icon"></i>
               <span class="chat-title">{{ chat.title }}</span>
@@ -35,11 +36,11 @@
       </div>
     }
 
-    @if (groupedChats.ayer.length > 0) {
+    @if (grouped().ayer.length > 0) {
       <div class="chat-section">
         <h3 class="section-title">Ayer</h3>
         <div class="chat-list">
-          @for (chat of groupedChats.ayer; track chat.id) {
+          @for (chat of grouped().ayer; track chat.id) {
             <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
               <i class="pi pi-comments chat-icon"></i>
               <span class="chat-title">{{ chat.title }}</span>
@@ -49,11 +50,11 @@
       </div>
     }
 
-    @if (groupedChats.semana.length > 0) {
+    @if (grouped().semana.length > 0) {
       <div class="chat-section">
         <h3 class="section-title">7 días anteriores</h3>
         <div class="chat-list">
-          @for (chat of groupedChats.semana; track chat.id) {
+          @for (chat of grouped().semana; track chat.id) {
             <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
               <i class="pi pi-comments chat-icon"></i>
               <span class="chat-title">{{ chat.title }}</span>

@@ -1,10 +1,11 @@
 import { Component, EventEmitter, Input, Output, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { ChatOptionsDrawerComponent } from '../chat-options-drawer/chat-options-drawer';
-import { ChatService } from '@core/services/chat.service';
+import { AuraChatApiService } from '@core/services/aura-chat-api.service';
+import { ToastService } from '@core/components/toast-service';
 
 type ChatRow = { id: string; title: string };
 
@@ -16,7 +17,9 @@ type ChatRow = { id: string; title: string };
   styleUrls: ['./chat-sidebar.component.css'],
 })
 export class ChatSidebarComponent implements OnInit {
-  private chatService = inject(ChatService);
+  private readonly api = inject(AuraChatApiService);
+  private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
 
   @Input() collapsed = false;
   @Input() activeId: string | null = null;
@@ -35,15 +38,22 @@ export class ChatSidebarComponent implements OnInit {
   drawerChatTitle = signal('');
 
   ngOnInit(): void {
-    this.loadAllChats();
+    this.reloadChats();
   }
 
-  loadAllChats(): void {
-    const userChats = this.chatService.getAllSessions();
-    this.chats = userChats.map((s) => ({
-      id: s.routeKey,
-      title: s.detail.name,
-    }));
+  reloadChats(): void {
+    this.api.listMyChats({ page_size: 50 }).subscribe({
+      next: (page) => {
+        this.chats = page.data.map((s) => ({
+          id: String(s.id),
+          title: s.name,
+        }));
+      },
+      error: () => {
+        this.chats = [];
+        this.toast.show('No se pudieron cargar los chats.', 'error');
+      },
+    });
   }
 
   isOpen() {
@@ -83,6 +93,27 @@ export class ChatSidebarComponent implements OnInit {
   }
 
   onDrawerMenuAction(data: { chatId: string; action: string }): void {
+    const id = Number.parseInt(data.chatId, 10);
+    if (!Number.isFinite(id)) {
+      return;
+    }
+    if (data.action === 'delete') {
+      if (!window.confirm('¿Eliminar esta conversación?')) {
+        return;
+      }
+      this.api.deleteChat(id).subscribe({
+        next: () => {
+          this.toast.show('Chat eliminado.', 'success');
+          this.reloadChats();
+          const url = this.router.url.split('?')[0];
+          if (url.includes(`/main-container/chat/${data.chatId}`)) {
+            void this.router.navigate(['/main-container', 'chat-home']);
+          }
+        },
+        error: () => this.toast.show('No se pudo eliminar el chat.', 'error'),
+      });
+      return;
+    }
     this.chatAction.emit(data);
   }
 }

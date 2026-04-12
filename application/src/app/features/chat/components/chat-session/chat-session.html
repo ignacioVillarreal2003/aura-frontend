@@ -27,6 +27,9 @@
     <app-chat-options-drawer
       [isOpen]="optionsOpen()"
       (isOpenChange)="optionsOpen.set($event)"
+      [showDocumentUpload]="true"
+      [uploadDisabled]="documentUploading() || !chat"
+      (documentSelected)="onDocumentFromDrawer($event)"
     />
 
     <div class="messages-container">

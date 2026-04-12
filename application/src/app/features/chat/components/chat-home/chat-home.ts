@@ -1,6 +1,9 @@
-import { Component, ElementRef, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuraChatApiService } from '@core/services/aura-chat-api.service';
+import { ToastService } from '@core/components/toast-service';
 
 @Component({
   selector: 'app-chat-home',
@@ -10,7 +13,12 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./chat-home.css'],
 })
 export class ChatHomeComponent {
+  private readonly router = inject(Router);
+  private readonly api = inject(AuraChatApiService);
+  private readonly toast = inject(ToastService);
+
   message = signal('');
+  submitting = signal(false);
 
   private readonly messageBox = viewChild<ElementRef<HTMLTextAreaElement>>('messageBox');
 
@@ -45,9 +53,23 @@ export class ChatHomeComponent {
 
   onSend(): void {
     const text = this.message().trim();
-    if (!text) return;
-    this.message.set('');
-    queueMicrotask(() => this.autosizeTextarea());
+    if (!text || this.submitting()) return;
+    const name = text.slice(0, 80).replace(/\s+/g, ' ').trim() || 'Nuevo chat';
+    this.submitting.set(true);
+    this.api.createChat({ name }).subscribe({
+      next: (chat) => {
+        this.submitting.set(false);
+        this.message.set('');
+        queueMicrotask(() => this.autosizeTextarea());
+        void this.router.navigate(['/main-container', 'chat', String(chat.id)], {
+          state: { pendingMessage: text },
+        });
+      },
+      error: () => {
+        this.submitting.set(false);
+        this.toast.show('No se pudo crear el chat.', 'error');
+      },
+    });
   }
 
   onEnterKey(event: KeyboardEvent): void {

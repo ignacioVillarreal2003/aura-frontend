@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -13,7 +13,8 @@ import { ChatSidebarComponent } from '../components/chat-sidebar/chat-sidebar.co
   styleUrls: ['./chat-page.css'],
 })
 export class ChatPageComponent {
-  private router = inject(Router);
+  private readonly router = inject(Router);
+  private readonly chatSidebar = viewChild<ChatSidebarComponent>('chatSidebar');
 
   collapsed = signal(false);
   activeId = signal<string | null>('chat-home');
@@ -24,13 +25,17 @@ export class ChatPageComponent {
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
-      .subscribe(() => this.syncActiveFromUrl());
+      .subscribe((e) => {
+        this.syncActiveFromUrl();
+        const url = e.urlAfterRedirects.split('?')[0];
+        if (url.includes('/main-container/chat-home') || url.match(/\/main-container\/chat\/[^/]+/)) {
+          this.chatSidebar()?.reloadChats();
+        }
+      });
     this.syncActiveFromUrl();
   }
 
-  onChatAction(data: { chatId: string; action: string }) {
-    console.log('Acción de chat:', data);
-  }
+  onChatAction(_data: { chatId: string; action: string }) {}
 
   private syncActiveFromUrl(): void {
     const url = this.router.url.split('?')[0];

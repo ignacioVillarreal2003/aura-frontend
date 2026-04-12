@@ -170,3 +170,16 @@
   flex: 1;
   min-width: 0;
 }
+
+.drawer-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.drawer-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}

@@ -1,14 +1,46 @@
-// --- HTTP API (v1) ---------------------------------------------------------------------------
-// Dominio DB: una sola tabla `chat`; participantes en `chat_membership`. El chat grupal es el
-// mismo concepto que el individual, con más `member_id` y `chat_type === 'group'` en API.
+// --- HTTP API (v1) — aura-chat-service (DRF) + WebSocket --------------------------------------
+
+export type ChatType = 'individual' | 'group';
+
+export interface DrfNumberedPage<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface DrfCursorPage<T> {
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface ChatListApiRow {
+  id: number;
+  name: string;
+  last_message_at: string | null;
+  created_by: number;
+  created_at: string;
+  member_count: number;
+}
+
+export interface ChatDetailApiRow {
+  id: number;
+  name: string;
+  system_prompt: string | null;
+  response_style: string | null;
+  last_message_at: string | null;
+  created_by: number;
+  created_at: string;
+  updated_by: number | null;
+  updated_at: string | null;
+}
 
 export interface ChatPagination {
   has_more: boolean;
   next_cursor: string | null;
   total_count: number;
 }
-
-export type ChatType = 'individual' | 'group';
 
 export interface ChatSummary {
   id: number;
@@ -82,41 +114,74 @@ export interface CreateMessageRequest {
   sender_type: MessageSenderType;
 }
 
-export interface ChatStreamRequest {
-  message: string;
+export interface AssistantBlock {
+  question: string;
+  answer: string;
+  fragments: Record<string, unknown>[];
 }
 
-export interface ChatStreamStartPayload {
+export interface AssistantErrorBlock {
+  detail: string;
+}
+
+export interface SendMessageResponse {
+  message: ChatApiMessage;
+  assistant: AssistantBlock | null;
+  assistant_error: AssistantErrorBlock | null;
+}
+
+export interface ChatMembershipRow {
+  id: number;
+  member_id: number;
   chat_id: number;
-  status: string;
+  status: ChatMemberStatus;
+  joined_at: string | null;
+  left_at: string | null;
+  created_by: number;
+  created_at: string;
 }
 
-export interface ChatStreamDeltaPayload {
-  delta: string;
+export interface AddMembersRequest {
+  member_ids: number[];
 }
 
-export interface ChatStreamCompletePayload {
-  message_id: number;
-  chat_id: number;
-  finish_reason: string;
+export interface UpdateMemberRequest {
+  status: ChatMemberStatus;
 }
 
-export type ChatStreamErrorCode =
-  | 'LLM_ERROR'
-  | 'FORBIDDEN'
-  | 'CONVERSATION_NOT_FOUND'
-  | 'INTERNAL_ERROR';
-
-export interface ChatStreamErrorPayload {
-  code: ChatStreamErrorCode;
-  message: string;
+export interface PaginatedMembershipsResponse {
+  data: ChatMembershipRow[];
+  pagination: ChatPagination;
 }
 
-export type ChatStreamEvent =
-  | { event: 'start'; data: ChatStreamStartPayload }
-  | { event: 'delta'; data: ChatStreamDeltaPayload }
-  | { event: 'complete'; data: ChatStreamCompletePayload }
-  | { event: 'error'; data: ChatStreamErrorPayload };
+export type ChatWsIncoming =
+  | {
+      type: 'user_message';
+      id: number;
+      message: string;
+      sender_type: MessageSenderType;
+      created_by: number | null;
+      created_at: string;
+    }
+  | { type: 'ai_meta'; chat_id: number }
+  | { type: 'ai_context'; question: string; fragments: unknown[] }
+  | { type: 'ai_delta'; delta: string }
+  | {
+      type: 'ai_complete';
+      message: string;
+      answer: string;
+      question: string;
+      fragments: unknown[];
+      id?: number;
+      sender_type?: MessageSenderType;
+      created_by?: number | null;
+      created_at?: string;
+    }
+  | { type: 'ai_error'; detail: string; code?: string }
+  | { type: 'typing'; user_id: number; is_typing: boolean }
+  | { type: 'error'; detail: string }
+  | { type: 'member_joined'; member_id: number }
+  | { type: 'member_left'; member_id: number };
 
 export type ChatApiErrorCode =
   | 'CONVERSATION_NOT_FOUND'

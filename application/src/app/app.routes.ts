@@ -20,13 +20,5 @@ export const routes: Routes = [
       import('./features/user/user.routes').then((m) => m.USER_ROUTES),
   },
 
-  {
-    path: 'join-group/:linkId',
-    loadChildren: () =>
-      import('./features/deprecated/join-group-chat/join-group-chat.routes').then(
-        (m) => m.joinGroupChatRoutes
-      ),
-  },
-
   { path: '**', redirectTo: 'login' }
 ];

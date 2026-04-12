@@ -1,6 +1,6 @@
 /**
- * Production bundle: set URLs via your release pipeline (replace this file or inject config)
- * so secrets never ship in source. `devAccessToken` is intentionally absent.
+ * Production: configure `chatApiUrl`, `authenticationApiUrl`, and `documentProcessingUrl`
+ * in your release pipeline (file replacement or runtime config). `devAccessToken` is absent.
  */
 export const environment = {
   production: true,

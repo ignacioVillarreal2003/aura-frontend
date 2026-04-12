@@ -49,15 +49,41 @@
           </button>
         </nav>
       } @else {
-        <p class="drawer-panel__intro">
-          Opciones del chat (placeholder). Aquí irán acciones reales cuando conectes el backend.
-        </p>
-        <ul class="drawer-panel__options">
-          <li><button type="button" class="drawer-option">Renombrar conversación</button></li>
-          <li><button type="button" class="drawer-option">Archivar</button></li>
-          <li><button type="button" class="drawer-option">Buscar en el chat</button></li>
-          <li><button type="button" class="drawer-option">Detalles del chat</button></li>
-        </ul>
+        @if (showDocumentUpload()) {
+          <p class="drawer-panel__intro">
+            Adjunta documentos para este chat (procesamiento en segundo plano).
+          </p>
+          <input
+            #docInput
+            type="file"
+            class="drawer-file-input"
+            [disabled]="uploadDisabled()"
+            (change)="onDocumentInput($event)"
+            aria-label="Seleccionar documento"
+          />
+          <ul class="drawer-panel__options">
+            <li>
+              <button
+                type="button"
+                class="drawer-option"
+                [disabled]="uploadDisabled()"
+                (click)="docInput.click()"
+              >
+                Subir documento
+              </button>
+            </li>
+          </ul>
+        } @else {
+          <p class="drawer-panel__intro">
+            Opciones del chat (placeholder). Aquí irán acciones reales cuando conectes el backend.
+          </p>
+          <ul class="drawer-panel__options">
+            <li><button type="button" class="drawer-option">Renombrar conversación</button></li>
+            <li><button type="button" class="drawer-option">Archivar</button></li>
+            <li><button type="button" class="drawer-option">Buscar en el chat</button></li>
+            <li><button type="button" class="drawer-option">Detalles del chat</button></li>
+          </ul>
+        }
       }
     </div>
   </aside>
