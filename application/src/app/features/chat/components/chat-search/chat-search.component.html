@@ -1,9 +1,6 @@
 <section class="chats-panel" aria-label="Lista de chats">
   <header class="chats-panel-header">
     <h2 class="chats-panel-title">Chats</h2>
-    <button type="button" class="close-button" (click)="goBack()" aria-label="Volver al inicio">
-      <i class="pi pi-times"></i>
-    </button>
   </header>
 
   <div class="search-input-container">
@@ -18,46 +15,52 @@
     </div>
   </div>
 
-  <button type="button" class="new-chat-button" (click)="onNewChat()">
+  <a class="chat-home-nav-button" [routerLink]="['/main-container', 'chat-home']">
     <i class="pi pi-pencil"></i>
     <span>Nuevo chat</span>
-  </button>
+  </a>
 
   <div class="chat-history">
-    <div class="chat-section">
-      <h3 class="section-title">Hoy</h3>
-      <div class="chat-list">
-        @for (chat of chats.hoy; track chat.id) {
-          <div class="chat-item" (click)="onChatSelect(chat.id)">
-            <i class="pi pi-comments chat-icon"></i>
-            <span class="chat-title">{{ chat.title }}</span>
-          </div>
-        }
+    @if (groupedChats.hoy.length > 0) {
+      <div class="chat-section">
+        <h3 class="section-title">Hoy</h3>
+        <div class="chat-list">
+          @for (chat of groupedChats.hoy; track chat.id) {
+            <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </a>
+          }
+        </div>
       </div>
-    </div>
+    }
 
-    <div class="chat-section">
-      <h3 class="section-title">Ayer</h3>
-      <div class="chat-list">
-        @for (chat of chats.ayer; track chat.id) {
-          <div class="chat-item" (click)="onChatSelect(chat.id)">
-            <i class="pi pi-comments chat-icon"></i>
-            <span class="chat-title">{{ chat.title }}</span>
-          </div>
-        }
+    @if (groupedChats.ayer.length > 0) {
+      <div class="chat-section">
+        <h3 class="section-title">Ayer</h3>
+        <div class="chat-list">
+          @for (chat of groupedChats.ayer; track chat.id) {
+            <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </a>
+          }
+        </div>
       </div>
-    </div>
+    }
 
-    <div class="chat-section">
-      <h3 class="section-title">7 días anteriores</h3>
-      <div class="chat-list">
-        @for (chat of chats.semana; track chat.id) {
-          <div class="chat-item" (click)="onChatSelect(chat.id)">
-            <i class="pi pi-comments chat-icon"></i>
-            <span class="chat-title">{{ chat.title }}</span>
-          </div>
-        }
+    @if (groupedChats.semana.length > 0) {
+      <div class="chat-section">
+        <h3 class="section-title">7 días anteriores</h3>
+        <div class="chat-list">
+          @for (chat of groupedChats.semana; track chat.id) {
+            <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </a>
+          }
+        </div>
       </div>
-    </div>
+    }
   </div>
 </section>

@@ -11,7 +11,7 @@ export const routes: Routes = [
   {
     path: 'main-container',
     loadChildren: () =>
-      import('./features/chat/chat-shell.routes').then((m) => m.chatShellRoutes),
+      import('./features/chat/chat.routes').then((m) => m.chatShellRoutes),
   },
 
   {

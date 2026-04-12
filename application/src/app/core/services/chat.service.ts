@@ -3,7 +3,7 @@ import type { ChatApiMessage, ChatDetail, MessageSenderType } from '@core/models
 
 /** Estado de sesión en memoria: misma fila `chat` + mensajes (no es un DTO nuevo de API). */
 type ChatSession = {
-  /** Clave estable del segmento `:id` en `/main-container/chat/:id`. */
+  /** Clave estable del segmento `:id` en la ruta `chat/:id` bajo `main-container`. */
   routeKey: string;
   detail: ChatDetail;
   messages: ChatApiMessage[];

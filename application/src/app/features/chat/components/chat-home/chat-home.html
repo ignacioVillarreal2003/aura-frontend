@@ -1,0 +1,55 @@
+<div class="chat-home-container">
+  <div class="chat-home-layout">
+    <div class="chat-home-center">
+      <div class="welcome-section">
+        <h1 class="welcome-title">¿En qué estás trabajando?</h1>
+        <p class="welcome-subtitle">Escribe una pregunta o sube un documento para empezar.</p>
+      </div>
+
+      <div class="chat-home-composer">
+        <div class="chat-home-composer-surface">
+          <textarea
+            #messageBox
+            id="chat-home-input"
+            name="chatHomeMessage"
+            class="chat-home-textarea"
+            rows="1"
+            placeholder="¿Cómo puedo ayudarte hoy?"
+            [ngModel]="message()"
+            (ngModelChange)="onMessageInput($event)"
+            (keydown)="onEnterKey($event)"
+          ></textarea>
+
+          <div class="chat-home-composer-footer">
+            <input
+              #fileInput
+              type="file"
+              class="chat-home-file-input"
+              multiple
+              accept=".pdf,.doc,.docx,.txt,.md,image/*"
+              (change)="onFilesSelected($event)"
+              aria-hidden="true"
+              tabindex="-1"
+            />
+            <button
+              type="button"
+              class="chat-home-attach"
+              aria-label="Adjuntar documento"
+              (click)="onAttachClick(fileInput)">
+              <i class="pi pi-plus" aria-hidden="true"></i>
+            </button>
+            <span class="chat-home-composer-spacer" aria-hidden="true"></span>
+            <button
+              type="button"
+              class="chat-home-send"
+              aria-label="Enviar mensaje"
+              [disabled]="!message().trim()"
+              (click)="onSend()">
+              <i class="pi pi-send" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

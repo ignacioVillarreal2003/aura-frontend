@@ -1,0 +1,14 @@
+<div class="chat-flex" [attr.data-state]="collapsed() ? 'closed' : 'open'">
+  <app-chat-sidebar
+    [collapsed]="collapsed()"
+    [activeId]="activeId()"
+    (toggle)="collapsed.set($event)"
+    (chatAction)="onChatAction($event)">
+  </app-chat-sidebar>
+
+  <main class="chat-content">
+    <div class="chat-main-outlet">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

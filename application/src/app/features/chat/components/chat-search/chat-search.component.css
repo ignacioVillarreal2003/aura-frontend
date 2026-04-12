@@ -18,7 +18,7 @@
 .chats-panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 1.25rem 1.5rem;
   flex-shrink: 0;
   border-bottom: 1px solid #2a2a2a;
@@ -30,20 +30,6 @@
   font-weight: 600;
   color: #fff;
   margin: 0;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-}
-
-.close-button:hover {
-  background-color: #2a2a2a;
 }
 
 .search-input-container {
@@ -85,7 +71,7 @@
   color: #9ca3af;
 }
 
-.new-chat-button {
+.chat-home-nav-button {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -103,13 +89,15 @@
   text-align: left;
   margin-bottom: 1rem;
   flex-shrink: 0;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
-.new-chat-button:hover {
+.chat-home-nav-button:hover {
   background-color: #2a2a2a;
 }
 
-.new-chat-button i {
+.chat-home-nav-button i {
   color: #9ca3af;
   font-size: 1rem;
 }
@@ -151,6 +139,9 @@
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
 }
 
 .chat-item:hover {

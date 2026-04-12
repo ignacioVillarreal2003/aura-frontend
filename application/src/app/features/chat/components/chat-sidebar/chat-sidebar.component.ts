@@ -1,15 +1,17 @@
 import { Component, EventEmitter, Input, Output, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
+import { ChatOptionsDrawerComponent } from '../chat-options-drawer/chat-options-drawer';
 import { ChatService } from '@core/services/chat.service';
 
-type ChatRow = { id: string; title: string; route: string };
+type ChatRow = { id: string; title: string };
 
 @Component({
   selector: 'app-chat-sidebar',
   standalone: true,
-  imports: [CommonModule, BtnIcon],
+  imports: [CommonModule, BtnIcon, ChatOptionsDrawerComponent, RouterLink],
   templateUrl: './chat-sidebar.component.html',
   styleUrls: ['./chat-sidebar.component.css'],
 })
@@ -24,15 +26,13 @@ export class ChatSidebarComponent implements OnInit {
   @Input() userRolInput = 'Operador';
 
   @Output() toggle = new EventEmitter<boolean>();
-  @Output() select = new EventEmitter<string>();
-  @Output() newClick = new EventEmitter<void>();
   @Output() chatAction = new EventEmitter<{ chatId: string; action: string }>();
-  @Output() chatSelect = new EventEmitter<{ id: string; isGroup: boolean }>();
 
   chats: ChatRow[] = [];
 
-  showChatMenu = signal<string | null>(null);
-  menuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  chatActionsDrawerOpen = signal(false);
+  drawerChatId = signal<string | null>(null);
+  drawerChatTitle = signal('');
 
   ngOnInit(): void {
     this.loadAllChats();
@@ -43,12 +43,7 @@ export class ChatSidebarComponent implements OnInit {
     this.chats = userChats.map((s) => ({
       id: s.routeKey,
       title: s.detail.name,
-      route: `/main-container/chat/${s.routeKey}`,
     }));
-  }
-
-  onChatClick(chat: ChatRow): void {
-    this.chatSelect.emit({ id: chat.id, isGroup: false });
   }
 
   isOpen() {
@@ -56,13 +51,6 @@ export class ChatSidebarComponent implements OnInit {
   }
   onOpenClose() {
     this.toggle.emit(!this.collapsed);
-  }
-
-  emitSelect(id: string) {
-    this.select.emit(id);
-  }
-  emitNewClick() {
-    this.newClick.emit();
   }
 
   userInitials() {
@@ -79,32 +67,22 @@ export class ChatSidebarComponent implements OnInit {
 
   onChatOptionsClick(event: MouseEvent, chatId: string) {
     event.stopPropagation();
+    const row = this.chats.find((c) => c.id === chatId);
+    if (!row) return;
+    this.drawerChatId.set(chatId);
+    this.drawerChatTitle.set(row.title);
+    this.chatActionsDrawerOpen.set(true);
+  }
 
-    if (this.showChatMenu() === chatId) {
-      this.showChatMenu.set(null);
-    } else {
-      const button = event.currentTarget as HTMLElement;
-      const rect = button.getBoundingClientRect();
-
-      const menuHeight = 190;
-
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const shouldShowAbove = spaceBelow < menuHeight + 20;
-
-      const x = rect.left;
-      const y = shouldShowAbove ? rect.top - menuHeight : rect.bottom + 12;
-
-      this.menuPosition.set({ x, y });
-      this.showChatMenu.set(chatId);
+  onChatActionsDrawerChange(open: boolean): void {
+    this.chatActionsDrawerOpen.set(open);
+    if (!open) {
+      this.drawerChatId.set(null);
+      this.drawerChatTitle.set('');
     }
   }
 
-  onCloseChatMenu() {
-    this.showChatMenu.set(null);
-  }
-
-  onChatActionSelected(data: { chatId: string; action: string }) {
+  onDrawerMenuAction(data: { chatId: string; action: string }): void {
     this.chatAction.emit(data);
-    this.onCloseChatMenu();
   }
 }

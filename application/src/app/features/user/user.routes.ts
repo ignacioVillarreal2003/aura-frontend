@@ -1,40 +1,33 @@
 import { Routes } from '@angular/router';
-import { UserShellPageComponent } from './pages/user-shell-page/user-shell-page';
+import { UserPageComponent } from './user-page/user-page';
 
 const settingsSectionLoader = () =>
-  import('./pages/user-settings-section-page/user-settings-section-page').then(
-    (m) => m.UserSettingsSectionPageComponent
+  import('./components/user-settings-section/user-settings-section.component').then(
+    (m) => m.UserSettingsSectionComponent,
   );
 
 export const USER_ROUTES: Routes = [
   {
     path: '',
-    component: UserShellPageComponent,
+    component: UserPageComponent,
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'profile' },
       {
         path: 'profile',
         loadComponent: () =>
-          import('./pages/user-profile-page/user-profile-page').then(
-            (m) => m.UserProfilePageComponent
-          ),
+          import('./components/user-profile/user-profile.component').then((m) => m.UserProfileComponent),
       },
       {
         path: 'notifications',
         loadComponent: () =>
-          import('./pages/notifications-page/notifications-page').then(
-            (m) => m.NotificationsPageComponent
+          import('./components/user-notifications/user-notifications.component').then(
+            (m) => m.UserNotificationsComponent,
           ),
       },
       {
         path: 'general',
         loadComponent: settingsSectionLoader,
         data: { section: 'general' },
-      },
-      {
-        path: 'notification-preferences',
-        loadComponent: settingsSectionLoader,
-        data: { section: 'notifications' },
       },
       {
         path: 'privacy',

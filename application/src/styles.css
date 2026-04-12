@@ -15,6 +15,11 @@ body {
   font-family: Manrope, serif;
 }
 
+app-root {
+  display: block;
+  height: 100%;
+}
+
 button {
   cursor: pointer;
 }

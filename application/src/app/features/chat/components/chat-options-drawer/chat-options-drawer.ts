@@ -16,8 +16,22 @@ export class ChatOptionsDrawerComponent {
   readonly isOpenChange = output<boolean>();
   readonly panelTitle = input<string>('Opciones del chat');
 
+  /** Si hay id, el cuerpo muestra acciones de lista (sidebar); si no, el placeholder de sesión. */
+  readonly actionMenuChatId = input<string | null>(null);
+  readonly actionMenuChatTitle = input<string>('');
+
+  readonly menuAction = output<{ chatId: string; action: string }>();
+
   close(): void {
     this.isOpenChange.emit(false);
+  }
+
+  emitMenuAction(action: string): void {
+    const id = this.actionMenuChatId();
+    if (id) {
+      this.menuAction.emit({ chatId: id, action });
+    }
+    this.close();
   }
 
   @HostListener('document:keydown', ['$event'])
