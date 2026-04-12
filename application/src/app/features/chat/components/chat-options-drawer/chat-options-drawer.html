@@ -1,0 +1,64 @@
+<div
+  class="drawer-root"
+  [attr.aria-hidden]="!isOpen()"
+>
+  <button
+    type="button"
+    class="drawer-backdrop"
+    tabindex="-1"
+    aria-label="Cerrar panel"
+    (click)="close()"
+  ></button>
+
+  <aside
+    class="drawer-panel"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'chat-drawer-title'"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="drawer-panel__header">
+      <h2 id="chat-drawer-title" class="drawer-panel__title">{{ panelTitle() }}</h2>
+      <app-btn-icon
+        [icon]="'close'"
+        [style]="'transparent'"
+        [rounded]="'radius-circle'"
+        (click)="close()"
+      />
+    </header>
+
+    <div class="drawer-panel__body">
+      @if (actionMenuChatId()) {
+        <p class="drawer-panel__chat-name">{{ actionMenuChatTitle() }}</p>
+        <nav class="drawer-action-list" aria-label="Acciones del chat">
+          <button type="button" class="drawer-action-item" (click)="emitMenuAction('share')">
+            <i class="pi pi-share-alt drawer-action-item__icon" aria-hidden="true"></i>
+            <span class="drawer-action-item__label">Compartir</span>
+          </button>
+          <button type="button" class="drawer-action-item" (click)="emitMenuAction('rename')">
+            <i class="pi pi-pencil drawer-action-item__icon" aria-hidden="true"></i>
+            <span class="drawer-action-item__label">Cambiar el nombre</span>
+          </button>
+          <button type="button" class="drawer-action-item" (click)="emitMenuAction('archive')">
+            <i class="pi pi-inbox drawer-action-item__icon" aria-hidden="true"></i>
+            <span class="drawer-action-item__label">Archivar</span>
+          </button>
+          <button type="button" class="drawer-action-item drawer-action-item--danger" (click)="emitMenuAction('delete')">
+            <i class="pi pi-trash drawer-action-item__icon" aria-hidden="true"></i>
+            <span class="drawer-action-item__label">Eliminar</span>
+          </button>
+        </nav>
+      } @else {
+        <p class="drawer-panel__intro">
+          Opciones del chat (placeholder). Aquí irán acciones reales cuando conectes el backend.
+        </p>
+        <ul class="drawer-panel__options">
+          <li><button type="button" class="drawer-option">Renombrar conversación</button></li>
+          <li><button type="button" class="drawer-option">Archivar</button></li>
+          <li><button type="button" class="drawer-option">Buscar en el chat</button></li>
+          <li><button type="button" class="drawer-option">Detalles del chat</button></li>
+        </ul>
+      }
+    </div>
+  </aside>
+</div>

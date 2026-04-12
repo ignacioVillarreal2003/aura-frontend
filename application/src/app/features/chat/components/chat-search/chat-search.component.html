@@ -1,0 +1,66 @@
+<section class="chats-panel" aria-label="Lista de chats">
+  <header class="chats-panel-header">
+    <h2 class="chats-panel-title">Chats</h2>
+  </header>
+
+  <div class="search-input-container">
+    <div class="search-input">
+      <i class="pi pi-search search-icon"></i>
+      <input
+        type="text"
+        placeholder="Buscar chats..."
+        [(ngModel)]="searchQuery"
+        class="search-field"
+      />
+    </div>
+  </div>
+
+  <a class="chat-home-nav-button" [routerLink]="['/main-container', 'chat-home']">
+    <i class="pi pi-pencil"></i>
+    <span>Nuevo chat</span>
+  </a>
+
+  <div class="chat-history">
+    @if (groupedChats.hoy.length > 0) {
+      <div class="chat-section">
+        <h3 class="section-title">Hoy</h3>
+        <div class="chat-list">
+          @for (chat of groupedChats.hoy; track chat.id) {
+            <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </a>
+          }
+        </div>
+      </div>
+    }
+
+    @if (groupedChats.ayer.length > 0) {
+      <div class="chat-section">
+        <h3 class="section-title">Ayer</h3>
+        <div class="chat-list">
+          @for (chat of groupedChats.ayer; track chat.id) {
+            <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </a>
+          }
+        </div>
+      </div>
+    }
+
+    @if (groupedChats.semana.length > 0) {
+      <div class="chat-section">
+        <h3 class="section-title">7 días anteriores</h3>
+        <div class="chat-list">
+          @for (chat of groupedChats.semana; track chat.id) {
+            <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
+              <i class="pi pi-comments chat-icon"></i>
+              <span class="chat-title">{{ chat.title }}</span>
+            </a>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</section>

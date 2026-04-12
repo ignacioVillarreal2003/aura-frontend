@@ -1,0 +1,36 @@
+<div class="user-flex">
+  <aside class="user-nav" aria-label="Cuenta y preferencias">
+    <a routerLink="/main-container" class="user-nav__back">
+      <i class="pi pi-arrow-left" aria-hidden="true"></i>
+      <span>Volver al chat</span>
+    </a>
+
+    <nav class="user-nav__links">
+      @for (item of areaNavLinks; track item.path) {
+        <a
+          [routerLink]="['/user', item.path]"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="user-nav__link">
+          <i [class]="item.icon" aria-hidden="true"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <button type="button" class="user-nav__logout" (click)="openLogoutModal()">
+      <i class="pi pi-sign-out" aria-hidden="true"></i>
+      <span>Cerrar sesión</span>
+    </button>
+  </aside>
+
+  <main class="user-content">
+    <div class="user-main-outlet">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  @if (showLogoutModal()) {
+    <app-user-logout-modal (close)="onCloseLogoutModal()" (confirm)="onConfirmLogout()"></app-user-logout-modal>
+  }
+</div>

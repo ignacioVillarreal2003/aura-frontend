@@ -1,0 +1,204 @@
+<div class="user-settings-container">
+  @switch (section()) {
+    @case ('general') {
+      <header class="user-settings-header">
+        <h1 class="user-settings-title">
+          <i class="pi pi-cog" aria-hidden="true"></i>
+          General
+        </h1>
+      </header>
+      <div class="user-settings-body">
+        <div class="general-section">
+          <div class="input-group">
+            <label class="input-label" for="user-theme">Tema</label>
+            <select
+              id="user-theme"
+              class="select-field"
+              [value]="store.settings().theme"
+              (change)="onThemeChange($any($event.target).value)">
+              @for (option of store.themeOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+    }
+    @case ('privacy') {
+      <header class="user-settings-header">
+        <h1 class="user-settings-title">
+          <i class="pi pi-shield" aria-hidden="true"></i>
+          Privacidad
+        </h1>
+      </header>
+      <div class="user-settings-body">
+        <p class="section-lead">
+          Visibilidad del perfil y mensajes. Las preferencias de notificación están en
+          <a routerLink="/user/notifications" class="section-lead__link">Notificaciones</a>.
+        </p>
+
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <span class="toggle-label">Permitir mensajes directos</span>
+            <span class="toggle-description">Recibir mensajes de usuarios no contactados</span>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="store.settings().privacy.allowDirectMessages"
+              (change)="store.setAllowDirectMessages($any($event.target).checked)" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <span class="toggle-label">Mostrar email públicamente</span>
+            <span class="toggle-description">Otros usuarios pueden ver tu correo en el perfil</span>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="store.settings().privacy.showEmail"
+              (change)="store.setShowEmailPublic($any($event.target).checked)" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <span class="toggle-label">Mostrar teléfono públicamente</span>
+            <span class="toggle-description">Tu número visible en el perfil</span>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="store.settings().privacy.showPhone"
+              (change)="store.setShowPhonePublic($any($event.target).checked)" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <span class="toggle-label">Mostrar ubicación públicamente</span>
+            <span class="toggle-description">Tu ubicación en el perfil</span>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="store.settings().privacy.showLocation"
+              (change)="store.setShowLocationPublic($any($event.target).checked)" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    }
+    @case ('security') {
+      <header class="user-settings-header">
+        <h1 class="user-settings-title">
+          <i class="pi pi-lock" aria-hidden="true"></i>
+          Seguridad
+        </h1>
+      </header>
+      <div class="user-settings-body">
+        <div class="password-section">
+          <div class="input-group">
+            <label class="input-label">Contraseña actual</label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="store.showPasswords().current ? 'text' : 'password'"
+                class="input-field"
+                placeholder="Ingresa tu contraseña actual"
+                [value]="store.passwordFields().current"
+                (input)="store.setPasswordField('current', $any($event.target).value)" />
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="store.togglePasswordVisibility('current')">
+                <i [class]="store.showPasswords().current ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Nueva contraseña</label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="store.showPasswords().new ? 'text' : 'password'"
+                class="input-field"
+                placeholder="Ingresa tu nueva contraseña"
+                [value]="store.passwordFields().new"
+                (input)="store.setPasswordField('new', $any($event.target).value)" />
+              <button type="button" class="password-toggle" (click)="store.togglePasswordVisibility('new')">
+                <i [class]="store.showPasswords().new ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Confirmar nueva contraseña</label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="store.showPasswords().confirm ? 'text' : 'password'"
+                class="input-field"
+                placeholder="Confirma tu nueva contraseña"
+                [value]="store.passwordFields().confirm"
+                (input)="store.setPasswordField('confirm', $any($event.target).value)" />
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="store.togglePasswordVisibility('confirm')">
+                <i [class]="store.showPasswords().confirm ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="change-password-btn" (click)="store.onPasswordChange()">
+            <i class="pi pi-key"></i>
+            Cambiar contraseña
+          </button>
+        </div>
+      </div>
+    }
+    @case ('data-control') {
+      <header class="user-settings-header">
+        <h1 class="user-settings-title">
+          <i class="pi pi-database" aria-hidden="true"></i>
+          Control de datos
+        </h1>
+      </header>
+      <div class="user-settings-body">
+        <div class="data-control-section">
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Enlaces compartidos</span>
+            </div>
+            <button type="button" class="manage-btn">Administrar</button>
+          </div>
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Chats archivados</span>
+            </div>
+            <button type="button" class="manage-btn">Administrar</button>
+          </div>
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Archivar todos los chats</span>
+            </div>
+            <button type="button" class="danger-btn">Archivar todo</button>
+          </div>
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Eliminar todos los chats</span>
+            </div>
+            <button type="button" class="danger-btn">Eliminar todo</button>
+          </div>
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Exportar datos</span>
+            </div>
+            <button type="button" class="export-btn">Exportar</button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>
