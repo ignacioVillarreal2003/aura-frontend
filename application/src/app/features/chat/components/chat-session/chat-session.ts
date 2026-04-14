@@ -24,6 +24,7 @@ import {
 } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { ChatApiMessage, ChatDetail, ChatWsIncoming } from '@core/models/types/chat.types';
+import type { CreateDocumentResponse } from '@core/models/types/document.types';
 import { ChatService } from '@core/services/chat.service';
 import { AuraChatApiService } from '@core/services/aura-chat-api.service';
 import { ChatWebSocketService, type ChatSocketConnection } from '@core/services/chat-websocket.service';
@@ -33,11 +34,12 @@ import { DocumentProcessingHttpService } from '@core/services/http/document-proc
 import { normalizeMessageRow } from '@core/models/chat-mappers';
 import { ChatOptionsDrawerComponent } from '../chat-options-drawer/chat-options-drawer';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
+import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
 
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawerComponent],
+  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawerComponent, MarkdownPipe],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
 })
@@ -68,6 +70,10 @@ export class ChatSessionComponent implements OnDestroy {
   isTyping = signal(false);
   optionsOpen = signal(false);
   documentUploading = signal(false);
+  /** Overlay “soltá para subir” al arrastrar archivos sobre el chat. */
+  readonly docDropOverlayVisible = signal(false);
+  /** Documentos subidos en esta sesión (se muestran en el drawer). */
+  readonly sessionDocuments = signal<CreateDocumentResponse[]>([]);
 
   private deltaBuffer = '';
   private rafHandle: number | null = null;
@@ -93,6 +99,8 @@ export class ChatSessionComponent implements OnDestroy {
           this.isTyping.set(false);
 
           this.chatId = id;
+          this.docDropOverlayVisible.set(false);
+          this.sessionDocuments.set([]);
           this.loading = true;
           this.chat = null;
           this.messages.set([]);
@@ -136,15 +144,27 @@ export class ChatSessionComponent implements OnDestroy {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
+    this.uploadDocumentFromFile(file ?? null, false);
+  }
+
+  onDocumentFromDrawer(file: File): void {
+    this.uploadDocumentFromFile(file, true);
+  }
+
+  private uploadDocumentFromFile(file: File | null, closeDrawerOnSuccess: boolean): void {
     if (!file || !this.chatId || this.documentUploading()) return;
     this.documentUploading.set(true);
     this.documents
       .createDocument({ file, chat_id: this.chatId, prefer_docling: false })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
+        next: (res) => {
+          this.sessionDocuments.update((d) => [...d, res]);
           this.toast.show('Documento subido; se procesará en segundo plano.', 'success');
           this.documentUploading.set(false);
+          if (closeDrawerOnSuccess) {
+            this.optionsOpen.set(false);
+          }
         },
         error: () => {
           this.toast.show('Error al subir el documento.', 'error');
@@ -153,23 +173,70 @@ export class ChatSessionComponent implements OnDestroy {
       });
   }
 
-  onDocumentFromDrawer(file: File): void {
-    if (!this.chatId || this.documentUploading()) return;
-    this.documentUploading.set(true);
-    this.documents
-      .createDocument({ file, chat_id: this.chatId, prefer_docling: false })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
+  private hasFileDrag(dataTransfer: DataTransfer | null): boolean {
+    if (!dataTransfer) return false;
+    if (dataTransfer.types.includes('Files')) return true;
+    return Array.from(dataTransfer.items ?? []).some((i) => i.kind === 'file');
+  }
+
+  onChatDragEnter(event: DragEvent): void {
+    if (!this.chat || !this.chatId || this.documentUploading()) return;
+    if (!this.hasFileDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    this.docDropOverlayVisible.set(true);
+  }
+
+  onChatDragLeave(event: DragEvent): void {
+    const root = event.currentTarget as HTMLElement;
+    const next = event.relatedTarget as Node | null;
+    if (next && root.contains(next)) return;
+    this.docDropOverlayVisible.set(false);
+  }
+
+  onChatDragOver(event: DragEvent): void {
+    if (!this.hasFileDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    event.dataTransfer!.dropEffect = 'copy';
+  }
+
+  onChatFileDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.docDropOverlayVisible.set(false);
+    const file = event.dataTransfer?.files?.[0];
+    this.uploadDocumentFromFile(file ?? null, false);
+  }
+
+  onDocDropOverlayLeave(event: DragEvent): void {
+    const el = event.currentTarget as HTMLElement;
+    const next = event.relatedTarget as Node | null;
+    if (next && el.contains(next)) return;
+    this.docDropOverlayVisible.set(false);
+  }
+
+  onDrawerChatAction(e: { chatId: number; action: string }): void {
+    if (e.action === 'delete') {
+      if (!window.confirm('¿Eliminar esta conversación?')) return;
+      this.api.deleteChat(e.chatId).subscribe({
         next: () => {
-          this.toast.show('Documento subido; se procesará en segundo plano.', 'success');
-          this.documentUploading.set(false);
+          this.toast.show('Chat eliminado.', 'success');
           this.optionsOpen.set(false);
+          void this.router.navigate(['/main-container', 'chat-home']);
         },
-        error: () => {
-          this.toast.show('Error al subir el documento.', 'error');
-          this.documentUploading.set(false);
-        },
+        error: () => this.toast.show('No se pudo eliminar el chat.', 'error'),
       });
+      return;
+    }
+    if (e.action === 'leave') {
+      void this.router.navigate(['/main-container', 'chats']);
+      return;
+    }
+  }
+
+  onChatMetaUpdated(e: { chatId: number; name: string }): void {
+    if (this.chat && this.chat.id === e.chatId) {
+      this.chat = { ...this.chat, name: e.name };
+      this.chatShell.setCurrentChat(this.chat);
+    }
   }
 
   ngOnDestroy(): void {
@@ -256,6 +323,45 @@ export class ChatSessionComponent implements OnDestroy {
       event.preventDefault();
       this.sendMessage();
     }
+  }
+
+  userBubbleInitials(message: ChatApiMessage): string {
+    const sessionName = this.chatShell.sessionViewerDisplayName();
+    const sessionMemberId = this.chatShell.sessionViewerMemberId();
+    if (message.created_by != null && sessionMemberId != null && message.created_by === sessionMemberId) {
+      return this.initialsFromDisplayName(sessionName);
+    }
+    if (sessionName && this.chat && message.created_by != null && message.created_by === this.chat.created_by) {
+      return this.initialsFromDisplayName(sessionName);
+    }
+    return this.initialsFromUserId(message.created_by);
+  }
+
+  userBubbleTitle(message: ChatApiMessage): string {
+    const sessionName = this.chatShell.sessionViewerDisplayName();
+    const sessionMemberId = this.chatShell.sessionViewerMemberId();
+    if (message.created_by != null && sessionMemberId != null && message.created_by === sessionMemberId) {
+      return sessionName ? `${sessionName} · vos` : `Usuario · id ${message.created_by}`;
+    }
+    if (sessionName && this.chat && message.created_by != null && message.created_by === this.chat.created_by) {
+      return `${sessionName} · creador del chat`;
+    }
+    return message.created_by != null ? `Participante · id ${message.created_by}` : 'Usuario';
+  }
+
+  private initialsFromDisplayName(raw: string): string {
+    const parts = raw.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  }
+
+  private initialsFromUserId(id: number | null): string {
+    if (id == null) return '?';
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const a = alphabet[id % alphabet.length];
+    const b = alphabet[(id * 17) % alphabet.length];
+    return `${a}${b}`;
   }
 
   formatTime(iso: string): string {

@@ -5,6 +5,13 @@
       <p>Cargando chat...</p>
     </div>
   } @else if (chat) {
+    <div
+      class="chat-session-drop-root"
+      (dragenter)="onChatDragEnter($event)"
+      (dragleave)="onChatDragLeave($event)"
+      (dragover)="onChatDragOver($event)"
+      (drop)="onChatFileDrop($event)"
+    >
     <div class="chat-header">
       <div class="header-left">
         <div class="chat-avatar">
@@ -27,9 +34,13 @@
     <app-chat-options-drawer
       [isOpen]="optionsOpen()"
       (isOpenChange)="optionsOpen.set($event)"
-      [showDocumentUpload]="true"
+      [contextChatId]="chat.id"
+      [contextChatTitle]="chat.name"
+      [attachedDocuments]="sessionDocuments()"
       [uploadDisabled]="documentUploading() || !chat"
       (documentSelected)="onDocumentFromDrawer($event)"
+      (chatAction)="onDrawerChatAction($event)"
+      (chatMetaUpdated)="onChatMetaUpdated($event)"
     />
 
     <div class="messages-container">
@@ -50,9 +61,18 @@
                   <i class="pi pi-sparkles"></i>
                 </div>
               }
+              @if (message.sender_type === 'user') {
+                <div
+                  class="message-avatar user-message-avatar"
+                  [attr.title]="userBubbleTitle(message)"
+                  [attr.aria-label]="userBubbleTitle(message)"
+                >
+                  <span class="user-message-avatar__text" aria-hidden="true">{{ userBubbleInitials(message) }}</span>
+                </div>
+              }
               <div class="message-content">
                 <div class="message-bubble">
-                  <p class="message-text">{{ message.message }}</p>
+                  <div class="message-text message-text--md" [innerHTML]="message.message | markdown"></div>
                   <span class="message-time">{{ formatTime(message.created_at) }}</span>
                 </div>
               </div>
@@ -122,6 +142,24 @@
           </div>
         </div>
       </div>
+    </div>
+
+    @if (docDropOverlayVisible()) {
+      <div
+        class="chat-doc-drop-overlay"
+        role="region"
+        aria-label="Zona para soltar el documento"
+        (dragover)="onChatDragOver($event)"
+        (drop)="onChatFileDrop($event)"
+        (dragleave)="onDocDropOverlayLeave($event)"
+      >
+        <div class="chat-doc-drop-overlay__card">
+          <i class="pi pi-cloud-upload chat-doc-drop-overlay__icon" aria-hidden="true"></i>
+          <p class="chat-doc-drop-overlay__title">Soltá para subir el documento</p>
+          <p class="chat-doc-drop-overlay__hint">Se asociará a este chat y se procesará en segundo plano.</p>
+        </div>
+      </div>
+    }
     </div>
   }
 </div>

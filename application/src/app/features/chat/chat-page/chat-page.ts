@@ -47,6 +47,10 @@ export class ChatPageComponent {
       this.activeId.set('chats');
       return;
     }
+    if (url.includes('/main-container/herramientas')) {
+      this.activeId.set('herramientas');
+      return;
+    }
     if (url.includes('/main-container/chat-home')) {
       this.activeId.set('chat-home');
       return;

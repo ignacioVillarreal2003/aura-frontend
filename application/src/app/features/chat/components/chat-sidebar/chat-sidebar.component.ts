@@ -1,10 +1,22 @@
-import { Component, EventEmitter, Input, Output, signal, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { ChatOptionsDrawerComponent } from '../chat-options-drawer/chat-options-drawer';
 import { AuraChatApiService } from '@core/services/aura-chat-api.service';
+import { ChatService } from '@core/services/chat.service';
 import { ToastService } from '@core/components/toast-service';
 
 type ChatRow = { id: string; title: string };
@@ -16,16 +28,19 @@ type ChatRow = { id: string; title: string };
   templateUrl: './chat-sidebar.component.html',
   styleUrls: ['./chat-sidebar.component.css'],
 })
-export class ChatSidebarComponent implements OnInit {
+export class ChatSidebarComponent implements OnInit, OnChanges {
   private readonly api = inject(AuraChatApiService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly chatShell = inject(ChatService);
 
   @Input() collapsed = false;
   @Input() activeId: string | null = null;
 
   @Input() userEmailInput = 'usuario@ejemplo.com';
   @Input() userNameInput = 'Emiliano Fau';
+  /** Opcional: `member_id` del usuario en el servicio de chat (alineación con `created_by` en mensajes). */
+  @Input() userMemberIdInput: number | null = null;
   @Input() userRolInput = 'Operador';
 
   @Output() toggle = new EventEmitter<boolean>();
@@ -37,8 +52,26 @@ export class ChatSidebarComponent implements OnInit {
   drawerChatId = signal<string | null>(null);
   drawerChatTitle = signal('');
 
+  readonly drawerContextChatId = computed(() => {
+    const s = this.drawerChatId();
+    if (!s) return null;
+    const n = Number.parseInt(s, 10);
+    return Number.isFinite(n) ? n : null;
+  });
+
   ngOnInit(): void {
+    this.pushSessionIdentity();
     this.reloadChats();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['userNameInput'] || changes['userMemberIdInput']) {
+      this.pushSessionIdentity();
+    }
+  }
+
+  private pushSessionIdentity(): void {
+    this.chatShell.setSessionIdentity(this.userNameInput ?? '', this.userMemberIdInput ?? null);
   }
 
   reloadChats(): void {
@@ -92,11 +125,14 @@ export class ChatSidebarComponent implements OnInit {
     }
   }
 
-  onDrawerMenuAction(data: { chatId: string; action: string }): void {
-    const id = Number.parseInt(data.chatId, 10);
-    if (!Number.isFinite(id)) {
-      return;
-    }
+  onDrawerChatMetaUpdated(_e: { chatId: number; name: string }): void {
+    this.reloadChats();
+  }
+
+  onDrawerChatAction(data: { chatId: number; action: string }): void {
+    const id = data.chatId;
+    if (!Number.isFinite(id)) return;
+
     if (data.action === 'delete') {
       if (!window.confirm('¿Eliminar esta conversación?')) {
         return;
@@ -106,7 +142,7 @@ export class ChatSidebarComponent implements OnInit {
           this.toast.show('Chat eliminado.', 'success');
           this.reloadChats();
           const url = this.router.url.split('?')[0];
-          if (url.includes(`/main-container/chat/${data.chatId}`)) {
+          if (url.includes(`/main-container/chat/${id}`)) {
             void this.router.navigate(['/main-container', 'chat-home']);
           }
         },
@@ -114,6 +150,16 @@ export class ChatSidebarComponent implements OnInit {
       });
       return;
     }
-    this.chatAction.emit(data);
+
+    if (data.action === 'leave') {
+      this.reloadChats();
+      const url = this.router.url.split('?')[0];
+      if (url.includes(`/main-container/chat/${id}`)) {
+        void this.router.navigate(['/main-container', 'chat-home']);
+      }
+      return;
+    }
+
+    this.chatAction.emit({ chatId: String(id), action: data.action });
   }
 }

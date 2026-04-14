@@ -28,6 +28,12 @@ import {
   normalizeMessageRow,
   sortMessagesChronological,
 } from '@core/models/chat-mappers';
+import {
+  devMockCreateMessage$,
+  devMockGetChat$,
+  devMockListMessages$,
+  devMockListMyChats$,
+} from './chat-http.list-chats.dev-mock';
 
 export type ListChatsQuery = {
   url?: string;
@@ -60,6 +66,10 @@ export class ChatHttpService {
   }
 
   listMyChats(query: ListChatsQuery = {}): Observable<PaginatedChatsResponse> {
+    // DEV-MOCK-CHATS: quitar mock (import + bloques if en este archivo; borrar `chat-http.list-chats.dev-mock.ts`).
+    const mock$ = devMockListMyChats$(query);
+    if (mock$) return mock$;
+
     if (query.url) {
       return this.http.get<DrfNumberedPage<ChatListApiRow>>(query.url).pipe(map(mapDrfNumberedPageToChats));
     }
@@ -84,6 +94,9 @@ export class ChatHttpService {
   }
 
   getChat(chatId: number): Observable<ChatDetail> {
+    const mock$ = devMockGetChat$(chatId);
+    if (mock$) return mock$;
+
     return this.http
       .get<ChatDetailApiRow>(`${this.base}/chats/${chatId}/`)
       .pipe(map(mapChatDetailApiToDetail));
@@ -100,6 +113,9 @@ export class ChatHttpService {
   }
 
   listMessages(chatId: number, query: ListMessagesQuery = {}): Observable<PaginatedMessagesResponse> {
+    const mock$ = devMockListMessages$(chatId, query);
+    if (mock$) return mock$;
+
     if (query.url) {
       return this.http
         .get<DrfCursorPage<ChatApiMessage>>(query.url)
@@ -141,6 +157,9 @@ export class ChatHttpService {
   }
 
   createMessage(chatId: number, body: CreateMessageRequest): Observable<SendMessageResponse> {
+    const mock$ = devMockCreateMessage$(chatId, body);
+    if (mock$) return mock$;
+
     return this.http.post<SendMessageResponse>(`${this.base}/chats/${chatId}/messages/`, body);
   }
 
