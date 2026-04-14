@@ -1,8 +1,27 @@
-import { Component, OnInit, signal, inject, OnDestroy, DestroyRef, ElementRef, viewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  ElementRef,
+  NgZone,
+  OnDestroy,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import {
+  Subscription,
+  catchError,
+  distinctUntilChanged,
+  EMPTY,
+  forkJoin,
+  map,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { ChatApiMessage, ChatDetail, ChatWsIncoming } from '@core/models/types/chat.types';
 import { ChatService } from '@core/services/chat.service';
@@ -22,7 +41,7 @@ import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
 })
-export class ChatSessionComponent implements OnInit, OnDestroy {
+export class ChatSessionComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly chatShell = inject(ChatService);
@@ -32,10 +51,15 @@ export class ChatSessionComponent implements OnInit, OnDestroy {
   private readonly toast = inject(ToastService);
   private readonly documents = inject(DocumentProcessingHttpService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   private chatId: number | null = null;
   private socket: ChatSocketConnection | null = null;
-  private streamingAssistantId: number | null = null;
+  private wsMessagesSub: Subscription | undefined;
+
+  /** Negative temp id while assistant message streams in over WebSocket. */
+  readonly streamingAssistantId = signal<number | null>(null);
 
   chat: ChatDetail | null = null;
   messages = signal<ChatApiMessage[]>([]);
@@ -45,7 +69,60 @@ export class ChatSessionComponent implements OnInit, OnDestroy {
   optionsOpen = signal(false);
   documentUploading = signal(false);
 
+  private deltaBuffer = '';
+  private rafHandle: number | null = null;
+  private pendingDeltaChatId: number | null = null;
+
   private readonly messageBox = viewChild<ElementRef<HTMLTextAreaElement>>('messageBox');
+
+  constructor() {
+    this.route.paramMap
+      .pipe(
+        map((pm) => pm.get('id')),
+        map((raw) => (raw != null ? Number.parseInt(raw, 10) : Number.NaN)),
+        distinctUntilChanged(),
+        switchMap((id) => {
+          if (!Number.isFinite(id) || id < 1) {
+            void this.router.navigate(['/main-container', 'chat-home']);
+            return EMPTY;
+          }
+
+          this.teardownSocket();
+          this.clearDeltaScheduling();
+          this.streamingAssistantId.set(null);
+          this.isTyping.set(false);
+
+          this.chatId = id;
+          this.loading = true;
+          this.chat = null;
+          this.messages.set([]);
+
+          const pending = this.consumePendingMessageFromHistory();
+
+          return forkJoin({
+            detail: this.api.getChat(id),
+            messages: this.api.listAllMessagesChronological(id),
+          }).pipe(
+            catchError(() => {
+              this.toast.show('No se pudo cargar el chat.', 'error');
+              void this.router.navigate(['/main-container', 'chats']);
+              return EMPTY;
+            }),
+            tap(({ detail, messages: msgs }) => {
+              this.chat = detail;
+              this.chatShell.setCurrentChat(detail);
+              this.messages.set(msgs);
+              this.loading = false;
+              void this.openWebSocketAfterLoad(id, pending);
+              setTimeout(() => this.scrollToBottom(), 100);
+              queueMicrotask(() => this.autosizeTextarea());
+            }),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe();
+  }
 
   toggleOptions(): void {
     this.optionsOpen.update((v) => !v);
@@ -95,55 +172,18 @@ export class ChatSessionComponent implements OnInit, OnDestroy {
       });
   }
 
-  ngOnInit(): void {
-    const raw = this.route.snapshot.paramMap.get('id');
-    const id = raw != null ? Number.parseInt(raw, 10) : Number.NaN;
-    if (!Number.isFinite(id) || id < 1) {
-      void this.router.navigate(['/main-container', 'chat-home']);
-      return;
-    }
-    this.chatId = id;
-
-    const navState = history.state as { pendingMessage?: string } | null;
-    const pending = navState?.pendingMessage?.trim();
-    if (navState && 'pendingMessage' in navState) {
-      const { pendingMessage: _p, ...rest } = navState;
-      history.replaceState(rest, '');
-    }
-
-    forkJoin({
-      detail: this.api.getChat(id),
-      messages: this.api.listAllMessagesChronological(id),
-    })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: ({ detail, messages: msgs }) => {
-          this.chat = detail;
-          this.chatShell.setCurrentChat(detail);
-          this.messages.set(msgs);
-          this.loading = false;
-          setTimeout(() => this.scrollToBottom(), 100);
-          queueMicrotask(() => this.autosizeTextarea());
-          this.openWebSocketIfPossible();
-          if (pending?.trim()) {
-            setTimeout(() => this.flushPendingMessage(pending.trim()), 250);
-          }
-        },
-        error: () => {
-          this.toast.show('No se pudo cargar el chat.', 'error');
-          void this.router.navigate(['/main-container', 'chats']);
-        },
-      });
-  }
-
   ngOnDestroy(): void {
-    this.socket?.close();
-    this.socket = null;
+    this.teardownSocket();
+    this.clearDeltaScheduling();
     this.chatShell.setCurrentChat(null);
   }
 
+  sendBlocked(): boolean {
+    return this.isTyping() || this.streamingAssistantId() !== null;
+  }
+
   sendMessage(): void {
-    if (!this.newMessage.trim() || !this.chat || this.isTyping()) return;
+    if (!this.newMessage.trim() || !this.chat || this.sendBlocked()) return;
 
     const text = this.newMessage.trim();
     this.newMessage = '';
@@ -225,19 +265,65 @@ export class ChatSessionComponent implements OnInit, OnDestroy {
     return `${hours}:${minutes}`;
   }
 
-  private openWebSocketIfPossible(): void {
-    if (!this.chatId) return;
-    const conn = this.wsFactory.open(this.chatId, this.auth.getToken());
-    if (!conn) return;
-    this.socket = conn;
-    conn.messages$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (msg) => this.handleWsMessage(msg),
-    });
+  private consumePendingMessageFromHistory(): string | undefined {
+    const navState = history.state as { pendingMessage?: string } | null;
+    const pending = navState?.pendingMessage?.trim();
+    if (navState && 'pendingMessage' in navState) {
+      const { pendingMessage: _p, ...rest } = navState;
+      history.replaceState(rest, '');
+    }
+    return pending?.trim() || undefined;
   }
 
-  private flushPendingMessage(text: string): void {
-    if (!text || !this.socket) return;
-    this.socket.sendUserMessage(text);
+  private async openWebSocketAfterLoad(expectedChatId: number, pending?: string): Promise<void> {
+    if (this.chatId !== expectedChatId) return;
+    const conn = this.wsFactory.open(expectedChatId, this.auth.getToken());
+    if (!conn) {
+      if (pending) {
+        this.toast.show('No hay conexión en tiempo real; enviá de nuevo el mensaje.', 'error');
+      }
+      return;
+    }
+    this.socket = conn;
+    this.wsMessagesSub = conn.messages$.subscribe({
+      next: (msg) => this.handleWsMessage(msg),
+      complete: () => this.onWebSocketMessagesComplete(),
+    });
+
+    try {
+      await conn.whenOpen;
+    } catch {
+      if (this.chatId !== expectedChatId) {
+        return;
+      }
+      if (pending?.trim()) {
+        this.toast.show('No se pudo conectar el chat en tiempo real. Probá enviar de nuevo.', 'error');
+      }
+      return;
+    }
+
+    if (this.chatId !== expectedChatId) {
+      conn.close();
+      return;
+    }
+
+    if (pending?.trim()) {
+      conn.sendUserMessage(pending.trim());
+    }
+  }
+
+  private onWebSocketMessagesComplete(): void {
+    this.flushPendingDeltas();
+    this.streamingAssistantId.set(null);
+    this.isTyping.set(false);
+    this.cdr.markForCheck();
+  }
+
+  private teardownSocket(): void {
+    this.wsMessagesSub?.unsubscribe();
+    this.wsMessagesSub = undefined;
+    this.socket?.close();
+    this.socket = null;
   }
 
   private handleWsMessage(msg: ChatWsIncoming): void {
@@ -263,33 +349,14 @@ export class ChatSessionComponent implements OnInit, OnDestroy {
         break;
       case 'ai_delta': {
         const delta = msg.delta ?? '';
-        if (this.streamingAssistantId == null) {
-          const tempId = -Date.now();
-          this.streamingAssistantId = tempId;
-          this.messages.update((list) => [
-            ...list,
-            {
-              id: tempId,
-              chat_id: cid,
-              message: delta,
-              sender_type: 'system',
-              created_by: null,
-              created_at: new Date().toISOString(),
-              deleted_at: null,
-            },
-          ]);
-        } else {
-          const sid = this.streamingAssistantId;
-          this.messages.update((list) =>
-            list.map((m) => (m.id === sid ? { ...m, message: m.message + delta } : m))
-          );
-        }
-        setTimeout(() => this.scrollToBottom(), 30);
+        this.isTyping.set(false);
+        this.scheduleDeltaApply(cid, delta);
         break;
       }
       case 'ai_complete': {
+        this.flushPendingDeltas();
         const text = msg.answer || msg.message || '';
-        const sid = this.streamingAssistantId;
+        const sid = this.streamingAssistantId();
         if (sid != null && msg.id != null) {
           this.messages.update((list) =>
             list.map((m) =>
@@ -324,22 +391,99 @@ export class ChatSessionComponent implements OnInit, OnDestroy {
             },
           ]);
         }
-        this.streamingAssistantId = null;
+        this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         setTimeout(() => this.scrollToBottom(), 50);
+        this.cdr.markForCheck();
         break;
       }
       case 'ai_error':
-        this.streamingAssistantId = null;
+        this.flushPendingDeltas();
+        this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.toast.show(msg.detail, 'error');
+        this.cdr.markForCheck();
         break;
       case 'error':
+        this.flushPendingDeltas();
+        this.streamingAssistantId.set(null);
+        this.isTyping.set(false);
         this.toast.show(msg.detail, 'error');
+        this.cdr.markForCheck();
         break;
       default:
         break;
     }
+  }
+
+  private clearDeltaScheduling(): void {
+    if (this.rafHandle != null) {
+      cancelAnimationFrame(this.rafHandle);
+      this.rafHandle = null;
+    }
+    this.deltaBuffer = '';
+    this.pendingDeltaChatId = null;
+  }
+
+  private flushPendingDeltas(): void {
+    if (this.rafHandle != null) {
+      cancelAnimationFrame(this.rafHandle);
+      this.rafHandle = null;
+    }
+    const buf = this.deltaBuffer;
+    this.deltaBuffer = '';
+    const cid = this.pendingDeltaChatId ?? this.chatId;
+    if (!buf || cid == null) {
+      this.pendingDeltaChatId = null;
+      return;
+    }
+    this.ngZone.run(() => {
+      this.applyDeltaChunk(cid, buf);
+      this.cdr.markForCheck();
+    });
+    this.pendingDeltaChatId = null;
+  }
+
+  private scheduleDeltaApply(chatId: number, delta: string): void {
+    this.pendingDeltaChatId = chatId;
+    this.deltaBuffer += delta;
+    if (this.rafHandle != null) return;
+    this.rafHandle = requestAnimationFrame(() => {
+      this.rafHandle = null;
+      const buf = this.deltaBuffer;
+      this.deltaBuffer = '';
+      const cid = this.pendingDeltaChatId ?? this.chatId;
+      if (!buf || cid == null) return;
+      this.ngZone.run(() => {
+        this.applyDeltaChunk(cid, buf);
+        this.cdr.markForCheck();
+      });
+    });
+  }
+
+  private applyDeltaChunk(cid: number, chunk: string): void {
+    if (this.streamingAssistantId() == null) {
+      const tempId = -Date.now();
+      this.streamingAssistantId.set(tempId);
+      this.messages.update((list) => [
+        ...list,
+        {
+          id: tempId,
+          chat_id: cid,
+          message: chunk,
+          sender_type: 'system',
+          created_by: null,
+          created_at: new Date().toISOString(),
+          deleted_at: null,
+        },
+      ]);
+    } else {
+      const sid = this.streamingAssistantId()!;
+      this.messages.update((list) =>
+        list.map((m) => (m.id === sid ? { ...m, message: m.message + chunk } : m))
+      );
+    }
+    setTimeout(() => this.scrollToBottom(), 0);
   }
 
   private scrollToBottom(): void {

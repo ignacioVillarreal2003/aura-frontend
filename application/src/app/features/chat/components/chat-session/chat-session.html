@@ -58,7 +58,7 @@
               </div>
             </div>
           }
-          @if (isTyping()) {
+          @if (isTyping() && streamingAssistantId() === null) {
             <div class="message assistant-message">
               <div class="message-avatar assistant-avatar">
                 <i class="pi pi-sparkles"></i>
@@ -115,7 +115,7 @@
               type="button"
               class="send-button"
               aria-label="Enviar mensaje"
-              [disabled]="!newMessage.trim() || isTyping()"
+              [disabled]="!newMessage.trim() || sendBlocked()"
               (click)="sendMessage()">
               <i class="pi pi-send" aria-hidden="true"></i>
             </button>
