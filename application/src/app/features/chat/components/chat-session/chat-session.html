@@ -34,8 +34,7 @@
     <app-chat-options-drawer
       [isOpen]="optionsOpen()"
       (isOpenChange)="optionsOpen.set($event)"
-      [contextChatId]="chat.id"
-      [contextChatTitle]="chat.name"
+      [contextChat]="{ id: chat.id, name: chat.name }"
       [attachedDocuments]="sessionDocuments()"
       [uploadDisabled]="documentUploading() || !chat"
       (documentSelected)="onDocumentFromDrawer($event)"

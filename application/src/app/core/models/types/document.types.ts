@@ -28,7 +28,7 @@ export interface CreateDocumentResponse {
   created_at: string;
 }
 
-export interface DocumentResponse {
+export interface Document {
   id: number;
   chat_id: number | null;
   name: string;
@@ -54,8 +54,10 @@ export interface DocumentResponse {
   deleted_at: string | null;
 }
 
+export type DocumentResponse = Document;
+
 export interface DocumentListResponse {
-  documents: DocumentResponse[];
+  documents: Document[];
 }
 
 

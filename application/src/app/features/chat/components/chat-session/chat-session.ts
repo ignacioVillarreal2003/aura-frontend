@@ -32,14 +32,14 @@ import { AuthenticationService } from '@core/services/authentication/authenticat
 import { ToastService } from '@core/components/toast-service';
 import { DocumentProcessingHttpService } from '@core/services/http/document-processing-http.service';
 import { normalizeMessageRow } from '@core/models/chat-mappers';
-import { ChatOptionsDrawerComponent } from '../chat-options-drawer/chat-options-drawer';
+import { ChatOptionsDrawer } from '../chat-options-drawer/chat-options-drawer';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
 
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawerComponent, MarkdownPipe],
+  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
 })

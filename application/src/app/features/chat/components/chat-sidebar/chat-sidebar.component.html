@@ -6,14 +6,14 @@
   <header class="sidebar-header">
     <div class="sidebar-header__toggle">
       <div class="sidebar-header__toggle-inner">
-        <app-btn-icon
-          size="small"
-          [style]="'transparent'"
-          rounded="radius-normal"
-          [icon]="isOpen() ? 'chevron_left' : 'chevron_right'"
+        <button
+          type="button"
+          class="sidebar-header__toggle-btn"
           [attr.aria-label]="isOpen() ? 'Cerrar sidebar' : 'Abrir sidebar'"
           (click)="onOpenClose()"
-        ></app-btn-icon>
+        >
+          <i class="pi" [ngClass]="isOpen() ? 'pi-chevron-left' : 'pi-chevron-right'" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
   </header>
@@ -43,8 +43,8 @@
       <button
         type="button"
         class="sidebar-link"
-        [class.is-active]="activeId === 'herramientas'"
-        [routerLink]="['/main-container', 'herramientas']">
+        [class.is-active]="activeId === 'tools'"
+        [routerLink]="['/main-container', 'tools']">
         <i class="pi pi-wrench" aria-hidden="true"></i>
         <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Herramientas</span>
       </button>
@@ -63,19 +63,19 @@
                     <div
                       class="sidebar-chat-item"
                       role="listitem"
-                      [class.menu-open]="drawerChatId() === c.id">
+                      [class.menu-open]="drawerContextChat()?.id === c.id">
                       <button
                         type="button"
                         class="sidebar-link sidebar-link--chat"
-                        [class.is-active]="activeId === c.id"
+                        [class.is-active]="activeId === '' + c.id"
                         [routerLink]="['/main-container', 'chat', c.id]">
                         <i class="pi pi-comments" aria-hidden="true"></i>
-                        <span class="sidebar-link__text">{{ c.title }}</span>
+                        <span class="sidebar-link__text">{{ c.name }}</span>
                       </button>
                       <button
                         type="button"
                         class="sidebar-link-more"
-                        [attr.aria-label]="'Opciones del chat ' + c.title"
+                        [attr.aria-label]="'Opciones del chat ' + c.name"
                         (click)="onChatOptionsClick($event, c.id)">
                         <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
                       </button>
@@ -99,10 +99,9 @@
         class="sidebar-link"
         [class.is-active]="activeId === 'profile'"
         routerLink="/user">
-        <span class="avatar-fallback" aria-hidden="true">{{ userInitials() }}</span>
+        <span class="avatar-fallback" aria-hidden="true">{{ initials() }}</span>
         <span class="sidebar-link__stack sidebar-link__stack--collapsible" [attr.aria-hidden]="collapsed ? true : null">
-          <span class="user-email">{{ userName() }}</span>
-          <span class="user-meta">{{ userRol() }}</span>
+          <span class="user-email">{{ username() }}</span>
         </span>
       </button>
     </nav>
@@ -112,9 +111,7 @@
 <app-chat-options-drawer
   [isOpen]="chatActionsDrawerOpen()"
   (isOpenChange)="onChatActionsDrawerChange($event)"
-  [panelTitle]="'Opciones del chat'"
-  [contextChatId]="drawerContextChatId()"
-  [contextChatTitle]="drawerChatTitle()"
+  [contextChat]="drawerContextChat()"
   (chatAction)="onDrawerChatAction($event)"
-  (chatMetaUpdated)="onDrawerChatMetaUpdated($event)"
+  (chatMetaUpdated)="onChatUpdated($event)"
 />

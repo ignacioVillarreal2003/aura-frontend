@@ -22,7 +22,6 @@
   flex-direction: column;
 }
 
-/* El componente cargado en el outlet queda como hermano del router-outlet */
 .chat-main-outlet > router-outlet + * {
   flex: 1 1 auto;
   min-height: 0;

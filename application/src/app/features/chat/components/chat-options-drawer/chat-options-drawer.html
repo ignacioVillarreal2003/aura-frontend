@@ -35,18 +35,18 @@
       @if (contextChatId() == null) {
         <p class="drawer-panel__intro">No hay un chat seleccionado.</p>
       } @else {
-        @if (panelView() === 'root' && contextChatTitle()) {
+        @if (contextChatTitle()) {
           <p class="drawer-panel__chat-name">{{ contextChatTitle() }}</p>
         }
 
         @switch (panelView()) {
           @case ('root') {
             <nav class="drawer-sections" aria-label="Secciones del chat">
-              <button type="button" class="drawer-section-tile" (click)="openSub('documents')">
-                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-file"></i></span>
+              <button type="button" class="drawer-section-tile" (click)="openSub('chat')">
+                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-cog"></i></span>
                 <span class="drawer-section-tile__text">
-                  <span class="drawer-section-tile__title">Documentos</span>
-                  <span class="drawer-section-tile__hint">Archivos cargados y subida</span>
+                  <span class="drawer-section-tile__title">Gestionar chat</span>
+                  <span class="drawer-section-tile__hint">Acciones sobre esta conversación</span>
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
@@ -58,11 +58,11 @@
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
-              <button type="button" class="drawer-section-tile" (click)="openSub('chat')">
-                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-cog"></i></span>
+              <button type="button" class="drawer-section-tile" (click)="openSub('documents')">
+                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-file"></i></span>
                 <span class="drawer-section-tile__text">
-                  <span class="drawer-section-tile__title">Chat</span>
-                  <span class="drawer-section-tile__hint">Gestionar conversación</span>
+                  <span class="drawer-section-tile__title">Documentos</span>
+                  <span class="drawer-section-tile__hint">Archivos cargados y subida</span>
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>

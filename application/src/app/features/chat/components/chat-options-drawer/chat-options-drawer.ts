@@ -10,22 +10,16 @@ import {
   untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { catchError, of, take } from 'rxjs';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
-import { AuraChatApiService } from '@core/services/aura-chat-api.service';
+import { ChatHttpService } from '@core/services/http/chat-http.service';
 import { DocumentProcessingHttpService } from '@core/services/http/document-processing-http.service';
 import { ToastService } from '@core/components/toast-service';
-import type { CreateDocumentResponse, DocumentResponse } from '@core/models/types/document.types';
-import type { ChatMembershipRow } from '@core/models/types/chat.types';
+import type { CreateDocumentResponse, Document } from '@core/models/types/document.types';
+import type { Chat, ChatMembership } from '@core/models/types/chat.types';
 
 type PanelView = 'root' | 'documents' | 'participants' | 'chat';
-
-type DocListItem = {
-  id: number;
-  name: string;
-  status: string;
-  created_at: string;
-};
 
 @Component({
   selector: 'app-chat-options-drawer',
@@ -37,20 +31,18 @@ type DocListItem = {
     '[class.open]': 'isOpen()',
   },
 })
-export class ChatOptionsDrawerComponent {
-  private readonly api = inject(AuraChatApiService);
-  private readonly documentsHttp = inject(DocumentProcessingHttpService);
-  private readonly toast = inject(ToastService);
+export class ChatOptionsDrawer {
+  private readonly chatHttpService = inject(ChatHttpService);
+  private readonly router = inject(Router);
+  private readonly documentProcessingHttpService = inject(DocumentProcessingHttpService);
+  private readonly toastService = inject(ToastService);
 
   readonly isOpen = input.required<boolean>();
   readonly isOpenChange = output<boolean>();
   readonly panelTitle = input<string>('Opciones del chat');
 
-  /** Chat activo (sesión o sidebar); si es null, el cuerpo muestra un aviso vacío. */
-  readonly contextChatId = input<number | null>(null);
-  readonly contextChatTitle = input<string>('');
+  readonly contextChat = input<Chat | null>(null);
 
-  /** Documentos subidos en esta sesión (p. ej. respuestas de `createDocument`). */
   readonly attachedDocuments = input<readonly CreateDocumentResponse[]>([]);
 
   readonly uploadDisabled = input(false);
@@ -60,31 +52,58 @@ export class ChatOptionsDrawerComponent {
   readonly chatMetaUpdated = output<{ chatId: number; name: string }>();
 
   readonly panelView = signal<PanelView>('root');
-  readonly members = signal<ChatMembershipRow[]>([]);
+  readonly members = signal<ChatMembership[]>([]);
   readonly membersLoading = signal(false);
-  readonly serverDocuments = signal<DocumentResponse[]>([]);
+  readonly serverDocuments = signal<Document[]>([]);
   readonly documentsLoading = signal(false);
 
   readonly headerTitle = computed(() => {
     switch (this.panelView()) {
-      case 'documents':
-        return 'Documentos';
+      case 'chat':
+        return 'Gestionar chat';
       case 'participants':
         return 'Participantes';
-      case 'chat':
-        return 'Chat';
+      case 'documents':
+        return 'Documentos';
       default:
         return this.panelTitle();
     }
   });
 
-  readonly mergedDocuments = computed((): DocListItem[] => {
-    const map = new Map<number, DocListItem>();
+  readonly contextChatId = computed(() => this.contextChat()?.id ?? null);
+  readonly contextChatTitle = computed(() => this.contextChat()?.name ?? '');
+
+  readonly mergedDocuments = computed((): Document[] => {
+    const map = new Map<number, Document>();
     for (const d of this.serverDocuments()) {
-      map.set(d.id, { id: d.id, name: d.name, status: d.status, created_at: d.created_at });
+      map.set(d.id, d);
     }
     for (const d of this.attachedDocuments()) {
-      map.set(d.id, { id: d.id, name: d.name, status: d.status, created_at: d.created_at });
+      map.set(d.id, {
+        id: d.id,
+        chat_id: this.contextChatId(),
+        name: d.name,
+        description: null,
+        mime_type: d.mime_type,
+        status: d.status,
+        storage_url: d.storage_url,
+        file_size_bytes: d.file_size_bytes,
+        type: null,
+        category: null,
+        text_cleaner_type: null,
+        text_splitter_type: null,
+        embedder_type: null,
+        split_size: null,
+        split_overlap: null,
+        processing_started_at: d.processing_started_at,
+        processing_finished_at: null,
+        created_by: d.created_by,
+        created_at: d.created_at,
+        updated_by: null,
+        updated_at: null,
+        deleted_by: null,
+        deleted_at: null,
+      });
     }
     return [...map.values()].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -137,9 +156,9 @@ export class ChatOptionsDrawerComponent {
 
   reloadServerDocuments(chatId: number): void {
     this.documentsLoading.set(true);
-    this.documentsHttp
+    this.documentProcessingHttpService
       .listDocumentsByChat(chatId)
-      .pipe(catchError(() => of([] as DocumentResponse[])), take(1))
+      .pipe(catchError(() => of([] as Document[])), take(1))
       .subscribe({
         next: (list) => {
           this.serverDocuments.set(list);
@@ -162,63 +181,77 @@ export class ChatOptionsDrawerComponent {
     const current = this.contextChatTitle()?.trim() || '';
     const next = window.prompt('Nuevo nombre del chat', current)?.trim();
     if (!next || next === current) return;
-    this.api.patchChat(cid, { name: next }).subscribe({
+    this.chatHttpService.patchChat(cid, { name: next }).subscribe({
       next: () => {
-        this.toast.show('Nombre actualizado.', 'success');
+        this.toastService.show('Nombre actualizado.', 'success');
         this.chatMetaUpdated.emit({ chatId: cid, name: next });
       },
-      error: () => this.toast.show('No se pudo actualizar el nombre.', 'error'),
+      error: () => this.toastService.show('No se pudo actualizar el nombre.', 'error'),
     });
   }
 
   deleteChatClick(): void {
-    this.emitChatAction('delete');
+    const cid = this.contextChatId();
+    if (cid == null) return;
+    if (!window.confirm('¿Eliminar esta conversación?')) return;
+    this.chatHttpService.deleteChat(cid).subscribe({
+      next: () => {
+        this.toastService.show('Chat eliminado.', 'success');
+        this.chatAction.emit({ chatId: cid, action: 'delete' });
+        const url = this.router.url.split('?')[0];
+        if (url.includes(`/main-container/chat/${cid}`)) {
+          void this.router.navigate(['/main-container', 'chat-home']);
+        }
+        this.close();
+      },
+      error: () => this.toastService.show('No se pudo eliminar el chat.', 'error'),
+    });
   }
 
   shareOrArchiveSoon(kind: 'share' | 'archive'): void {
     const msg = kind === 'share' ? 'Compartir: próximamente.' : 'Archivar: próximamente.';
-    this.toast.show(msg, 'success');
+    this.toastService.show(msg, 'success');
   }
 
   leaveChat(): void {
     const cid = this.contextChatId();
     if (cid == null) return;
     if (!window.confirm('¿Salir de este chat?')) return;
-    this.api.leaveChat(cid).subscribe({
+    this.chatHttpService.leaveChat(cid).subscribe({
       next: () => {
-        this.toast.show('Saliste del chat.', 'success');
+        this.toastService.show('Saliste del chat.', 'success');
         this.chatAction.emit({ chatId: cid, action: 'leave' });
         this.close();
       },
-      error: () => this.toast.show('No se pudo abandonar el chat.', 'error'),
+      error: () => this.toastService.show('No se pudo abandonar el chat.', 'error'),
     });
   }
 
   addParticipantSoon(): void {
-    this.toast.show('Invitar participantes: próximamente.', 'success');
+    this.toastService.show('Invitar participantes: próximamente.', 'success');
   }
 
-  removeMember(row: ChatMembershipRow): void {
+  removeMember(row: ChatMembership): void {
     const cid = this.contextChatId();
     if (cid == null) return;
     if (!window.confirm('¿Quitar a este participante del chat?')) return;
-    this.api.removeMember(cid, row.id).subscribe({
+    this.chatHttpService.removeMember(cid, row.id).subscribe({
       next: () => {
-        this.toast.show('Participante eliminado.', 'success');
+        this.toastService.show('Participante eliminado.', 'success');
         this.reloadMembers(cid);
       },
-      error: () => this.toast.show('No se pudo quitar al participante.', 'error'),
+      error: () => this.toastService.show('No se pudo quitar al participante.', 'error'),
     });
   }
 
-  documentUpdateSoon(item: DocListItem): void {
+  documentUpdateSoon(item: Document): void {
     void item;
-    this.toast.show('Actualizar documento: próximamente.', 'success');
+    this.toastService.show('Actualizar documento: próximamente.', 'success');
   }
 
   private reloadMembers(chatId: number): void {
     this.membersLoading.set(true);
-    this.api
+    this.chatHttpService
       .listMembers(chatId, { page_size: 100 })
       .pipe(take(1))
       .subscribe({
@@ -228,7 +261,7 @@ export class ChatOptionsDrawerComponent {
         },
         error: () => {
           this.membersLoading.set(false);
-          this.toast.show('No se pudieron cargar los participantes.', 'error');
+          this.toastService.show('No se pudieron cargar los participantes.', 'error');
         },
       });
   }

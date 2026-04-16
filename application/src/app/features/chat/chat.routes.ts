@@ -20,7 +20,7 @@ export const chatShellRoutes: Routes = [
           ),
       },
       {
-        path: 'herramientas',
+        path: 'tools',
         loadComponent: () =>
           import('./components/herramientas/herramientas-shell.component').then(
             (m) => m.HerramientasShellComponent
