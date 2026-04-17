@@ -11,8 +11,9 @@ import {CommonModule} from '@angular/common';
 import {Router, RouterLink} from '@angular/router';
 import {ChatOptionsDrawer} from '../chat-options-drawer/chat-options-drawer';
 import {ChatHttpService} from '@core/services/http/chat-http.service';
+import {AuthenticationService} from '@core/services/authentication/authentication.service';
 import {ToastService} from '@core/components/toast-service';
-import type {Chat, User} from '@core/models/types/chat.types';
+import type {Chat} from '@core/models/types/chat.types';
 
 @Component({
   selector: 'app-chat-sidebar',
@@ -23,17 +24,12 @@ import type {Chat, User} from '@core/models/types/chat.types';
 })
 export class ChatSidebarComponent implements OnInit {
   private readonly chatHttpService = inject(ChatHttpService);
+  private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
 
   @Input() collapsed = false;
   @Input() activeId: string | null = null;
-
-  @Input() user: User = {
-    name: 'Emiliano Fau',
-    email: 'usuario@ejemplo.com',
-    member_id: null
-  };
 
   @Output() toggle = new EventEmitter<boolean>();
   @Output() chatAction = new EventEmitter<{ chatId: string; action: string }>();
@@ -71,12 +67,12 @@ export class ChatSidebarComponent implements OnInit {
   }
 
   initials() {
-    const n = this.user?.name?.trim?.() || 'U';
+    const n = this.auth.getSidebarUser().name?.trim?.() || 'U';
     return n.charAt(0).toUpperCase();
   }
 
   username() {
-    return this.user?.name ?? '';
+    return this.auth.getSidebarUser().name ?? '';
   }
 
   onChatOptionsClick(event: MouseEvent, chatId: number) {
