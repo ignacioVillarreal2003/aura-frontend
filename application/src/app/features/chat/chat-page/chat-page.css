@@ -12,7 +12,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #151515;
+  background: var(--surface-page);
 }
 
 .chat-main-outlet {

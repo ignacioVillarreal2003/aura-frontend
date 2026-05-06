@@ -14,10 +14,9 @@
             <select
               id="user-theme"
               class="select-field"
-              [value]="store.settings().theme"
               (change)="onThemeChange($any($event.target).value)">
               @for (option of store.themeOptions; track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
+                <option [value]="option.value" [selected]="option.value === store.settings().theme">{{ option.label }}</option>
               }
             </select>
           </div>

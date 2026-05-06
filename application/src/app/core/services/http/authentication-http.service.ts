@@ -8,6 +8,7 @@ import type {
   LogoutRequest,
   RefreshRequest,
   TokenPairResponse,
+  ValidateResponse,
 } from '@core/models/types/authentication.types';
 
 @Injectable({ providedIn: 'root' })
@@ -25,5 +26,9 @@ export class AuthenticationHttpService {
 
   refresh(body: RefreshRequest): Observable<TokenPairResponse> {
     return this.http.post<TokenPairResponse>(`${this.base}/auth/refresh`, body);
+  }
+
+  validate(): Observable<ValidateResponse> {
+    return this.http.get<ValidateResponse>(`${this.base}/auth/validate`);
   }
 }

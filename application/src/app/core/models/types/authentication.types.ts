@@ -20,3 +20,11 @@ export interface RefreshRequest {
 export interface AuthenticationMessageResponse {
   detail: string;
 }
+
+export interface ValidateResponse {
+  id: number;
+  email: string;
+  username: string;
+  roles: string[];
+  permissions: string[];
+}

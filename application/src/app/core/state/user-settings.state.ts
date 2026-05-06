@@ -5,10 +5,12 @@ export type UserSettingsSection = 'general' | 'privacy' | 'security' | 'data-con
 
 export type UserTheme = 'dark' | 'light' | 'system';
 
+const THEME_KEY = 'aura-theme';
+
 @Injectable({ providedIn: 'root' })
 export class UserSettingsState {
   readonly settings = signal({
-    theme: 'dark' as UserTheme,
+    theme: ((localStorage.getItem(THEME_KEY) as UserTheme) ?? 'dark'),
     notifications: {
       email: true,
       sound: false,
@@ -22,6 +24,19 @@ export class UserSettingsState {
       showLocation: true,
     },
   });
+
+  constructor() {
+    this.applyTheme(this.settings().theme);
+  }
+
+  private applyTheme(theme: UserTheme): void {
+    const body = document.body;
+    body.classList.remove('theme-dark', 'theme-light');
+    const effective = theme === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : theme;
+    body.classList.add(`theme-${effective}`);
+  }
 
   readonly themeOptions = [
     { value: 'dark' as const, label: 'Tema oscuro' },
@@ -43,6 +58,8 @@ export class UserSettingsState {
 
   updateTheme(theme: UserTheme): void {
     this.settings.update((s) => ({ ...s, theme }));
+    localStorage.setItem(THEME_KEY, theme);
+    this.applyTheme(theme);
   }
 
   setNotificationEmail(value: boolean): void {

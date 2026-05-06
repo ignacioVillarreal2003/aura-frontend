@@ -1,17 +1,14 @@
 <div class="user-profile-container">
   <div class="profile-header">
     <div class="profile-avatar">
-      <span class="avatar-text">{{ user.avatar }}</span>
+      <span class="avatar-text">{{ avatarChar() }}</span>
     </div>
     <div class="profile-info">
-      <h1 class="profile-name">{{ user.name }}</h1>
-      <p class="profile-role">{{ user.role }}</p>
-      <p class="profile-department">{{ user.department }}</p>
+      <h1 class="profile-name">{{ displayName() }}</h1>
+      @if (displayRoles().length > 0) {
+        <p class="profile-role">{{ displayRoles()[0] }}</p>
+      }
     </div>
-    <button type="button" class="edit-button" (click)="toggleEdit()">
-      <i class="pi pi-pencil"></i>
-      {{ isEditing ? 'Cancelar' : 'Editar' }}
-    </button>
   </div>
 
   <div class="profile-content-wrapper">
@@ -24,69 +21,22 @@
 
         <div class="info-grid">
           <div class="info-item">
-            <label class="info-label">Nombre completo</label>
-            @if (isEditing) {
-              <input type="text" [(ngModel)]="editedUser.name" class="info-input" />
-            } @else {
-              <span class="info-value">{{ user.name }}</span>
-            }
+            <label class="info-label">Usuario</label>
+            <span class="info-value">{{ displayName() }}</span>
           </div>
 
           <div class="info-item">
             <label class="info-label">Email</label>
-            @if (isEditing) {
-              <input type="email" [(ngModel)]="editedUser.email" class="info-input" />
-            } @else {
-              <span class="info-value">{{ user.email }}</span>
-            }
+            <span class="info-value">{{ displayEmail() }}</span>
           </div>
 
-          <div class="info-item">
-            <label class="info-label">Teléfono</label>
-            @if (isEditing) {
-              <input type="tel" [(ngModel)]="editedUser.phone" class="info-input" />
-            } @else {
-              <span class="info-value">{{ user.phone }}</span>
-            }
-          </div>
-
-          <div class="info-item">
-            <label class="info-label">Ubicación</label>
-            @if (isEditing) {
-              <input type="text" [(ngModel)]="editedUser.location" class="info-input" />
-            } @else {
-              <span class="info-value">{{ user.location }}</span>
-            }
-          </div>
-
-          <div class="info-item">
-            <label class="info-label">Fecha de ingreso</label>
-            <span class="info-value">{{ user.joinDate }}</span>
-          </div>
-
-          <div class="info-item">
-            <label class="info-label">Departamento</label>
-            <span class="info-value">{{ user.department }}</span>
-          </div>
-
-          <div class="info-item">
-            <label class="info-label">Rol</label>
-            <span class="info-value">{{ user.role }}</span>
-          </div>
+          @if (displayRoles().length > 0) {
+            <div class="info-item">
+              <label class="info-label">Roles</label>
+              <span class="info-value">{{ displayRoles().join(', ') }}</span>
+            </div>
+          }
         </div>
-
-        @if (isEditing) {
-          <div class="edit-actions">
-            <button type="button" class="save-button" (click)="saveChanges()">
-              <i class="pi pi-check"></i>
-              Guardar cambios
-            </button>
-            <button type="button" class="cancel-button" (click)="cancelEdit()">
-              <i class="pi pi-times"></i>
-              Cancelar
-            </button>
-          </div>
-        }
       </div>
 
       <p class="profile-hint">

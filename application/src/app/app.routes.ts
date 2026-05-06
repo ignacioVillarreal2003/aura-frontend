@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authenticationGuard } from './core/guards/authentication.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -10,12 +11,14 @@ export const routes: Routes = [
   },
   {
     path: 'main-container',
+    canActivate: [authenticationGuard],
     loadChildren: () =>
       import('./features/chat/chat.routes').then((m) => m.chatShellRoutes),
   },
 
   {
     path: 'user',
+    canActivate: [authenticationGuard],
     loadChildren: () =>
       import('./features/user/user.routes').then((m) => m.USER_ROUTES),
   },
