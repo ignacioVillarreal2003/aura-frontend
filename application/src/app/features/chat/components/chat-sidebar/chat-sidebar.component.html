@@ -54,22 +54,37 @@
                     <div
                       class="sidebar-chat-item"
                       role="listitem"
-                      [class.menu-open]="drawerChatId() === c.id">
-                      <button
-                        type="button"
-                        class="sidebar-link sidebar-link--chat"
-                        [class.is-active]="activeId === c.id"
-                        [routerLink]="['/main-container', 'chat', c.id]">
-                        <i class="pi pi-comments" aria-hidden="true"></i>
-                        <span class="sidebar-link__text">{{ c.title }}</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="sidebar-link-more"
-                        [attr.aria-label]="'Opciones del chat ' + c.title"
-                        (click)="onChatOptionsClick($event, c.id)">
-                        <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
-                      </button>
+                      [class.menu-open]="drawerChatId() === c.id"
+                      [class.is-renaming]="renamingChatId() === c.id">
+                      @if (renamingChatId() === c.id) {
+                        <input
+                          #renameInput
+                          type="text"
+                          class="sidebar-rename-input"
+                          [attr.data-chat-id]="c.id"
+                          [value]="renameValue()"
+                          (input)="renameValue.set($any($event.target).value)"
+                          (keydown)="onRenameKeydown($event, c.id)"
+                          (blur)="onRenameBlur(c.id)"
+                          aria-label="Renombrar chat"
+                        />
+                      } @else {
+                        <button
+                          type="button"
+                          class="sidebar-link sidebar-link--chat"
+                          [class.is-active]="activeId === c.id"
+                          [routerLink]="['/main-container', 'chat', c.id]">
+                          <i class="pi pi-comments" aria-hidden="true"></i>
+                          <span class="sidebar-link__text">{{ c.title }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="sidebar-link-more"
+                          [attr.aria-label]="'Opciones del chat ' + c.title"
+                          (click)="onChatOptionsClick($event, c.id)">
+                          <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+                        </button>
+                      }
                     </div>
                   }
                 </div>

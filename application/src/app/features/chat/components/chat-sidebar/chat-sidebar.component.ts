@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal, OnInit, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, OnInit, inject, ElementRef, viewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
@@ -36,6 +36,11 @@ export class ChatSidebarComponent implements OnInit {
   chatActionsDrawerOpen = signal(false);
   drawerChatId = signal<string | null>(null);
   drawerChatTitle = signal('');
+
+  renamingChatId = signal<string | null>(null);
+  renameValue = signal('');
+
+  private readonly renameInputs = viewChildren<ElementRef<HTMLInputElement>>('renameInput');
 
   ngOnInit(): void {
     this.reloadChats();
@@ -114,6 +119,50 @@ export class ChatSidebarComponent implements OnInit {
       });
       return;
     }
+    if (data.action === 'rename') {
+      const row = this.chats.find((c) => c.id === data.chatId);
+      if (!row) return;
+      this.renamingChatId.set(data.chatId);
+      this.renameValue.set(row.title);
+      setTimeout(() => {
+        const input = this.renameInputs().find(
+          (el) => el.nativeElement.dataset['chatId'] === data.chatId
+        );
+        input?.nativeElement.focus();
+        input?.nativeElement.select();
+      });
+      return;
+    }
     this.chatAction.emit(data);
+  }
+
+  onRenameKeydown(event: KeyboardEvent, chatId: string): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void this.commitRename(chatId);
+    } else if (event.key === 'Escape') {
+      this.renamingChatId.set(null);
+    }
+  }
+
+  onRenameBlur(chatId: string): void {
+    if (this.renamingChatId() === chatId) {
+      void this.commitRename(chatId);
+    }
+  }
+
+  private commitRename(chatId: string): void {
+    const newName = this.renameValue().trim();
+    const row = this.chats.find((c) => c.id === chatId);
+    this.renamingChatId.set(null);
+    if (!newName || newName === row?.title) return;
+    const id = Number.parseInt(chatId, 10);
+    this.api.patchChat(id, { name: newName }).subscribe({
+      next: () => {
+        this.toast.show('Chat renombrado.', 'success');
+        this.reloadChats();
+      },
+      error: () => this.toast.show('No se pudo renombrar el chat.', 'error'),
+    });
   }
 }
