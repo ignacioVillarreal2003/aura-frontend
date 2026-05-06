@@ -191,4 +191,12 @@ export class ChatHttpService {
   leaveChat(chatId: number): Observable<void> {
     return this.http.post(`${this.base}/chats/${chatId}/members/leave/`, {}).pipe(map(() => undefined));
   }
+
+  archiveChat(chatId: number): Observable<void> {
+    return this.http.post(`${this.base}/chats/${chatId}/archive/`, {}).pipe(map(() => undefined));
+  }
+
+  unarchiveChat(chatId: number): Observable<void> {
+    return this.http.post(`${this.base}/chats/${chatId}/unarchive/`, {}).pipe(map(() => undefined));
+  }
 }

@@ -84,6 +84,14 @@ export class AuraChatApiService {
     return this.chats.leaveChat(chatId);
   }
 
+  archiveChat(chatId: number): Observable<void> {
+    return this.chats.archiveChat(chatId);
+  }
+
+  unarchiveChat(chatId: number): Observable<void> {
+    return this.chats.unarchiveChat(chatId);
+  }
+
   sendMessageRest(chatId: number, text: string): Observable<SendMessageResponse> {
     return this.chats.createMessage(chatId, { message: text, sender_type: 'user' });
   }

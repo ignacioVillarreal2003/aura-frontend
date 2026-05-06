@@ -119,6 +119,20 @@ export class ChatSidebarComponent implements OnInit {
       });
       return;
     }
+    if (data.action === 'archive') {
+      this.api.archiveChat(id).subscribe({
+        next: () => {
+          this.toast.show('Chat archivado.', 'success');
+          this.reloadChats();
+          const url = this.router.url.split('?')[0];
+          if (url.includes(`/main-container/chat/${data.chatId}`)) {
+            void this.router.navigate(['/main-container', 'chat-home']);
+          }
+        },
+        error: () => this.toast.show('No se pudo archivar el chat.', 'error'),
+      });
+      return;
+    }
     if (data.action === 'rename') {
       const row = this.chats.find((c) => c.id === data.chatId);
       if (!row) return;
