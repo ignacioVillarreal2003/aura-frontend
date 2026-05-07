@@ -7,4 +7,5 @@ export const environment = {
   chatApiUrl: '',
   authenticationApiUrl: '',
   documentProcessingUrl: '',
+  notificationApiUrl: '',
 };
