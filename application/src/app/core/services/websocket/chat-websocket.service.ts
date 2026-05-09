@@ -1,20 +1,20 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
-import { environment } from '../../../environments/environment';
-import type { ChatWsIncoming } from '@core/models/types/chat.types';
+import { environment } from '../../../../environments/environment';
+import type {
+  AuraChatWsClientMessage,
+  AuraChatWsServerMessage,
+} from '@types/aura-chat-service.types';
+import { AURA_CHAT_WS_MESSAGE_MAX_CHAR } from '@types/aura-chat-service.types';
 import { ToastService } from '@core/components/toast-service';
 
 const MAX_OUTBOUND_QUEUE = 50;
-/** Aligns with apps/message WebSocket / REST validation in aura-chat-service. */
-const MAX_MESSAGE_CHARS = 10000;
 
 export type ChatSocketConnection = {
-  readonly messages$: Observable<ChatWsIncoming>;
-  /** Queues until the socket is OPEN; drops with toast if over limit or empty. */
+  readonly messages$: Observable<AuraChatWsServerMessage>;
   sendUserMessage(text: string): void;
   sendTyping(isTyping: boolean): void;
   close(): void;
-  /** Resolves when the WebSocket handshake completes; rejects if it errors before open. */
   readonly whenOpen: Promise<void>;
 };
 
@@ -39,7 +39,7 @@ export class ChatWebSocketService {
     }
 
     const toast = this.toast;
-    const inbound = new Subject<ChatWsIncoming>();
+    const inbound = new Subject<AuraChatWsServerMessage>();
     const outboundQueue: string[] = [];
     let openResolve: (() => void) | null = null;
     let openReject: ((err: Error) => void) | null = null;
@@ -54,7 +54,8 @@ export class ChatWebSocketService {
       while (ws.readyState === WebSocket.OPEN && outboundQueue.length > 0) {
         const next = outboundQueue.shift();
         if (next != null) {
-          ws.send(JSON.stringify({ type: 'chat.message', message: next }));
+          const payload: AuraChatWsClientMessage = { type: 'chat.message', message: next };
+          ws.send(JSON.stringify(payload));
         }
       }
     };
@@ -62,7 +63,7 @@ export class ChatWebSocketService {
     const enqueueUserMessage = (raw: string): void => {
       const text = raw.trim();
       if (!text) return;
-      if (text.length > MAX_MESSAGE_CHARS) {
+      if (text.length > AURA_CHAT_WS_MESSAGE_MAX_CHAR) {
         toast.show('El mensaje es demasiado largo.', 'error');
         return;
       }
@@ -83,14 +84,18 @@ export class ChatWebSocketService {
 
     ws.onmessage = (event: MessageEvent<string>) => {
       try {
-        inbound.next(JSON.parse(event.data) as ChatWsIncoming);
+        inbound.next(JSON.parse(event.data) as AuraChatWsServerMessage);
       } catch {
-        /* ignore */
+        /* ignore malformed payload */
       }
     };
 
     ws.onerror = () => {
-      inbound.next({ type: 'error', detail: 'WebSocket transport error' });
+      const errPayload: AuraChatWsServerMessage = {
+        type: 'error',
+        detail: 'WebSocket transport error',
+      };
+      inbound.next(errPayload);
       if (openReject) {
         openReject(new Error('WebSocket error before open'));
         openReject = null;
@@ -115,11 +120,12 @@ export class ChatWebSocketService {
         if (ws.readyState === WebSocket.OPEN) {
           const t = text.trim();
           if (!t) return;
-          if (t.length > MAX_MESSAGE_CHARS) {
+          if (t.length > AURA_CHAT_WS_MESSAGE_MAX_CHAR) {
             toast.show('El mensaje es demasiado largo.', 'error');
             return;
           }
-          ws.send(JSON.stringify({ type: 'chat.message', message: t }));
+          const payload: AuraChatWsClientMessage = { type: 'chat.message', message: t };
+          ws.send(JSON.stringify(payload));
           return;
         }
         if (ws.readyState === WebSocket.CONNECTING) {
@@ -130,7 +136,11 @@ export class ChatWebSocketService {
       },
       sendTyping(isTyping: boolean): void {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'chat.typing', is_typing: isTyping }));
+          const payload: AuraChatWsClientMessage = {
+            type: 'chat.typing',
+            is_typing: isTyping,
+          };
+          ws.send(JSON.stringify(payload));
         }
       },
       close(): void {

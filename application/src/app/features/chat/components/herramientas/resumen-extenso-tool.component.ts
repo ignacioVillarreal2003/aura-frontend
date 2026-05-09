@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ToolsHttpService } from '@core/services/http/tools-http.service';
+import { ToolsHttpService } from '@core/http/tools-http.service';
 
 @Component({
   selector: 'app-resumen-extenso-tool',

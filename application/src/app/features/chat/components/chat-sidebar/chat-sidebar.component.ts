@@ -10,10 +10,10 @@ import {
 import {CommonModule} from '@angular/common';
 import {Router, RouterLink} from '@angular/router';
 import {ChatOptionsDrawer} from '../chat-options-drawer/chat-options-drawer';
-import {ChatHttpService} from '@core/services/http/chat-http.service';
+import {ChatHttpService} from '@core/http/chat-http.service';
 import {AuthenticationService} from '@core/services/authentication/authentication.service';
 import {ToastService} from '@core/components/toast-service';
-import type {Chat} from '@core/models/types/chat.types';
+import type {Chat} from '@core/models/deprecated/types/chat.types';
 
 @Component({
   selector: 'app-chat-sidebar',

@@ -13,11 +13,11 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { catchError, of, take } from 'rxjs';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
-import { ChatHttpService } from '@core/services/http/chat-http.service';
-import { DocumentProcessingHttpService } from '@core/services/http/document-processing-http.service';
+import { ChatHttpService } from '@core/http/chat-http.service';
+import { DocumentProcessingHttpService } from '@core/http/document-processing-http.service';
 import { ToastService } from '@core/components/toast-service';
-import type { CreateDocumentResponse, Document } from '@core/models/types/document.types';
-import type { Chat, ChatMembership } from '@core/models/types/chat.types';
+import type { CreateDocumentResponse, Document } from '@core/models/deprecated/types/document.types';
+import type { Chat, ChatMembership } from '@core/models/deprecated/types/chat.types';
 
 type PanelView = 'root' | 'documents' | 'participants' | 'chat';
 

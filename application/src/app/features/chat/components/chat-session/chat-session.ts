@@ -23,14 +23,15 @@ import {
   tap,
 } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import type { ChatApiMessage, ChatDetail, ChatWsIncoming } from '@core/models/types/chat.types';
-import type { CreateDocumentResponse } from '@core/models/types/document.types';
-import { ChatService } from '@core/services/chat.service';
+import type { ChatApiMessage, ChatDetail } from '@core/models/deprecated/types/chat.types';
+import type { AuraChatWsServerMessage } from '@types/aura-chat-service.types';
+import type { CreateDocumentResponse } from '@core/models/deprecated/types/document.types';
+import { ChatService } from '@core/services/chat/chat.service';
 import { AuraChatApiService } from '@core/services/aura-chat-api.service';
-import { ChatWebSocketService, type ChatSocketConnection } from '@core/services/chat-websocket.service';
+import { ChatWebSocketService, type ChatSocketConnection } from '@core/services/websocket/chat-websocket.service';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { ToastService } from '@core/components/toast-service';
-import { DocumentProcessingHttpService } from '@core/services/http/document-processing-http.service';
+import { DocumentProcessingHttpService } from '@core/http/document-processing-http.service';
 import { normalizeMessageRow } from '@core/models/chat-mappers';
 import { ChatOptionsDrawer } from '../chat-options-drawer/chat-options-drawer';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
@@ -235,14 +236,14 @@ export class ChatSessionComponent implements OnDestroy {
   onChatMetaUpdated(e: { chatId: number; name: string }): void {
     if (this.chat && this.chat.id === e.chatId) {
       this.chat = { ...this.chat, name: e.name };
-      this.chatShell.setCurrentChat(this.chat);
+      this.chatShell.updateActiveChatName(e.name);
     }
   }
 
   ngOnDestroy(): void {
     this.teardownSocket();
     this.clearDeltaScheduling();
-    this.chatShell.setCurrentChat(null);
+    this.chatShell.clearCurrentChat();
   }
 
   sendBlocked(): boolean {
@@ -432,7 +433,7 @@ export class ChatSessionComponent implements OnDestroy {
     this.socket = null;
   }
 
-  private handleWsMessage(msg: ChatWsIncoming): void {
+  private handleWsMessage(msg: AuraChatWsServerMessage): void {
     const cid = this.chatId;
     if (cid == null) return;
     switch (msg.type) {

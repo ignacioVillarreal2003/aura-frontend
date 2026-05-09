@@ -1,9 +1,9 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserSettingsState } from '@core/state/user-settings.state';
-import { NotificationHttpService } from '@core/services/http/notification-http.service';
+import { NotificationHttpService } from '@core/_dep/notification-http.service';
 import { ToastService } from '@core/components/toast-service';
-import type { NotificationApiRow } from '@core/models/types/notification.types';
+import type { NotificationApiRow } from '@core/_dep/notification.types';
 
 @Component({
   selector: 'app-user-notifications',
