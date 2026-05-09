@@ -39,6 +39,11 @@ export class ChatSidebarComponent implements OnInit {
   chatActionsDrawerOpen = signal(false);
   drawerContextChat = signal<Chat | null>(null);
 
+  renamingChatId = signal<string | null>(null);
+  renameValue = signal('');
+
+  private readonly renameInputs = viewChildren<ElementRef<HTMLInputElement>>('renameInput');
+
   ngOnInit(): void {
     this.reloadChats();
   }
@@ -108,5 +113,35 @@ export class ChatSidebarComponent implements OnInit {
     }
 
     this.chatAction.emit({chatId: String(id), action: data.action});
+  }
+
+  onRenameKeydown(event: KeyboardEvent, chatId: string): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void this.commitRename(chatId);
+    } else if (event.key === 'Escape') {
+      this.renamingChatId.set(null);
+    }
+  }
+
+  onRenameBlur(chatId: string): void {
+    if (this.renamingChatId() === chatId) {
+      void this.commitRename(chatId);
+    }
+  }
+
+  private commitRename(chatId: string): void {
+    const newName = this.renameValue().trim();
+    const row = this.chats.find((c) => c.id === chatId);
+    this.renamingChatId.set(null);
+    if (!newName || newName === row?.title) return;
+    const id = Number.parseInt(chatId, 10);
+    this.api.patchChat(id, { name: newName }).subscribe({
+      next: () => {
+        this.toast.show('Chat renombrado.', 'success');
+        this.reloadChats();
+      },
+      error: () => this.toast.show('No se pudo renombrar el chat.', 'error'),
+    });
   }
 }

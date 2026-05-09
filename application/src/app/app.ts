@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
-import {RouterOutlet} from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { UserSettingsState } from './core/state/user-settings.state';
 
 @Component({
   selector: 'app-root',
@@ -8,11 +9,7 @@ import {RouterOutlet} from '@angular/router';
   styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('application');
-
   constructor() {
-  }
-
-  ngOnInit() {
+    inject(UserSettingsState);
   }
 }

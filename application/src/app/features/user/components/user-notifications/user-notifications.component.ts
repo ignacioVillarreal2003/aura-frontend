@@ -1,25 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UserSettingsState } from '@core/state/user-settings.state';
-
-interface NotificationItem {
-  id: string;
-  type: 'invitation' | 'message' | 'mention' | 'system';
-  sender: string;
-  senderEmail?: string;
-  title: string;
-  description?: string;
-  timestamp: Date;
-  isRead: boolean;
-  actions: NotificationAction[];
-}
-
-interface NotificationAction {
-  id: string;
-  label: string;
-  type: 'primary' | 'secondary' | 'danger';
-  action: () => void;
-}
+import { NotificationHttpService } from '@core/services/http/notification-http.service';
+import { ToastService } from '@core/components/toast-service';
+import type { NotificationApiRow } from '@core/models/types/notification.types';
 
 @Component({
   selector: 'app-user-notifications',
@@ -28,179 +12,80 @@ interface NotificationAction {
   templateUrl: './user-notifications.component.html',
   styleUrls: ['./user-notifications.component.css'],
 })
-export class UserNotificationsComponent {
+export class UserNotificationsComponent implements OnInit {
   readonly store = inject(UserSettingsState);
+  private readonly notificationHttp = inject(NotificationHttpService);
+  private readonly toast = inject(ToastService);
 
-  notifications: NotificationItem[] = [
-    {
-      id: '1',
-      type: 'invitation',
-      sender: 'Paco Julio',
-      senderEmail: 'Paco23@gmail.com',
-      title: 'Invitación',
-      description: 'Te ha invitado a un chat grupal',
-      timestamp: new Date('2024-01-15T10:30:00'),
-      isRead: false,
-      actions: [
-        {
-          id: 'accept',
-          label: 'Aceptar',
-          type: 'primary',
-          action: () => this.acceptInvitation('1'),
-        },
-        {
-          id: 'decline',
-          label: 'Declinar',
-          type: 'danger',
-          action: () => this.declineInvitation('1'),
-        },
-      ],
-    },
-    {
-      id: '2',
-      type: 'message',
-      sender: 'Administrador',
-      title: 'Mensaje',
-      description: 'Nuevo mensaje en el chat de soporte',
-      timestamp: new Date('2024-01-15T09:15:00'),
-      isRead: false,
-      actions: [
-        {
-          id: 'view',
-          label: 'Ver',
-          type: 'primary',
-          action: () => this.viewMessage('2'),
-        },
-      ],
-    },
-    {
-      id: '3',
-      type: 'mention',
-      sender: 'Paco Julio',
-      senderEmail: 'Paco23@gmail.com',
-      title: 'Mención',
-      description: 'Te mencionó en un chat',
-      timestamp: new Date('2024-01-15T08:45:00'),
-      isRead: true,
-      actions: [
-        {
-          id: 'go',
-          label: 'Ir',
-          type: 'primary',
-          action: () => this.goToMention('3'),
-        },
-      ],
-    },
-    {
-      id: '4',
-      type: 'system',
-      sender: 'Sistema',
-      title: 'Actualización',
-      description: 'Nueva versión disponible',
-      timestamp: new Date('2024-01-14T16:20:00'),
-      isRead: true,
-      actions: [
-        {
-          id: 'update',
-          label: 'Actualizar',
-          type: 'primary',
-          action: () => this.updateSystem('4'),
-        },
-      ],
-    },
-    {
-      id: '5',
-      type: 'invitation',
-      sender: 'María González',
-      senderEmail: 'maria.gonzalez@empresa.com',
-      title: 'Invitación',
-      description: 'Te ha invitado a un proyecto',
-      timestamp: new Date('2024-01-14T14:30:00'),
-      isRead: false,
-      actions: [
-        {
-          id: 'accept',
-          label: 'Aceptar',
-          type: 'primary',
-          action: () => this.acceptInvitation('5'),
-        },
-        {
-          id: 'decline',
-          label: 'Declinar',
-          type: 'danger',
-          action: () => this.declineInvitation('5'),
-        },
-      ],
-    },
-  ];
+  readonly notifications = signal<NotificationApiRow[]>([]);
+  readonly loading = signal(false);
 
-  acceptInvitation(notificationId: string) {
-    console.log('Aceptando invitación:', notificationId);
-    this.markAsRead(notificationId);
+  ngOnInit(): void {
+    this.loadNotifications();
   }
 
-  declineInvitation(notificationId: string) {
-    console.log('Declinando invitación:', notificationId);
-    this.markAsRead(notificationId);
-  }
-
-  viewMessage(notificationId: string) {
-    console.log('Viendo mensaje:', notificationId);
-    this.markAsRead(notificationId);
-  }
-
-  goToMention(notificationId: string) {
-    console.log('Yendo a mención:', notificationId);
-    this.markAsRead(notificationId);
-  }
-
-  updateSystem(notificationId: string) {
-    console.log('Actualizando sistema:', notificationId);
-    this.markAsRead(notificationId);
-  }
-
-  markAsRead(notificationId: string) {
-    const notification = this.notifications.find((n) => n.id === notificationId);
-    if (notification) {
-      notification.isRead = true;
-    }
-  }
-
-  markAllAsRead() {
-    this.notifications.forEach((notification) => {
-      notification.isRead = true;
+  loadNotifications(): void {
+    this.loading.set(true);
+    this.notificationHttp.list().subscribe({
+      next: (res) => {
+        this.notifications.set(res.results);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.toast.show('No se pudieron cargar las notificaciones.', 'error');
+        this.loading.set(false);
+      },
     });
   }
 
-  deleteNotification(notificationId: string) {
-    this.notifications = this.notifications.filter((n) => n.id !== notificationId);
+  markAsRead(id: number): void {
+    this.notificationHttp.updateStatus(id, { status: 'read' }).subscribe({
+      next: (updated) => {
+        this.notifications.update((list) =>
+          list.map((n) => (n.id === id ? updated : n))
+        );
+      },
+      error: () => this.toast.show('No se pudo marcar como leída.', 'error'),
+    });
   }
 
-  getSenderInitials(sender: string): string {
-    return sender
-      .split(' ')
-      .map((name) => name.charAt(0))
-      .join('')
-      .toUpperCase();
+  markAllAsRead(): void {
+    const unread = this.notifications().filter((n) => n.status === 'unread');
+    unread.forEach((n) => this.markAsRead(n.id));
   }
 
-  getTimeAgo(timestamp: Date): string {
-    const now = new Date();
-    const diff = now.getTime() - timestamp.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+  deleteNotification(id: number): void {
+    this.notificationHttp.delete(id).subscribe({
+      next: () => {
+        this.notifications.update((list) => list.filter((n) => n.id !== id));
+      },
+      error: () => this.toast.show('No se pudo eliminar la notificación.', 'error'),
+    });
+  }
 
-    if (minutes < 60) {
-      return `hace ${minutes} min`;
-    } else if (hours < 24) {
-      return `hace ${hours}h`;
-    } else {
-      return `hace ${days} días`;
-    }
+  getSenderDisplay(notification: NotificationApiRow): string {
+    if (notification.sender_name) return notification.sender_name;
+    if (notification.type === 'system') return 'Sistema';
+    if (notification.type === 'admin') return 'Administrador';
+    return 'Usuario';
+  }
+
+  getSenderInitials(notification: NotificationApiRow): string {
+    const name = this.getSenderDisplay(notification);
+    return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
   }
 
   getUnreadCount(): number {
-    return this.notifications.filter((n) => !n.isRead).length;
+    return this.notifications().filter((n) => n.status === 'unread').length;
+  }
+
+  getTimeAgo(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (minutes < 60) return `hace ${minutes} min`;
+    if (hours < 24) return `hace ${hours}h`;
+    return `hace ${days} días`;
   }
 }

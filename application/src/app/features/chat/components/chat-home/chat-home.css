@@ -12,8 +12,8 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background-color: #151515;
-  color: #fff;
+  background-color: var(--surface-page);
+  color: var(--text-primary);
 }
 
 .chat-home-layout {
@@ -51,7 +51,7 @@
   font-family: 'Sora', sans-serif;
   font-size: clamp(1.5rem, 4vw, 2.25rem);
   font-weight: 500;
-  color: #fafaf9;
+  color: var(--text-primary);
   margin: 0 0 0.5rem;
   line-height: 1.25;
 }
@@ -60,7 +60,7 @@
   font-family: 'Sora', sans-serif;
   font-size: 0.9375rem;
   font-weight: 400;
-  color: #a8a29e;
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.5;
 }
@@ -87,8 +87,8 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background: #1c1c1e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surface-composer);
+  border: 1px solid var(--overlay-active);
   border-radius: 1.25rem;
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.35) inset,
@@ -111,14 +111,13 @@
   width: 100%;
   box-sizing: border-box;
   display: block;
-  /* ~1 renglón mínimo; crece con el texto hasta max-height (≈5 renglones), luego scroll */
   min-height: calc(var(--chat-home-textarea-lh) * 1em + 1.35rem);
   max-height: calc(var(--chat-home-textarea-lh) * var(--chat-home-textarea-max-lines) * 1em + 1.35rem);
   padding: 1rem 1.15rem 0.65rem;
   border: none;
   border-radius: 1.25rem 1.25rem 0 0;
   background: transparent;
-  color: #f5f5f4;
+  color: var(--text-primary);
   font-family: 'Sora', sans-serif;
   font-size: 0.9375rem;
   line-height: var(--chat-home-textarea-lh);
@@ -133,7 +132,7 @@
 }
 
 .chat-home-textarea::placeholder {
-  color: #78716c;
+  color: var(--text-secondary);
 }
 
 /* Scroll fino (WebKit/Blink) cuando hay overflow */
@@ -205,15 +204,15 @@
   justify-content: center;
   border: none;
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.06);
-  color: #d6d3d1;
+  background: var(--overlay-subtle);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 
 .chat-home-attach:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fafaf9;
+  background: var(--overlay-hover);
+  color: var(--text-primary);
 }
 
 .chat-home-attach:active {

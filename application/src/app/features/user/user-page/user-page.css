@@ -1,6 +1,6 @@
 /*
  * Aside fijo en altura de viewport; solo la columna principal hace scroll.
- * Sin esto, el grid deja crecer el contenido y el scroll queda “roto” entre flex anidados.
+ * Sin esto, el grid deja crecer el contenido y el scroll queda "roto" entre flex anidados.
  */
 :host {
   display: block;
@@ -26,8 +26,8 @@
   gap: 1rem;
   min-width: 260px;
   padding: 1.25rem 1rem;
-  background-color: #2c2825;
-  border-right: 1px solid #404040;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
   box-sizing: border-box;
   height: 100%;
   max-height: 100%;
@@ -42,15 +42,15 @@
   gap: 0.5rem;
   padding: 0.65rem 0.75rem;
   border-radius: 8px;
-  color: #e5e7eb;
+  color: var(--text-primary);
   text-decoration: none;
   font-size: 0.9rem;
   transition: background-color 0.15s ease;
 }
 
 .user-nav__back:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: var(--overlay-hover);
+  color: var(--text-primary);
 }
 
 .user-nav__links {
@@ -67,29 +67,29 @@
   gap: 0.65rem;
   padding: 0.75rem 0.85rem;
   border-radius: 8px;
-  color: #e5e7eb;
+  color: var(--text-primary);
   text-decoration: none;
   font-size: 0.95rem;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .user-nav__link:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: var(--overlay-subtle);
+  color: var(--text-primary);
 }
 
 .user-nav__link.is-active {
-  background: rgba(99, 102, 241, 0.22);
-  color: #fff;
+  background: var(--accent-surface);
+  color: var(--text-primary);
 }
 
 .user-nav__link i {
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
 .user-nav__link.is-active i {
-  color: #a5b4fc;
+  color: var(--accent-fg);
 }
 
 .user-nav__logout {
@@ -98,19 +98,31 @@
   gap: 0.65rem;
   margin-top: auto;
   padding: 0.75rem 0.85rem;
-  border: 1px solid #404040;
+  border: 1px solid var(--destructive);
   border-radius: 8px;
   background: transparent;
-  color: #fca5a5;
+  color: var(--destructive);
   font-family: inherit;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .user-nav__logout:hover {
   background: rgba(239, 68, 68, 0.12);
-  color: #fecaca;
+  color: var(--destructive);
+}
+
+body.theme-light .user-nav__logout {
+  background: rgb(220, 38, 38);
+  border-color: rgb(185, 28, 28);
+  color: #fff;
+  font-weight: 500;
+}
+
+body.theme-light .user-nav__logout:hover {
+  background: rgb(185, 28, 28);
+  color: #fff;
 }
 
 .user-content {
@@ -118,10 +130,10 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  background: #151515;
+  background: var(--surface-page);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 .user-content::-webkit-scrollbar {
@@ -133,7 +145,7 @@
 }
 
 .user-content::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.35);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
@@ -160,7 +172,7 @@
     flex-wrap: wrap;
     align-items: center;
     border-right: none;
-    border-bottom: 1px solid #404040;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .user-nav__links {

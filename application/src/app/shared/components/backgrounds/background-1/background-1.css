@@ -3,7 +3,7 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: rgb(30, 27, 24);
+  background: var(--background);
 }
 
 .background-1__layer {

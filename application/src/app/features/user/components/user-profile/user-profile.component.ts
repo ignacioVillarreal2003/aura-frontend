@@ -1,44 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { UserState } from '@core/state/user.state';
 
 @Component({
   selector: 'app-user-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.css'],
 })
 export class UserProfileComponent {
-  user = {
-    name: 'Emiliano Fau',
-    email: 'emiliano.fau@aura.com',
-    role: 'Operador',
-    department: 'Soporte Técnico',
-    phone: '+54 11 1234-5678',
-    location: 'Montevideo, Uruguay',
-    joinDate: 'Enero 2024',
-    avatar: 'E',
-  };
+  private readonly userState = inject(UserState);
 
-  isEditing = false;
-  editedUser = { ...this.user };
-
-  toggleEdit() {
-    this.isEditing = !this.isEditing;
-    if (this.isEditing) {
-      this.editedUser = { ...this.user };
-    }
-  }
-
-  saveChanges() {
-    this.user = { ...this.editedUser };
-    this.isEditing = false;
-    console.log('Cambios guardados:', this.user);
-  }
-
-  cancelEdit() {
-    this.editedUser = { ...this.user };
-    this.isEditing = false;
-  }
+  readonly displayName = computed(() => this.userState.user()?.username ?? '—');
+  readonly displayEmail = computed(() => this.userState.user()?.email ?? '—');
+  readonly displayRoles = computed(() => this.userState.user()?.roles ?? []);
+  readonly avatarChar = computed(() =>
+    (this.userState.user()?.username?.[0] ?? '?').toUpperCase()
+  );
 }

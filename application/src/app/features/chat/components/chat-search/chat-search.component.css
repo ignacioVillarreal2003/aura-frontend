@@ -3,7 +3,7 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  background: #151515;
+  background: var(--surface-page);
 }
 
 .chats-panel {
@@ -21,14 +21,14 @@
   justify-content: flex-start;
   padding: 1.25rem 1.5rem;
   flex-shrink: 0;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .chats-panel-title {
   font-family: 'Sora', sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -46,29 +46,29 @@
 .search-icon {
   position: absolute;
   left: 1rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
 .search-field {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid #404040;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 1rem;
   font-family: 'Sora', sans-serif;
-  background-color: #2a2a2a;
-  color: #fff;
+  background-color: var(--border-subtle);
+  color: var(--text-primary);
   outline: none;
   transition: border-color 0.2s ease;
 }
 
 .search-field:focus {
-  border-color: #666;
+  border-color: var(--border-strong);
 }
 
 .search-field::placeholder {
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .chat-home-nav-button {
@@ -81,7 +81,7 @@
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   font-family: 'Sora', sans-serif;
   cursor: pointer;
@@ -94,11 +94,11 @@
 }
 
 .chat-home-nav-button:hover {
-  background-color: #2a2a2a;
+  background-color: var(--overlay-hover);
 }
 
 .chat-home-nav-button i {
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
@@ -108,7 +108,7 @@
   overflow-y: auto;
   padding: 0 1.5rem 1.5rem 1.5rem;
   scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.35) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 .chat-section {
@@ -119,7 +119,7 @@
   font-family: 'Sora', sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--text-secondary);
   margin: 0 0 0.75rem 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -145,18 +145,18 @@
 }
 
 .chat-item:hover {
-  background-color: #2a2a2a;
+  background-color: var(--overlay-hover);
 }
 
 .chat-icon {
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
 .chat-title {
   font-family: 'Sora', sans-serif;
   font-size: 1rem;
-  color: #fff;
+  color: var(--text-primary);
   flex: 1;
 }
 
@@ -169,10 +169,10 @@
 }
 
 .chat-history::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.35);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 .chat-history::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--scrollbar-thumb-hover);
 }

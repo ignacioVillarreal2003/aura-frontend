@@ -14,13 +14,13 @@
 }
 
 .modal-container {
-  background: #2c2825;
+  background: var(--bg-primary);
   border-radius: 16px;
   width: 480px;
   max-height: 420px;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  border: 1px solid #404040;
+  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
 }
@@ -30,13 +30,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  background: #2c2825;
+  background: var(--bg-primary);
 }
 
 .modal-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -45,14 +45,14 @@
 }
 
 .modal-title i {
-  color: #6366f1;
+  color: var(--accent-color);
   font-size: 1.1rem;
 }
 
 .close-button {
   background: transparent;
   border: none;
-  color: #9ca3af;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 6px;
@@ -63,8 +63,8 @@
 }
 
 .close-button:hover {
-  background: #404040;
-  color: #fff;
+  background: var(--overlay-hover);
+  color: var(--text-primary);
 }
 
 .modal-content {
@@ -85,8 +85,8 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: rgba(99, 102, 241, 0.15);
-  color: #6366f1;
+  background: var(--accent-surface);
+  color: var(--accent-color);
   font-size: 24px;
 }
 
@@ -100,7 +100,7 @@
 .logout-question {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.4;
   font-family: 'Sora', sans-serif;
@@ -108,7 +108,7 @@
 
 .logout-description {
   font-size: 0.9rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.5;
 }
@@ -119,13 +119,13 @@
   justify-content: flex-end;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
-  background: #2c2825;
+  background: var(--bg-primary);
 }
 
 .cancel-button {
   background: transparent;
-  border: 1px solid #404040;
-  color: #9ca3af;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   cursor: pointer;
@@ -139,12 +139,12 @@
 }
 
 .cancel-button:hover {
-  background: #404040;
-  color: #fff;
+  background: var(--overlay-hover);
+  color: var(--text-primary);
 }
 
 .logout-button {
-  background: #6366f1;
+  background: var(--accent-color);
   border: none;
   color: #fff;
   padding: 0.75rem 1.5rem;
