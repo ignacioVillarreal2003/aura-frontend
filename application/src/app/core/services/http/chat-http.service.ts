@@ -28,7 +28,6 @@ import {
   normalizeMessageRow,
   sortMessagesChronological,
 } from '@core/models/chat-mappers';
-
 export type ListChatsQuery = {
   url?: string;
   page?: number;

@@ -63,8 +63,38 @@
   flex-shrink: 0;
 }
 
-.drawer-panel__title {
+.drawer-panel__header-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.drawer-back-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #e8e8ea);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.drawer-back-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.drawer-panel__header .drawer-panel__title {
+  margin: 0;
+  min-width: 0;
   font-size: 16px;
   font-weight: 600;
 }
@@ -182,4 +212,206 @@
   height: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+.drawer-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-section-tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.drawer-section-tile:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.drawer-section-tile__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 18px;
+  color: #a1a1aa;
+}
+
+.drawer-section-tile__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-section-tile__title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.drawer-section-tile__hint {
+  font-size: 12px;
+  color: var(--text-secondary, #9a9aa3);
+  line-height: 1.35;
+}
+
+.drawer-section-tile__chev {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #71717a;
+}
+
+.drawer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.drawer-toolbar--split {
+  justify-content: flex-start;
+}
+
+.drawer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.drawer-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.drawer-btn--primary {
+  background: rgba(99, 102, 241, 0.35);
+  color: #e8e8ff;
+}
+
+.drawer-btn--primary:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+.drawer-btn--secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #e8e8ea);
+}
+
+.drawer-btn--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.drawer-muted {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.drawer-doc-list,
+.drawer-member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drawer-doc-card,
+.drawer-member-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.drawer-doc-card__main,
+.drawer-member-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.drawer-doc-card__name,
+.drawer-member-card__title {
+  font-size: 14px;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.drawer-doc-card__meta,
+.drawer-member-card__meta {
+  font-size: 12px;
+  color: var(--text-secondary, #9a9aa3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drawer-doc-card__status {
+  text-transform: capitalize;
+}
+
+.drawer-linkish {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: #818cf8;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.drawer-linkish:hover {
+  color: #a5b4fc;
+}
+
+.drawer-linkish--danger {
+  color: #f87171;
+}
+
+.drawer-linkish--danger:hover {
+  color: #fca5a5;
+}
+
+.drawer-action-item--spaced {
+  margin-top: 20px;
+}
+
+@keyframes drawer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pi-spin {
+  display: inline-block;
+  animation: drawer-spin 0.9s linear infinite;
 }

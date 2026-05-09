@@ -1,0 +1,8 @@
+<div class="herramienta-page">
+  @if (meta$ | async; as meta) {
+    <a routerLink="/main-container/tools" class="herramienta-back">← Herramientas</a>
+    <h1 class="herramienta-title">{{ meta.title }}</h1>
+    <p class="herramienta-desc">{{ meta.description }}</p>
+    <p class="herramienta-badge">Próximamente</p>
+  }
+</div>

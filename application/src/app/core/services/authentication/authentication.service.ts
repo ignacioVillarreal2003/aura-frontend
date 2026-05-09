@@ -1,6 +1,7 @@
 import {Injectable, inject, signal} from '@angular/core';
 import {Observable, catchError, finalize, map, of, switchMap, tap, throwError} from 'rxjs';
 import {environment} from '../../../../environments/environment';
+import type {User} from '@core/models/types/chat.types';
 import {AuthenticationHttpService} from '../http/authentication-http.service';
 import {UserState} from '@core/state/user.state';
 
@@ -14,6 +15,8 @@ export class AuthenticationService {
   private readonly accessToken = signal<string | null>(initialAccessToken());
   private readonly refreshToken = signal<string | null>(null);
   private readonly sessionActive = signal(false);
+  /** Last username used at login (for sidebar display; not a substitute for a profile API). */
+  private readonly sessionDisplayName = signal<string | null>(null);
 
   isLoggedIn(): boolean {
     return this.sessionActive();
@@ -41,6 +44,7 @@ export class AuthenticationService {
         this.accessToken.set(res.access_token);
         this.refreshToken.set(res.refresh_token);
         this.sessionActive.set(true);
+        this.sessionDisplayName.set(username.trim() || null);
         sessionStorage.setItem(SESSION_TOKEN_KEY, res.access_token);
         sessionStorage.setItem(SESSION_REFRESH_KEY, res.refresh_token);
       }),
@@ -50,6 +54,10 @@ export class AuthenticationService {
     );
   }
 
+  /** Display user for chat shell (name from login until a profile endpoint exists). */
+  getSidebarUser(): User {
+    const name = this.sessionDisplayName()?.trim() || 'Usuario';
+    return {name, member_id: null};
   tryRestoreSession(): Observable<boolean> {
     const storedToken = sessionStorage.getItem(SESSION_TOKEN_KEY);
     const storedRefresh = sessionStorage.getItem(SESSION_REFRESH_KEY);
@@ -101,6 +109,7 @@ export class AuthenticationService {
   private clearLocalSession(): void {
     this.sessionActive.set(false);
     this.refreshToken.set(null);
+    this.sessionDisplayName.set(null);
     this.accessToken.set(initialAccessToken());
     this.userState.setUser(null);
     sessionStorage.removeItem(SESSION_TOKEN_KEY);

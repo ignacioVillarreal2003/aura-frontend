@@ -87,10 +87,20 @@
   transform: scale(0.96);
 }
 
-.sidebar-header__toggle-inner app-btn-icon {
+.sidebar-header__toggle-btn {
+  width: 100%;
+  height: 100%;
+  border: none;
   border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
 }
 
+.sidebar-header__toggle-btn i {
+  font-size: 0.95rem;
 /* Icono del toggle acorde al panel */
 :host ::ng-deep .sidebar-header__toggle-inner .btn-icon.transparent {
   color: var(--text-secondary);
@@ -101,8 +111,9 @@
   color: var(--text-primary);
 }
 
-:host ::ng-deep .sidebar-header__toggle-inner .btn-icon.transparent mat-icon {
-  color: currentColor;
+.sidebar-header__toggle-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--chat-focus-ring);
 }
 
 /* DIVISOR */

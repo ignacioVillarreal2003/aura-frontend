@@ -1,7 +1,4 @@
-<div
-  class="drawer-root"
-  [attr.aria-hidden]="!isOpen()"
->
+<div class="drawer-root" [attr.aria-hidden]="!isOpen()">
   <button
     type="button"
     class="drawer-backdrop"
@@ -18,7 +15,14 @@
     (click)="$event.stopPropagation()"
   >
     <header class="drawer-panel__header">
-      <h2 id="chat-drawer-title" class="drawer-panel__title">{{ panelTitle() }}</h2>
+      <div class="drawer-panel__header-main">
+        @if (panelView() !== 'root') {
+          <button type="button" class="drawer-back-btn" (click)="goRoot()" aria-label="Volver">
+            <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          </button>
+        }
+        <h2 id="chat-drawer-title" class="drawer-panel__title">{{ headerTitle() }}</h2>
+      </div>
       <app-btn-icon
         [icon]="'close'"
         [style]="'transparent'"
@@ -28,61 +32,157 @@
     </header>
 
     <div class="drawer-panel__body">
-      @if (actionMenuChatId()) {
-        <p class="drawer-panel__chat-name">{{ actionMenuChatTitle() }}</p>
-        <nav class="drawer-action-list" aria-label="Acciones del chat">
-          <button type="button" class="drawer-action-item" (click)="emitMenuAction('share')">
-            <i class="pi pi-share-alt drawer-action-item__icon" aria-hidden="true"></i>
-            <span class="drawer-action-item__label">Compartir</span>
-          </button>
-          <button type="button" class="drawer-action-item" (click)="emitMenuAction('rename')">
-            <i class="pi pi-pencil drawer-action-item__icon" aria-hidden="true"></i>
-            <span class="drawer-action-item__label">Cambiar el nombre</span>
-          </button>
-          <button type="button" class="drawer-action-item" (click)="emitMenuAction('archive')">
-            <i class="pi pi-inbox drawer-action-item__icon" aria-hidden="true"></i>
-            <span class="drawer-action-item__label">Archivar</span>
-          </button>
-          <button type="button" class="drawer-action-item drawer-action-item--danger" (click)="emitMenuAction('delete')">
-            <i class="pi pi-trash drawer-action-item__icon" aria-hidden="true"></i>
-            <span class="drawer-action-item__label">Eliminar</span>
-          </button>
-        </nav>
+      @if (contextChatId() == null) {
+        <p class="drawer-panel__intro">No hay un chat seleccionado.</p>
       } @else {
-        @if (showDocumentUpload()) {
-          <p class="drawer-panel__intro">
-            Adjunta documentos para este chat (procesamiento en segundo plano).
-          </p>
-          <input
-            #docInput
-            type="file"
-            class="drawer-file-input"
-            [disabled]="uploadDisabled()"
-            (change)="onDocumentInput($event)"
-            aria-label="Seleccionar documento"
-          />
-          <ul class="drawer-panel__options">
-            <li>
+        @if (contextChatTitle()) {
+          <p class="drawer-panel__chat-name">{{ contextChatTitle() }}</p>
+        }
+
+        @switch (panelView()) {
+          @case ('root') {
+            <nav class="drawer-sections" aria-label="Secciones del chat">
+              <button type="button" class="drawer-section-tile" (click)="openSub('chat')">
+                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-cog"></i></span>
+                <span class="drawer-section-tile__text">
+                  <span class="drawer-section-tile__title">Gestionar chat</span>
+                  <span class="drawer-section-tile__hint">Acciones sobre esta conversación</span>
+                </span>
+                <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="drawer-section-tile" (click)="openSub('participants')">
+                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-users"></i></span>
+                <span class="drawer-section-tile__text">
+                  <span class="drawer-section-tile__title">Participantes</span>
+                  <span class="drawer-section-tile__hint">Quién está en el chat</span>
+                </span>
+                <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="drawer-section-tile" (click)="openSub('documents')">
+                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-file"></i></span>
+                <span class="drawer-section-tile__text">
+                  <span class="drawer-section-tile__title">Documentos</span>
+                  <span class="drawer-section-tile__hint">Archivos cargados y subida</span>
+                </span>
+                <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+              </button>
+            </nav>
+          }
+          @case ('documents') {
+            <p class="drawer-panel__intro">
+              Documentos asociados a este chat. Podés subir uno nuevo o refrescar el listado desde el servidor.
+            </p>
+            <div class="drawer-toolbar">
+              <input
+                #docInput
+                type="file"
+                class="drawer-file-input"
+                [disabled]="uploadDisabled()"
+                (change)="onDocumentInput($event)"
+                aria-label="Seleccionar documento"
+              />
               <button
                 type="button"
-                class="drawer-option"
+                class="drawer-btn drawer-btn--primary"
                 [disabled]="uploadDisabled()"
                 (click)="docInput.click()"
               >
-                Subir documento
+                <i class="pi pi-upload" aria-hidden="true"></i>
+                Añadir documento
               </button>
-            </li>
-          </ul>
-        } @else {
-          <p class="drawer-panel__intro">
-            Opciones del chat (placeholder). Aquí irán acciones reales cuando conectes el backend.
-          </p>
-          <ul class="drawer-panel__options">
-            <li><button type="button" class="drawer-option">Renombrar conversación</button></li>
-            <li><button type="button" class="drawer-option">Archivar</button></li>
-            <li><button type="button" class="drawer-option">Buscar en el chat</button></li>
-            <li><button type="button" class="drawer-option">Detalles del chat</button></li>
-          </ul>
+              <button
+                type="button"
+                class="drawer-btn drawer-btn--secondary"
+                (click)="refreshDocumentsList()"
+                [disabled]="documentsLoading()"
+              >
+                <i class="pi pi-refresh" [class.pi-spin]="documentsLoading()" aria-hidden="true"></i>
+                Actualizar lista
+              </button>
+            </div>
+            @if (documentsLoading() && mergedDocuments().length === 0) {
+              <p class="drawer-muted">Cargando documentos…</p>
+            } @else if (mergedDocuments().length === 0) {
+              <p class="drawer-muted">Todavía no hay documentos para mostrar.</p>
+            } @else {
+              <ul class="drawer-doc-list" aria-label="Documentos">
+                @for (doc of mergedDocuments(); track doc.id) {
+                  <li class="drawer-doc-card">
+                    <div class="drawer-doc-card__main">
+                      <span class="drawer-doc-card__name">{{ doc.name }}</span>
+                      <span class="drawer-doc-card__meta">
+                        <span class="drawer-doc-card__status">{{ doc.status }}</span>
+                        <span class="drawer-doc-card__date">{{ doc.created_at | date: 'short' }}</span>
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      class="drawer-linkish"
+                      (click)="documentUpdateSoon(doc)"
+                    >
+                      Actualizar documento
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          }
+          @case ('participants') {
+            <div class="drawer-toolbar drawer-toolbar--split">
+              <button type="button" class="drawer-btn drawer-btn--primary" (click)="addParticipantSoon()">
+                <i class="pi pi-user-plus" aria-hidden="true"></i>
+                Añadir participante
+              </button>
+            </div>
+            @if (membersLoading()) {
+              <p class="drawer-muted">Cargando participantes…</p>
+            } @else if (members().length === 0) {
+              <p class="drawer-muted">No hay participantes listados.</p>
+            } @else {
+              <ul class="drawer-member-list" aria-label="Participantes">
+                @for (m of members(); track m.id) {
+                  <li class="drawer-member-card">
+                    <div class="drawer-member-card__main">
+                      <span class="drawer-member-card__title">Usuario {{ m.member_id }}</span>
+                      <span class="drawer-member-card__meta">
+                        Estado: {{ m.status }}
+                        @if (m.joined_at) {
+                          <span> · Entró {{ m.joined_at | date: 'short' }}</span>
+                        }
+                      </span>
+                    </div>
+                    <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="removeMember(m)">
+                      Quitar
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+            <button type="button" class="drawer-action-item drawer-action-item--spaced" (click)="leaveChat()">
+              <i class="pi pi-sign-out drawer-action-item__icon" aria-hidden="true"></i>
+              <span class="drawer-action-item__label">Abandonar chat</span>
+            </button>
+          }
+          @case ('chat') {
+            <nav class="drawer-action-list" aria-label="Gestión del chat">
+              <button type="button" class="drawer-action-item" (click)="shareOrArchiveSoon('share')">
+                <i class="pi pi-share-alt drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Compartir</span>
+              </button>
+              <button type="button" class="drawer-action-item" (click)="renameChat()">
+                <i class="pi pi-pencil drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Cambiar el nombre</span>
+              </button>
+              <button type="button" class="drawer-action-item" (click)="shareOrArchiveSoon('archive')">
+                <i class="pi pi-inbox drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Archivar</span>
+              </button>
+              <button type="button" class="drawer-action-item drawer-action-item--danger" (click)="deleteChatClick()">
+                <i class="pi pi-trash drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Borrar chat</span>
+              </button>
+            </nav>
+          }
         }
       }
     </div>

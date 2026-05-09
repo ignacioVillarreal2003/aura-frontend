@@ -52,12 +52,12 @@ export interface ChatSummary {
   updated_at: string | null;
 }
 
-export type ChatMemberStatus = 'active' | 'inactive' | 'pending';
+export type ChatMembershipStatus = 'active' | 'inactive' | 'pending';
 
 export interface ChatMember {
   id: number;
   member_id: number;
-  status: ChatMemberStatus;
+  status: ChatMembershipStatus;
   joined_at: string | null;
 }
 
@@ -130,15 +130,29 @@ export interface SendMessageResponse {
   assistant_error: AssistantErrorBlock | null;
 }
 
-export interface ChatMembershipRow {
+export interface ChatMembership {
   id: number;
   member_id: number;
   chat_id: number;
-  status: ChatMemberStatus;
+  status: ChatMembershipStatus;
   joined_at: string | null;
   left_at: string | null;
   created_by: number;
   created_at: string;
+}
+
+export type ChatMembershipRow = ChatMembership;
+
+export interface Chat {
+  id: number;
+  name: string;
+}
+
+export interface User {
+  name: string;
+  email?: string;
+  role?: string;
+  member_id?: number | null;
 }
 
 export interface AddMembersRequest {
@@ -146,11 +160,11 @@ export interface AddMembersRequest {
 }
 
 export interface UpdateMemberRequest {
-  status: ChatMemberStatus;
+  status: ChatMembershipStatus;
 }
 
 export interface PaginatedMembershipsResponse {
-  data: ChatMembershipRow[];
+  data: ChatMembership[];
   pagination: ChatPagination;
 }
 
