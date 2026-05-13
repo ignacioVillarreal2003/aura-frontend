@@ -7,7 +7,8 @@
     "types": [],
     "baseUrl": ".",
     "paths": {
-      "@core/*": ["src/app/core/*"]
+      "@core/*": ["src/app/core/*"],
+      "@types/*": ["src/app/core/types/*"]
     }
   },
   "include": [

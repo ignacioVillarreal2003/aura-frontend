@@ -39,12 +39,12 @@ export class ChatPageComponent {
 
   private syncActiveFromUrl(): void {
     const url = this.router.url.split('?')[0];
-    if (url.startsWith('/user')) {
-      this.activeId.set('profile');
-      return;
-    }
     if (url.includes('/main-container/chats')) {
       this.activeId.set('chats');
+      return;
+    }
+    if (url.includes('/main-container/tools')) {
+      this.activeId.set('tools');
       return;
     }
     if (url.includes('/main-container/chat-home')) {

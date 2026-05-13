@@ -1,0 +1,55 @@
+<div class="resumen-page">
+  <a routerLink="/main-container/tools" class="resumen-back">← Herramientas</a>
+
+  <header class="resumen-header">
+    <h1 class="resumen-title">Resumen extenso</h1>
+    <p class="resumen-subtitle">
+      Subí un documento para obtener un resumen detallado. El procesamiento ocurre en el servidor configurado en
+      <code>toolsApiUrl</code>.
+    </p>
+  </header>
+
+  <div
+    class="resumen-dropzone"
+    (dragover)="onDragOver($event)"
+    (dragenter)="onDragEnter($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+    [class.resumen-dropzone--busy]="loading()"
+  >
+    <input
+      #fileInp
+      type="file"
+      class="resumen-file-input"
+      accept=".pdf,.doc,.docx,.txt,.md,image/*"
+      (change)="onFileSelected($event)"
+      aria-label="Elegir documento"
+    />
+    @if (loading()) {
+      <p class="resumen-dropzone__hint">Generando resumen…</p>
+    } @else {
+      <p class="resumen-dropzone__hint">Arrastrá un archivo aquí o elegí uno desde tu equipo.</p>
+      <button type="button" class="resumen-btn resumen-btn--primary" (click)="triggerPick(fileInp)">
+        Elegir documento
+      </button>
+    }
+  </div>
+
+  @if (fileName()) {
+    <p class="resumen-file-meta">Archivo: <strong>{{ fileName() }}</strong></p>
+  }
+
+  @if (error()) {
+    <div class="resumen-alert" role="alert">{{ error() }}</div>
+  }
+
+  @if (result() != null) {
+    <section class="resumen-result" aria-label="Resultado">
+      <div class="resumen-result__head">
+        <h2 class="resumen-result__title">Resultado</h2>
+        <button type="button" class="resumen-btn resumen-btn--ghost" (click)="clearResult()">Limpiar</button>
+      </div>
+      <pre class="resumen-result__body">{{ result() }}</pre>
+    </section>
+  }
+</div>

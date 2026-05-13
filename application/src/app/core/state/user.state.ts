@@ -1,11 +1,11 @@
 import { Injectable, signal } from '@angular/core';
-import type { ValidateResponse } from '../models/types/authentication.types';
+import type { AuthValidateUserDto } from '@core/types/aura-auth-service.types';
 
 @Injectable({ providedIn: 'root' })
 export class UserState {
-  readonly user = signal<ValidateResponse | null>(null);
+  readonly user = signal<AuthValidateUserDto | null>(null);
 
-  setUser(user: ValidateResponse | null): void {
+  setUser(user: AuthValidateUserDto | null): void {
     this.user.set(user);
   }
 }
