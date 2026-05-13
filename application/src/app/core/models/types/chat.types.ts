@@ -18,10 +18,18 @@ export interface DrfCursorPage<T> {
 export interface ChatListApiRow {
   id: number;
   name: string;
+  tags: string[];
+  is_ephemeral: boolean;
+  is_locked: boolean;
   last_message_at: string | null;
+  is_archived: boolean;
   created_by: number;
   created_at: string;
   member_count: number;
+  unread_count: number;
+  is_pinned: boolean;
+  archived_at: string | null;
+  is_muted: boolean;
 }
 
 export interface ChatDetailApiRow {
@@ -29,7 +37,11 @@ export interface ChatDetailApiRow {
   name: string;
   system_prompt: string | null;
   response_style: string | null;
+  tags: string[];
+  is_ephemeral: boolean;
+  is_locked: boolean;
   last_message_at: string | null;
+  is_archived: boolean;
   created_by: number;
   created_at: string;
   updated_by: number | null;
@@ -50,9 +62,14 @@ export interface ChatSummary {
   last_message_at: string | null;
   created_at: string;
   updated_at: string | null;
+  is_archived: boolean;
+  is_pinned: boolean;
+  unread_count: number;
+  tags: string[];
 }
 
 export type ChatMemberStatus = 'active' | 'inactive' | 'pending';
+export type ChatMemberRole = 'owner' | 'editor' | 'reader';
 
 export interface ChatMember {
   id: number;
@@ -102,6 +119,9 @@ export interface ChatApiMessage {
   created_by: number | null;
   created_at: string;
   deleted_at: string | null;
+  is_bookmarked: boolean;
+  user_feedback: 1 | -1 | null;
+  thread_reply_count: number;
 }
 
 export interface PaginatedMessagesResponse {
@@ -126,6 +146,12 @@ export interface AssistantErrorBlock {
 
 export interface SendMessageResponse {
   message: ChatApiMessage;
+  transcript: string | null;
+  assistant: AssistantBlock | null;
+  assistant_error: AssistantErrorBlock | null;
+}
+
+export interface RegenerateResponse {
   assistant: AssistantBlock | null;
   assistant_error: AssistantErrorBlock | null;
 }
@@ -135,6 +161,7 @@ export interface ChatMembershipRow {
   member_id: number;
   chat_id: number;
   status: ChatMemberStatus;
+  role: ChatMemberRole;
   joined_at: string | null;
   left_at: string | null;
   created_by: number;
@@ -149,8 +176,108 @@ export interface UpdateMemberRequest {
   status: ChatMemberStatus;
 }
 
+export interface UpdateMemberRoleRequest {
+  role: ChatMemberRole;
+}
+
 export interface PaginatedMembershipsResponse {
   data: ChatMembershipRow[];
+  pagination: ChatPagination;
+}
+
+export interface PinnedMessageApiRow {
+  id: number;
+  chat_id: number;
+  message_id: number;
+  pinned_by: number;
+  pinned_at: string;
+  message: Omit<ChatApiMessage, 'deleted_at' | 'chat_id'> & { chat_id?: number; deleted_at?: string | null };
+}
+
+export interface PinnedMessageRow {
+  id: number;
+  chat_id: number;
+  message_id: number;
+  pinned_by: number;
+  pinned_at: string;
+  message: ChatApiMessage;
+}
+
+export interface PaginatedPinnedMessagesResponse {
+  data: PinnedMessageRow[];
+  pagination: ChatPagination;
+}
+
+export interface ThreadReplyRow {
+  id: number;
+  parent_message_id: number;
+  message: string;
+  created_by: number;
+  created_at: string;
+}
+
+export interface MessageFeedbackRow {
+  id: number;
+  message_id: number;
+  user_id: number;
+  value: 1 | -1;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ShareLinkRow {
+  id: number;
+  chat_id: number;
+  token: string;
+  created_by: number;
+  created_at: string;
+  expires_at: string | null;
+  is_active: boolean;
+}
+
+export interface CreateShareLinkRequest {
+  expires_at?: string | null;
+}
+
+export interface PaginatedShareLinksResponse {
+  data: ShareLinkRow[];
+  pagination: ChatPagination;
+}
+
+export type WebhookEvent =
+  | 'message.created'
+  | 'member.joined'
+  | 'member.left'
+  | 'chat.locked'
+  | 'chat.unlocked';
+
+export interface WebhookRow {
+  id: number;
+  chat_id: number;
+  url: string;
+  events: WebhookEvent[];
+  is_active: boolean;
+  created_by: number;
+  created_at: string;
+}
+
+export interface WebhookCreateRow extends WebhookRow {
+  secret: string;
+}
+
+export interface CreateWebhookRequest {
+  url: string;
+  events: WebhookEvent[];
+}
+
+export interface PatchWebhookRequest {
+  url?: string;
+  events?: WebhookEvent[];
+  is_active?: boolean;
+}
+
+export interface PaginatedWebhooksResponse {
+  data: WebhookRow[];
   pagination: ChatPagination;
 }
 

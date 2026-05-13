@@ -215,6 +215,9 @@ export class ChatSessionComponent implements OnDestroy {
                 created_by: null,
                 created_at: new Date().toISOString(),
                 deleted_at: null,
+                is_bookmarked: false,
+                user_feedback: null,
+                thread_reply_count: 0,
               },
             ]);
           }
@@ -339,6 +342,9 @@ export class ChatSessionComponent implements OnDestroy {
           created_by: msg.created_by,
           created_at: msg.created_at,
           deleted_at: null,
+          is_bookmarked: false,
+          user_feedback: null,
+          thread_reply_count: 0,
         };
         this.messages.update((list) => (list.some((m) => m.id === row.id) ? list : [...list, row]));
         setTimeout(() => this.scrollToBottom(), 50);
@@ -369,6 +375,9 @@ export class ChatSessionComponent implements OnDestroy {
                     created_by: msg.created_by ?? null,
                     created_at: msg.created_at ?? new Date().toISOString(),
                     deleted_at: null,
+                    is_bookmarked: false,
+                    user_feedback: null,
+                    thread_reply_count: 0,
                   }
                 : m
             )
@@ -388,6 +397,9 @@ export class ChatSessionComponent implements OnDestroy {
               created_by: msg.created_by ?? null,
               created_at: msg.created_at ?? new Date().toISOString(),
               deleted_at: null,
+              is_bookmarked: false,
+              user_feedback: null,
+              thread_reply_count: 0,
             },
           ]);
         }
@@ -475,6 +487,9 @@ export class ChatSessionComponent implements OnDestroy {
           created_by: null,
           created_at: new Date().toISOString(),
           deleted_at: null,
+          is_bookmarked: false,
+          user_feedback: null,
+          thread_reply_count: 0,
         },
       ]);
     } else {

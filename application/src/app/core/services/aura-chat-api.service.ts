@@ -56,10 +56,6 @@ export class AuraChatApiService {
     return this.chats.createMessage(chatId, body);
   }
 
-  getMessage(chatId: number, messageId: number): Observable<ChatApiMessage> {
-    return this.chats.getMessage(chatId, messageId);
-  }
-
   deleteMessage(chatId: number, messageId: number): Observable<void> {
     return this.chats.deleteMessage(chatId, messageId);
   }
