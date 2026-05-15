@@ -663,6 +663,95 @@
   }
 }
 
+.message-actions {
+  display: flex;
+  gap: 2px;
+  padding: 2px 0 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.message:hover .message-actions,
+.message:focus-within .message-actions {
+  opacity: 1;
+}
+
+.user-message .message-actions {
+  justify-content: flex-end;
+}
+
+.message-action-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #9a9aa3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: background 0.12s ease, color 0.12s ease;
+  flex-shrink: 0;
+}
+
+.message-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #e8e8ea);
+}
+
+.message-action-btn--active {
+  color: #818cf8;
+}
+
+.message-action-btn--active:hover:not(:disabled) {
+  color: #a5b4fc;
+  background: rgba(129, 140, 248, 0.12);
+}
+
+.message-action-btn--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.message-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.session-regenerate {
+  display: flex;
+  justify-content: center;
+  padding: 8px 20px 4px;
+}
+
+.session-regenerate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary, #9a9aa3);
+  font-family: 'Sora', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.session-regenerate-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text-primary, #e8e8ea);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.session-regenerate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .chat-input-container {
   padding: 14px 20px;
   flex-shrink: 0;
@@ -889,6 +978,205 @@
 
 .messages-container::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
+}
+
+.peer-typing {
+  justify-content: flex-end;
+}
+
+.peer-typing__bubble {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.peer-typing__label {
+  font-size: 11px;
+  color: var(--text-secondary, #9a9aa3);
+  align-self: flex-end;
+  margin-top: 2px;
+}
+
+.message-action-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: #6366f1;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.message-action-btn--thread {
+  position: relative;
+}
+
+.thread-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 0 0 46px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.thread-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.thread-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.thread-close-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #9a9aa3);
+  cursor: pointer;
+  font-size: 10px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.thread-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #e8e8ea);
+}
+
+.thread-loading {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.thread-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #818cf8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.thread-empty {
+  margin: 0;
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text-secondary, #9a9aa3);
+  text-align: center;
+}
+
+.thread-reply-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.thread-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.thread-reply__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary, #e8e8ea);
+  word-break: break-word;
+}
+
+.thread-reply__time {
+  font-size: 10px;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.thread-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.thread-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary, #e8e8ea);
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s ease;
+  overflow-y: hidden;
+}
+
+.thread-input:focus {
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.thread-input::placeholder {
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.thread-send-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  transition: opacity 0.15s ease, transform 0.12s ease;
+}
+
+.thread-send-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.thread-send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

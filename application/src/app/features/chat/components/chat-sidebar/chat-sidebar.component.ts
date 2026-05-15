@@ -4,6 +4,7 @@ import {
   Input,
   OnInit,
   Output,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -14,7 +15,7 @@ import type { ChatRef } from '../chat-options-drawer/chat-options-drawer';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { ToastService } from '@core/components/toast-service';
-import type { ChatListItemDto } from '@types/aura-chat-service.types';
+import type { ChatListItemDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
   selector: 'app-chat-sidebar',
@@ -35,7 +36,15 @@ export class ChatSidebarComponent implements OnInit {
   @Output() toggle = new EventEmitter<boolean>();
   @Output() chatAction = new EventEmitter<{ chatId: string; action: string }>();
 
-  chats: ChatListItemDto[] = [];
+  readonly chats = signal<ChatListItemDto[]>([]);
+  readonly sortedChats = computed(() =>
+    [...this.chats()].sort((a, b) => {
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+      const at = a.last_message_at ?? a.created_at;
+      const bt = b.last_message_at ?? b.created_at;
+      return new Date(bt).getTime() - new Date(at).getTime();
+    })
+  );
 
   chatActionsDrawerOpen = signal(false);
   drawerContextChat = signal<ChatRef | null>(null);
@@ -47,10 +56,10 @@ export class ChatSidebarComponent implements OnInit {
   reloadChats(): void {
     this.chatHttp.listMyChats({ page_size: 50 }).subscribe({
       next: (page) => {
-        this.chats = [...page.results];
+        this.chats.set([...page.results]);
       },
       error: () => {
-        this.chats = [];
+        this.chats.set([]);
         this.toastService.show('No se pudieron cargar los chats.', 'error');
       },
     });
@@ -75,9 +84,16 @@ export class ChatSidebarComponent implements OnInit {
 
   onChatOptionsClick(event: MouseEvent, chatId: number) {
     event.stopPropagation();
-    const row = this.chats.find((c) => c.id === chatId);
+    const row = this.chats().find((c) => c.id === chatId);
     if (!row) return;
-    this.drawerContextChat.set({ id: row.id, name: row.name });
+    this.drawerContextChat.set({
+      id: row.id,
+      name: row.name,
+      is_pinned: row.is_pinned,
+      archived_at: row.archived_at,
+      is_locked: row.is_locked,
+      is_muted: row.is_muted,
+    });
     this.chatActionsDrawerOpen.set(true);
   }
 
@@ -96,11 +112,16 @@ export class ChatSidebarComponent implements OnInit {
     const id = data.chatId;
     if (!Number.isFinite(id)) return;
 
-    if (data.action === 'leave') {
+    const navigateAwayActions = new Set(['leave', 'archive']);
+    const reloadActions = new Set(['leave', 'archive', 'unarchive', 'pin', 'unpin', 'lock', 'unlock', 'mute', 'unmute']);
+
+    if (reloadActions.has(data.action)) {
       this.reloadChats();
-      const url = this.router.url.split('?')[0];
-      if (url.includes(`/main-container/chat/${id}`)) {
-        void this.router.navigate(['/main-container', 'chat-home']);
+      if (navigateAwayActions.has(data.action)) {
+        const url = this.router.url.split('?')[0];
+        if (url.includes(`/main-container/chat/${id}`)) {
+          void this.router.navigate(['/main-container', 'chat-home']);
+        }
       }
       return;
     }

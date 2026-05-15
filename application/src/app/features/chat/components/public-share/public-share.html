@@ -1,0 +1,64 @@
+<div class="share-page">
+  <header class="share-header">
+    <div class="share-header__brand">
+      <i class="pi pi-sparkles share-header__icon" aria-hidden="true"></i>
+      <span class="share-header__title">Chat compartido</span>
+    </div>
+  </header>
+
+  <main class="share-main">
+    @if (loading()) {
+      <div class="share-loading">
+        <div class="share-spinner"></div>
+        <p>Cargando mensajes…</p>
+      </div>
+    } @else if (error()) {
+      <div class="share-error">
+        <i class="pi pi-exclamation-triangle share-error__icon" aria-hidden="true"></i>
+        <p class="share-error__text">{{ error() }}</p>
+      </div>
+    } @else if (messages().length === 0) {
+      <div class="share-empty">
+        <i class="pi pi-comments share-empty__icon" aria-hidden="true"></i>
+        <p>No hay mensajes para mostrar.</p>
+      </div>
+    } @else {
+      <ol class="share-message-list">
+        @for (msg of messages(); track msg.id) {
+          <li class="share-message" [class.share-message--user]="msg.sender_type === 'user'" [class.share-message--system]="msg.sender_type === 'system'">
+            <div class="share-message__avatar" aria-hidden="true">
+              @if (msg.sender_type === 'system') {
+                <i class="pi pi-sparkles"></i>
+              } @else {
+                <i class="pi pi-user"></i>
+              }
+            </div>
+            <div class="share-message__body">
+              <div class="share-message__bubble">
+                <div class="share-message__text" [innerHTML]="msg.message | markdown"></div>
+              </div>
+              <span class="share-message__time">{{ formatTime(msg.created_at) }}</span>
+            </div>
+          </li>
+        }
+      </ol>
+
+      @if (nextUrl()) {
+        <div class="share-load-more">
+          <button
+            type="button"
+            class="share-load-btn"
+            [disabled]="loadingMore()"
+            (click)="loadMore()">
+            @if (loadingMore()) {
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              Cargando…
+            } @else {
+              Cargar más mensajes
+            }
+          </button>
+        </div>
+      }
+    }
+  </main>
+</div>

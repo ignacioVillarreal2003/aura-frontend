@@ -376,6 +376,13 @@
   color: var(--text-primary);
 }
 
+.sidebar-chat-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
 .chats-section-label {
   margin: 1rem 0 0.85rem;
   padding: 0 0.35rem;

@@ -66,6 +66,22 @@
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
+              <button type="button" class="drawer-section-tile" (click)="openSub('pinned')">
+                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-thumbtack"></i></span>
+                <span class="drawer-section-tile__text">
+                  <span class="drawer-section-tile__title">Mensajes fijados</span>
+                  <span class="drawer-section-tile__hint">Mensajes anclados en este chat</span>
+                </span>
+                <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="drawer-section-tile" (click)="openSub('bookmarks')">
+                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-bookmark"></i></span>
+                <span class="drawer-section-tile__text">
+                  <span class="drawer-section-tile__title">Guardados</span>
+                  <span class="drawer-section-tile__hint">Mensajes marcados como favoritos</span>
+                </span>
+                <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+              </button>
             </nav>
           }
           @case ('documents') {
@@ -129,9 +145,13 @@
           }
           @case ('participants') {
             <div class="drawer-toolbar drawer-toolbar--split">
-              <button type="button" class="drawer-btn drawer-btn--primary" (click)="addParticipantSoon()">
+              <button type="button" class="drawer-btn drawer-btn--primary" (click)="addParticipants()">
                 <i class="pi pi-user-plus" aria-hidden="true"></i>
                 Añadir participante
+              </button>
+              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadMembers(contextChatId()!)" [disabled]="membersLoading()">
+                <i class="pi pi-refresh" [class.pi-spin]="membersLoading()" aria-hidden="true"></i>
+                Actualizar
               </button>
             </div>
             @if (membersLoading()) {
@@ -145,15 +165,18 @@
                     <div class="drawer-member-card__main">
                       <span class="drawer-member-card__title">Usuario {{ m.member_id }}</span>
                       <span class="drawer-member-card__meta">
-                        Estado: {{ m.status }}
+                        <span class="drawer-member-badge drawer-member-badge--role">{{ m.role }}</span>
+                        <span class="drawer-member-badge">{{ m.status }}</span>
                         @if (m.joined_at) {
-                          <span> · Entró {{ m.joined_at | date: 'short' }}</span>
+                          <span>· Entró {{ m.joined_at | date: 'short' }}</span>
                         }
                       </span>
                     </div>
-                    <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="removeMember(m)">
-                      Quitar
-                    </button>
+                    <div class="drawer-share-actions">
+                      <button type="button" class="drawer-linkish" title="Cicla entre owner, editor, reader" (click)="changeRole(m)">Rol</button>
+                      <button type="button" class="drawer-linkish" title="Cicla entre active, inactive, pending" (click)="changeStatus(m)">Estado</button>
+                      <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="removeMember(m)">Quitar</button>
+                    </div>
                   </li>
                 }
               </ul>
@@ -165,21 +188,258 @@
           }
           @case ('chat') {
             <nav class="drawer-action-list" aria-label="Gestión del chat">
-              <button type="button" class="drawer-action-item" (click)="shareOrArchiveSoon('share')">
+              <button type="button" class="drawer-action-item" (click)="openSub('share')">
                 <i class="pi pi-share-alt drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Compartir</span>
+              </button>
+              <button type="button" class="drawer-action-item" (click)="togglePin()">
+                <i [ngClass]="['pi', 'drawer-action-item__icon', isChatPinned() ? 'pi-ban' : 'pi-thumbtack']" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">{{ isChatPinned() ? 'Desfijar' : 'Fijar' }}</span>
               </button>
               <button type="button" class="drawer-action-item" (click)="renameChat()">
                 <i class="pi pi-pencil drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Cambiar el nombre</span>
               </button>
-              <button type="button" class="drawer-action-item" (click)="shareOrArchiveSoon('archive')">
+              <button type="button" class="drawer-action-item" (click)="archiveChat()">
                 <i class="pi pi-inbox drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">Archivar</span>
+                <span class="drawer-action-item__label">{{ isChatArchived() ? 'Desarchivar' : 'Archivar' }}</span>
+              </button>
+              <button type="button" class="drawer-action-item" (click)="toggleLock()">
+                <i [ngClass]="['pi', 'drawer-action-item__icon', isChatLocked() ? 'pi-lock-open' : 'pi-lock']" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">{{ isChatLocked() ? 'Desbloquear' : 'Bloquear' }}</span>
+              </button>
+              @if (isChatMuted()) {
+                <button type="button" class="drawer-action-item" (click)="unmute()">
+                  <i class="pi pi-volume-up drawer-action-item__icon" aria-hidden="true"></i>
+                  <span class="drawer-action-item__label">Activar sonido</span>
+                </button>
+              } @else {
+                <button type="button" class="drawer-action-item" (click)="openSub('mute')">
+                  <i class="pi pi-volume-off drawer-action-item__icon" aria-hidden="true"></i>
+                  <span class="drawer-action-item__label">Silenciar</span>
+                </button>
+              }
+              <button type="button" class="drawer-action-item" (click)="openSub('export')">
+                <i class="pi pi-download drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Exportar</span>
+              </button>
+              <button type="button" class="drawer-action-item" (click)="openSub('webhooks')">
+                <i class="pi pi-link drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Webhooks</span>
+              </button>
+              <button type="button" class="drawer-action-item drawer-action-item--danger" (click)="clearChatHistory()">
+                <i class="pi pi-eraser drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Limpiar historial</span>
               </button>
               <button type="button" class="drawer-action-item drawer-action-item--danger" (click)="deleteChatClick()">
                 <i class="pi pi-trash drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Borrar chat</span>
+              </button>
+            </nav>
+          }
+          @case ('share') {
+            <div class="drawer-toolbar">
+              <button type="button" class="drawer-btn drawer-btn--primary" (click)="createShareLink()">
+                <i class="pi pi-plus" aria-hidden="true"></i>
+                Crear enlace
+              </button>
+              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadShareLinks()" [disabled]="shareLinksLoading()">
+                <i class="pi pi-refresh" [class.pi-spin]="shareLinksLoading()" aria-hidden="true"></i>
+                Actualizar
+              </button>
+            </div>
+            @if (shareLinksLoading() && shareLinks().length === 0) {
+              <p class="drawer-muted">Cargando enlaces…</p>
+            } @else if (shareLinks().length === 0) {
+              <p class="drawer-muted">No hay enlaces de compartir activos.</p>
+            } @else {
+              <ul class="drawer-doc-list" aria-label="Enlaces compartidos">
+                @for (link of shareLinks(); track link.id) {
+                  <li class="drawer-doc-card">
+                    <div class="drawer-doc-card__main">
+                      <span class="drawer-doc-card__name drawer-share-token">{{ link.token }}</span>
+                      <span class="drawer-doc-card__meta">
+                        <span>Creado {{ link.created_at | date: 'short' }}</span>
+                        @if (link.expires_at) {
+                          <span>· Expira {{ link.expires_at | date: 'short' }}</span>
+                        }
+                        <span [class]="link.is_active ? 'drawer-share-badge--active' : 'drawer-share-badge--inactive'">
+                          {{ link.is_active ? '· Activo' : '· Inactivo' }}
+                        </span>
+                      </span>
+                    </div>
+                    <div class="drawer-share-actions">
+                      <button type="button" class="drawer-linkish" (click)="copyShareLink(link.token)">Copiar</button>
+                      @if (link.is_active) {
+                        <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="revokeShareLink(link.id)">Revocar</button>
+                      }
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+          @case ('mute') {
+            <p class="drawer-panel__intro">Elige por cuánto tiempo silenciar las notificaciones de este chat.</p>
+            <nav class="drawer-action-list" aria-label="Duración del silencio">
+              <button type="button" class="drawer-action-item" (click)="muteFor(1)">
+                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">1 hora</span>
+              </button>
+              <button type="button" class="drawer-action-item" (click)="muteFor(8)">
+                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">8 horas</span>
+              </button>
+              <button type="button" class="drawer-action-item" (click)="muteFor(24)">
+                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">24 horas</span>
+              </button>
+              <button type="button" class="drawer-action-item" (click)="muteFor(168)">
+                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">1 semana</span>
+              </button>
+            </nav>
+          }
+          @case ('webhooks') {
+            <div class="drawer-toolbar">
+              @if (!showWebhookForm()) {
+                <button type="button" class="drawer-btn drawer-btn--primary" (click)="showWebhookForm.set(true)">
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  Nuevo webhook
+                </button>
+              }
+              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadWebhooks()" [disabled]="webhooksLoading()">
+                <i class="pi pi-refresh" [class.pi-spin]="webhooksLoading()" aria-hidden="true"></i>
+                Actualizar
+              </button>
+            </div>
+            @if (showWebhookForm()) {
+              <div class="drawer-webhook-form">
+                <label class="drawer-webhook-label" for="webhook-url">URL del endpoint</label>
+                <input
+                  id="webhook-url"
+                  type="url"
+                  class="drawer-webhook-input"
+                  placeholder="https://ejemplo.com/webhook"
+                  [value]="newWebhookUrl()"
+                  (input)="onWebhookUrlInput($event)"
+                />
+                <p class="drawer-webhook-label">Eventos a recibir</p>
+                <div class="drawer-webhook-events">
+                  @for (ev of webhookEventOptions; track ev) {
+                    <label class="drawer-webhook-event">
+                      <input
+                        type="checkbox"
+                        class="drawer-webhook-checkbox"
+                        [checked]="isWebhookEventSelected(ev)"
+                        (change)="toggleWebhookEvent(ev)"
+                      />
+                      <span>{{ ev }}</span>
+                    </label>
+                  }
+                </div>
+                <div class="drawer-webhook-form-actions">
+                  <button type="button" class="drawer-btn drawer-btn--primary" (click)="submitCreateWebhook()">Crear</button>
+                  <button type="button" class="drawer-btn drawer-btn--secondary" (click)="cancelWebhookForm()">Cancelar</button>
+                </div>
+              </div>
+            }
+            @if (webhooksLoading() && webhooks().length === 0) {
+              <p class="drawer-muted">Cargando webhooks…</p>
+            } @else if (!showWebhookForm() && webhooks().length === 0) {
+              <p class="drawer-muted">No hay webhooks configurados para este chat.</p>
+            } @else if (webhooks().length > 0) {
+              <ul class="drawer-doc-list" aria-label="Webhooks">
+                @for (wh of webhooks(); track wh.id) {
+                  <li class="drawer-doc-card">
+                    <div class="drawer-doc-card__main">
+                      <span class="drawer-doc-card__name drawer-webhook-url">{{ wh.url }}</span>
+                      <span class="drawer-doc-card__meta">
+                        <span>Eventos: {{ wh.events.join(', ') }}</span>
+                        <span [class]="wh.is_active ? 'drawer-share-badge--active' : 'drawer-share-badge--inactive'">
+                          · {{ wh.is_active ? 'Activo' : 'Inactivo' }}
+                        </span>
+                      </span>
+                    </div>
+                    <div class="drawer-share-actions">
+                      <button type="button" class="drawer-linkish" (click)="toggleWebhookActive(wh)">
+                        {{ wh.is_active ? 'Desactivar' : 'Activar' }}
+                      </button>
+                      <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="deleteWebhookClick(wh.id)">Eliminar</button>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+          @case ('pinned') {
+            <div class="drawer-toolbar">
+              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadPinnedMessages()" [disabled]="pinnedLoading()">
+                <i class="pi pi-refresh" [class.pi-spin]="pinnedLoading()" aria-hidden="true"></i>
+                Actualizar
+              </button>
+            </div>
+            @if (pinnedLoading() && pinnedMessages().length === 0) {
+              <p class="drawer-muted">Cargando mensajes fijados…</p>
+            } @else if (pinnedMessages().length === 0) {
+              <p class="drawer-muted">No hay mensajes fijados en este chat.</p>
+            } @else {
+              <ul class="drawer-doc-list" aria-label="Mensajes fijados">
+                @for (pm of pinnedMessages(); track pm.id) {
+                  <li class="drawer-doc-card">
+                    <div class="drawer-doc-card__main">
+                      <span class="drawer-pinned-text">{{ pm.message.message }}</span>
+                      <span class="drawer-doc-card__meta">
+                        Fijado {{ pm.pinned_at | date: 'short' }}
+                      </span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+          @case ('bookmarks') {
+            <div class="drawer-toolbar">
+              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadBookmarkedMessages()" [disabled]="bookmarkedLoading()">
+                <i class="pi pi-refresh" [class.pi-spin]="bookmarkedLoading()" aria-hidden="true"></i>
+                Actualizar
+              </button>
+            </div>
+            @if (bookmarkedLoading() && bookmarkedMessages().length === 0) {
+              <p class="drawer-muted">Cargando guardados…</p>
+            } @else if (bookmarkedMessages().length === 0) {
+              <p class="drawer-muted">No hay mensajes guardados en este chat.</p>
+            } @else {
+              <ul class="drawer-doc-list" aria-label="Guardados">
+                @for (msg of bookmarkedMessages(); track msg.id) {
+                  <li class="drawer-doc-card">
+                    <div class="drawer-doc-card__main">
+                      <span class="drawer-pinned-text">{{ msg.message }}</span>
+                      <span class="drawer-doc-card__meta">{{ msg.created_at | date: 'short' }}</span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+          @case ('export') {
+            <p class="drawer-panel__intro">Descargá el contenido de este chat en distintos formatos.</p>
+            <nav class="drawer-action-list" aria-label="Formatos de exportación">
+              <button type="button" class="drawer-action-item" [disabled]="exportingAs() !== null" (click)="exportChat('pdf')">
+                <i [ngClass]="['pi', 'drawer-action-item__icon', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">PDF</span>
+              </button>
+              <button type="button" class="drawer-action-item" [disabled]="exportingAs() !== null" (click)="exportChat('markdown')">
+                <i [ngClass]="['pi', 'drawer-action-item__icon', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Markdown completo</span>
+              </button>
+              <button type="button" class="drawer-action-item" [disabled]="exportingAs() !== null" (click)="exportChat('ai')">
+                <i [ngClass]="['pi', 'drawer-action-item__icon', exportingAs() === 'ai' ? 'pi-spin pi-spinner' : 'pi-sparkles']" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Solo respuestas IA (Markdown)</span>
+              </button>
+              <button type="button" class="drawer-action-item" [disabled]="exportingAs() !== null" (click)="exportChat('json')">
+                <i [ngClass]="['pi', 'drawer-action-item__icon', exportingAs() === 'json' ? 'pi-spin pi-spinner' : 'pi-code']" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Copia de seguridad (JSON)</span>
               </button>
             </nav>
           }

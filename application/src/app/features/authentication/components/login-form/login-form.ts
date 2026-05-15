@@ -1,53 +1,55 @@
-import {Component, ElementRef, inject, ViewChild} from '@angular/core';
-import {InputText} from '../../../../shared/components/inputs/input-text/input-text';
-import {BtnText} from '../../../../shared/components/buttons/btn-text/btn-text';
-import {Router} from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
-import {FormsModule} from '@angular/forms';
+import { BtnText } from '../../../../shared/components/buttons/btn-text/btn-text';
 
 @Component({
   selector: 'app-login-form',
-  imports: [
-    InputText,
-    BtnText,
-    FormsModule
-  ],
+  standalone: true,
+  imports: [FormsModule, BtnText],
   templateUrl: './login-form.html',
-  styleUrl: './login-form.css'
+  styleUrl: './login-form.css',
 })
 export class LoginForm {
-  private router = inject(Router);
-  private auth = inject(AuthenticationService);
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthenticationService);
 
-  @ViewChild('emailField', { read: ElementRef }) emailField!: ElementRef<HTMLElement>;
-  @ViewChild('passField',  { read: ElementRef }) passField!:  ElementRef<HTMLElement>;
+  readonly username = signal('');
+  readonly password = signal('');
+  readonly submitting = signal(false);
+  readonly errorMessage = signal<string | null>(null);
 
-  email = '';
-  password = '';
-
-  private readValue(host: ElementRef<HTMLElement>): string {
-      const input = host.nativeElement.querySelector('input') as HTMLInputElement | null;
-      return input?.value ?? '';
-  }
-
-  submitting = false;
-  errorMessage: string | null = null;
-
-  onSubmit(evt: Event) {
+  onSubmit(evt: Event): void {
     evt.preventDefault();
-    const username = this.readValue(this.emailField);
-    const password = this.readValue(this.passField);
-    this.errorMessage = null;
-    this.submitting = true;
-    this.auth.loginWithCredentials(username, password).subscribe({
+    const user = this.username().trim();
+    const pass = this.password();
+    if (!user || !pass) {
+      this.errorMessage.set('Completá usuario y contraseña.');
+      return;
+    }
+    this.errorMessage.set(null);
+    this.submitting.set(true);
+    this.auth.loginWithCredentials(user, pass).subscribe({
       next: () => {
-        this.submitting = false;
+        this.submitting.set(false);
         void this.router.navigateByUrl('/main-container');
       },
-      error: () => {
-        this.submitting = false;
-        this.errorMessage = 'Usuario o contraseña incorrectos.';
+      error: (err: unknown) => {
+        this.submitting.set(false);
+        this.errorMessage.set(this.resolveErrorMessage(err));
       },
     });
+  }
+
+  private resolveErrorMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      if (err.status === 0) return 'Error de conexión. Verificá tu internet.';
+      if (err.status === 400 || err.status === 401) return 'Usuario o contraseña incorrectos.';
+      if (err.status === 429) return 'Demasiados intentos. Esperá un momento e intentá de nuevo.';
+      return 'Error del servidor. Intentá de nuevo más tarde.';
+    }
+    return 'Ocurrió un error inesperado.';
   }
 }

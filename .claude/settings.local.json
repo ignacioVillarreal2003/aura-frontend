@@ -17,7 +17,11 @@
       "Bash(find C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\core *)",
       "Bash(find \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\features\" -type d)",
       "Bash(find C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\environments *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ignac\\\\Desktop\\\\aura-frontend\\\\application\\\\src\\\\app\\\\features\" -Recurse)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(python *)"
     ]
   }
 }

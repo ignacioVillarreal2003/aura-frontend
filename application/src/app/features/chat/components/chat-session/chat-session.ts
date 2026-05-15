@@ -5,6 +5,7 @@ import {
   ElementRef,
   NgZone,
   OnDestroy,
+  computed,
   inject,
   signal,
   viewChild,
@@ -33,7 +34,9 @@ import type {
   FeedbackValue,
   MessageDto,
   MessageSenderType,
-} from '@types/aura-chat-service.types';
+  PinnedMessageDto,
+  ThreadReplyDto,
+} from '@aura-types/aura-chat-service.types';
 import { ChatService } from '@core/services/chat/chat.service';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
@@ -79,8 +82,31 @@ export class ChatSessionComponent implements OnDestroy {
   private chatId: number | null = null;
   private socket: ChatSocketConnection | null = null;
   private wsMessagesSub: Subscription | undefined;
+  private typingOutTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly peerTypingTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
   readonly streamingAssistantId = signal<number | null>(null);
+  readonly pinnedMessageIds = signal<Set<number>>(new Set());
+  readonly processingMessageIds = signal<Set<number>>(new Set());
+  readonly peerTypingIds = signal<Set<number>>(new Set());
+  readonly activeThreadMessageId = signal<number | null>(null);
+  readonly threadReplies = signal<ThreadReplyDto[]>([]);
+  readonly threadLoading = signal(false);
+  readonly threadReplyText = signal('');
+  readonly submittingReply = signal(false);
+  readonly exportingMessageId = signal<number | null>(null);
+  readonly regenerating = signal(false);
+  readonly canRegenerate = computed(() => {
+    const msgs = this.messages();
+    if (msgs.length === 0) return false;
+    const last = msgs[msgs.length - 1];
+    return (
+      last.sender_type === 'system' &&
+      !this.isTyping() &&
+      this.streamingAssistantId() === null &&
+      !this.regenerating()
+    );
+  });
 
   chat: ChatDetailDto | null = null;
   messages = signal<ChatMessage[]>([]);
@@ -127,17 +153,20 @@ export class ChatSessionComponent implements OnDestroy {
           return forkJoin({
             detail: this.http.getChat(id),
             messages: this.loadAllMessagesChronological(id),
+            pinned: this.http.listPinnedMessages(id, { page_size: 100 }),
           }).pipe(
             catchError(() => {
               this.toast.show('No se pudo cargar el chat.', 'error');
               void this.router.navigate(['/main-container', 'chats']);
               return EMPTY;
             }),
-            tap(({ detail, messages: msgs }) => {
+            tap(({ detail, messages: msgs, pinned }) => {
               this.chat = detail;
               this.chatShell.setCurrentChat(detail);
               this.messages.set(msgs);
+              this.pinnedMessageIds.set(new Set(pinned.results.map((p: PinnedMessageDto) => p.message_id)));
               this.loading = false;
+              this.http.markChatAsRead(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
               void this.openWebSocketAfterLoad(id, pending);
               setTimeout(() => this.scrollToBottom(), 100);
               queueMicrotask(() => this.autosizeTextarea());
@@ -186,31 +215,41 @@ export class ChatSessionComponent implements OnDestroy {
   private uploadDocumentFromFile(file: File | null, closeDrawerOnSuccess: boolean): void {
     if (!file || !this.chatId || this.documentUploading()) return;
     this.documentUploading.set(true);
-    this.documents
-      .createDocumentFromInput({ file, chat_id: this.chatId, prefer_docling: false })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          this.sessionDocuments.update((d) => [
-            ...d,
-            {
-              id: res.id,
-              name: res.name,
-              status: res.status,
-              created_at: new Date().toISOString(),
-            },
-          ]);
-          this.toast.show('Documento subido; se procesará en segundo plano.', 'success');
-          this.documentUploading.set(false);
-          if (closeDrawerOnSuccess) {
-            this.optionsOpen.set(false);
-          }
-        },
-        error: () => {
-          this.toast.show('Error al subir el documento.', 'error');
-          this.documentUploading.set(false);
-        },
+    let upload$;
+    try {
+      upload$ = this.documents.createDocumentFromInput({
+        file,
+        chat_id: this.chatId,
+        prefer_docling: false,
       });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Archivo inválido.';
+      this.toast.show(msg, 'error');
+      this.documentUploading.set(false);
+      return;
+    }
+    upload$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.sessionDocuments.update((d) => [
+          ...d,
+          {
+            id: res.id,
+            name: res.name,
+            status: res.status,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+        this.toast.show('Documento subido; se procesará en segundo plano.', 'success');
+        this.documentUploading.set(false);
+        if (closeDrawerOnSuccess) {
+          this.optionsOpen.set(false);
+        }
+      },
+      error: () => {
+        this.toast.show('Error al subir el documento.', 'error');
+        this.documentUploading.set(false);
+      },
+    });
   }
 
   private hasFileDrag(dataTransfer: DataTransfer | null): boolean {
@@ -266,8 +305,20 @@ export class ChatSessionComponent implements OnDestroy {
       });
       return;
     }
-    if (e.action === 'leave') {
-      void this.router.navigate(['/main-container', 'chats']);
+    if (e.action === 'leave' || e.action === 'archive') {
+      void this.router.navigate(['/main-container', 'chat-home']);
+      return;
+    }
+    if (e.action === 'clear-history') {
+      this.messages.set([]);
+      return;
+    }
+    if (e.action === 'lock' && this.chat) {
+      this.chat = { ...this.chat, is_locked: true };
+      return;
+    }
+    if (e.action === 'unlock' && this.chat) {
+      this.chat = { ...this.chat, is_locked: false };
       return;
     }
   }
@@ -285,8 +336,50 @@ export class ChatSessionComponent implements OnDestroy {
     this.chatShell.clearCurrentChat();
   }
 
+  private clearTypingTimers(): void {
+    if (this.typingOutTimer != null) {
+      clearTimeout(this.typingOutTimer);
+      this.typingOutTimer = null;
+    }
+    this.peerTypingTimers.forEach((t) => clearTimeout(t));
+    this.peerTypingTimers.clear();
+    this.peerTypingIds.set(new Set());
+  }
+
   sendBlocked(): boolean {
     return this.isTyping() || this.streamingAssistantId() !== null;
+  }
+
+  regenerateResponse(): void {
+    if (!this.chatId || !this.canRegenerate()) return;
+    this.regenerating.set(true);
+    this.http
+      .regenerateAssistantResponse(this.chatId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          const text = res.assistant?.answer ?? '';
+          if (text) {
+            this.messages.update((msgs) => {
+              const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'system');
+              if (lastSystemIdx === -1) return msgs;
+              const realIdx = msgs.length - 1 - lastSystemIdx;
+              return msgs.map((m, i) =>
+                i === realIdx ? { ...m, message: text, created_at: new Date().toISOString() } : m
+              );
+            });
+          }
+          if (res.assistant_error) {
+            this.toast.show(res.assistant_error.detail, 'error');
+          }
+          this.regenerating.set(false);
+          setTimeout(() => this.scrollToBottom(), 50);
+        },
+        error: () => {
+          this.toast.show('No se pudo regenerar la respuesta.', 'error');
+          this.regenerating.set(false);
+        },
+      });
   }
 
   sendMessage(): void {
@@ -343,6 +436,17 @@ export class ChatSessionComponent implements OnDestroy {
   onNewMessageChange(value: string): void {
     this.newMessage = value;
     queueMicrotask(() => this.autosizeTextarea());
+    this.emitTypingStart();
+  }
+
+  private emitTypingStart(): void {
+    if (!this.socket) return;
+    this.socket.sendTyping(true);
+    if (this.typingOutTimer != null) clearTimeout(this.typingOutTimer);
+    this.typingOutTimer = setTimeout(() => {
+      this.socket?.sendTyping(false);
+      this.typingOutTimer = null;
+    }, 2000);
   }
 
   private autosizeTextarea(): void {
@@ -365,6 +469,200 @@ export class ChatSessionComponent implements OnDestroy {
       event.preventDefault();
       this.sendMessage();
     }
+  }
+
+  isProcessing(msgId: number): boolean {
+    return this.processingMessageIds().has(msgId);
+  }
+
+  isPinned(msgId: number): boolean {
+    return this.pinnedMessageIds().has(msgId);
+  }
+
+  private setProcessing(id: number, active: boolean): void {
+    this.processingMessageIds.update((s) => {
+      const next = new Set(s);
+      active ? next.add(id) : next.delete(id);
+      return next;
+    });
+  }
+
+  deleteMessage(message: ChatMessage): void {
+    if (!this.chatId || !window.confirm('¿Eliminar este mensaje?')) return;
+    this.setProcessing(message.id, true);
+    this.http.deleteMessage(this.chatId, message.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.messages.update((msgs) => msgs.filter((m) => m.id !== message.id));
+          this.setProcessing(message.id, false);
+        },
+        error: () => {
+          this.toast.show('No se pudo eliminar el mensaje.', 'error');
+          this.setProcessing(message.id, false);
+        },
+      });
+  }
+
+  toggleBookmark(message: ChatMessage): void {
+    if (!this.chatId) return;
+    this.setProcessing(message.id, true);
+    const obs$ = message.is_bookmarked
+      ? this.http.unbookmarkMessage(this.chatId, message.id)
+      : this.http.bookmarkMessage(this.chatId, message.id);
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.messages.update((msgs) =>
+          msgs.map((m) => (m.id === message.id ? { ...m, is_bookmarked: !m.is_bookmarked } : m))
+        );
+        this.setProcessing(message.id, false);
+      },
+      error: () => {
+        this.toast.show('No se pudo actualizar el guardado.', 'error');
+        this.setProcessing(message.id, false);
+      },
+    });
+  }
+
+  togglePinMessage(message: ChatMessage): void {
+    if (!this.chatId) return;
+    const pinned = this.isPinned(message.id);
+    this.setProcessing(message.id, true);
+    const obs$ = pinned
+      ? this.http.unpinMessage(this.chatId, message.id)
+      : this.http.pinMessage(this.chatId, message.id);
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.pinnedMessageIds.update((s) => {
+          const next = new Set(s);
+          pinned ? next.delete(message.id) : next.add(message.id);
+          return next;
+        });
+        this.setProcessing(message.id, false);
+      },
+      error: () => {
+        this.toast.show('No se pudo actualizar el mensaje fijado.', 'error');
+        this.setProcessing(message.id, false);
+      },
+    });
+  }
+
+  toggleThread(message: ChatMessage): void {
+    if (this.activeThreadMessageId() === message.id) {
+      this.activeThreadMessageId.set(null);
+      this.threadReplies.set([]);
+      this.threadReplyText.set('');
+      return;
+    }
+    this.activeThreadMessageId.set(message.id);
+    this.threadReplies.set([]);
+    this.threadReplyText.set('');
+    this.loadThreadReplies(message.id);
+  }
+
+  private loadThreadReplies(messageId: number): void {
+    if (!this.chatId) return;
+    this.threadLoading.set(true);
+    this.http
+      .listThreadReplies(this.chatId, messageId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (replies) => {
+          this.threadReplies.set([...replies]);
+          this.threadLoading.set(false);
+        },
+        error: () => {
+          this.toast.show('No se pudieron cargar las respuestas del hilo.', 'error');
+          this.threadLoading.set(false);
+        },
+      });
+  }
+
+  submitThreadReply(messageId: number): void {
+    if (!this.chatId || !this.threadReplyText().trim() || this.submittingReply()) return;
+    const text = this.threadReplyText().trim();
+    this.submittingReply.set(true);
+    this.http
+      .addThreadReply(this.chatId, messageId, { message: text })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (reply) => {
+          this.threadReplies.update((r) => [...r, reply]);
+          this.messages.update((msgs) =>
+            msgs.map((m) =>
+              m.id === messageId ? { ...m, thread_reply_count: m.thread_reply_count + 1 } : m
+            )
+          );
+          this.threadReplyText.set('');
+          this.submittingReply.set(false);
+        },
+        error: () => {
+          this.toast.show('No se pudo enviar la respuesta.', 'error');
+          this.submittingReply.set(false);
+        },
+      });
+  }
+
+  onThreadReplyKey(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      const activeId = this.activeThreadMessageId();
+      if (activeId != null) this.submitThreadReply(activeId);
+    }
+  }
+
+  toggleFeedback(message: ChatMessage, value: FeedbackValue): void {
+    if (!this.chatId) return;
+    this.setProcessing(message.id, true);
+    const isToggleOff = message.user_feedback === value;
+    const onSuccess = () => {
+      this.messages.update((msgs) =>
+        msgs.map((m) =>
+          m.id === message.id ? { ...m, user_feedback: isToggleOff ? null : value } : m
+        )
+      );
+      this.setProcessing(message.id, false);
+    };
+    const onError = () => {
+      this.toast.show('No se pudo registrar el feedback.', 'error');
+      this.setProcessing(message.id, false);
+    };
+    if (isToggleOff) {
+      this.http
+        .deleteMessageFeedback(this.chatId, message.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: onSuccess, error: onError });
+    } else {
+      this.http
+        .setMessageFeedback(this.chatId, message.id, { value })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: onSuccess, error: onError });
+    }
+  }
+
+  exportMessageAsPdf(message: ChatMessage): void {
+    if (!this.chatId || this.exportingMessageId() !== null) return;
+    this.exportingMessageId.set(message.id);
+    this.http
+      .exportMessagePdf(this.chatId, message.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `mensaje-${message.id}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          this.exportingMessageId.set(null);
+        },
+        error: () => {
+          this.toast.show('No se pudo exportar el mensaje.', 'error');
+          this.exportingMessageId.set(null);
+        },
+      });
   }
 
   userBubbleInitials(message: ChatMessage): string {
@@ -472,6 +770,7 @@ export class ChatSessionComponent implements OnDestroy {
     this.wsMessagesSub = undefined;
     this.socket?.close();
     this.socket = null;
+    this.clearTypingTimers();
   }
 
   private handleWsMessage(msg: AuraChatWsServerMessage): void {
@@ -564,6 +863,36 @@ export class ChatSessionComponent implements OnDestroy {
         this.isTyping.set(false);
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
+        break;
+      case 'typing': {
+        const uid = msg.user_id;
+        if (msg.is_typing) {
+          this.peerTypingIds.update((s) => { const n = new Set(s); n.add(uid); return n; });
+          const prev = this.peerTypingTimers.get(uid);
+          if (prev != null) clearTimeout(prev);
+          this.peerTypingTimers.set(uid, setTimeout(() => {
+            this.peerTypingIds.update((s) => { const n = new Set(s); n.delete(uid); return n; });
+            this.peerTypingTimers.delete(uid);
+          }, 4000));
+        } else {
+          this.peerTypingIds.update((s) => { const n = new Set(s); n.delete(uid); return n; });
+          const t = this.peerTypingTimers.get(uid);
+          if (t != null) { clearTimeout(t); this.peerTypingTimers.delete(uid); }
+        }
+        this.cdr.markForCheck();
+        break;
+      }
+      case 'chat_locked_changed':
+        if (this.chat) {
+          this.chat = { ...this.chat, is_locked: msg.is_locked };
+          this.cdr.markForCheck();
+        }
+        break;
+      case 'member_joined':
+        this.toast.show(`Participante ${msg.member_id} se unió al chat.`, 'success');
+        break;
+      case 'member_left':
+        this.toast.show(`Participante ${msg.member_id} abandonó el chat.`, 'success');
         break;
       default:
         break;

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
-import type { ChatListItemDto } from '@types/aura-chat-service.types';
+import type { ChatListItemDto } from '@aura-types/aura-chat-service.types';
 
 type ChatListItem = { id: string; title: string; sortKey: number };
 
