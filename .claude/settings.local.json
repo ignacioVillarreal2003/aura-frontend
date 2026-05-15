@@ -21,7 +21,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ignac\\\\Desktop\\\\aura-frontend\\\\application\\\\src\\\\app\\\\features\" -Recurse)",
       "Bash(Select-Object FullName, PSIsContainer)",
       "Bash(Sort-Object FullName)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(npx ng *)"
     ]
   }
 }

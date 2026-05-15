@@ -531,7 +531,7 @@ export class ChatSessionComponent implements OnDestroy {
     const obs$ = pinned
       ? this.http.unpinMessage(this.chatId, message.id)
       : this.http.pinMessage(this.chatId, message.id);
-    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    (obs$ as Observable<unknown>).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.pinnedMessageIds.update((s) => {
           const next = new Set(s);

@@ -5,5 +5,6 @@ export const environment = {
   documentProcessingUrl: 'http://localhost:8000',
   /** Base URL del servicio de herramientas (p. ej. resumen extenso). */
   toolsApiUrl: 'http://localhost:8000',
+  notificationApiUrl: 'http://localhost:8004',
   devAccessToken: 'user_token_123',
 };

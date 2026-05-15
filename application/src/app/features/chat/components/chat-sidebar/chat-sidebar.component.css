@@ -101,6 +101,7 @@
 
 .sidebar-header__toggle-btn i {
   font-size: 0.95rem;
+}
 /* Icono del toggle acorde al panel */
 :host ::ng-deep .sidebar-header__toggle-inner .btn-icon.transparent {
   color: var(--text-secondary);
