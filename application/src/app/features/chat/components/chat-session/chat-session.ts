@@ -13,29 +13,48 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+  EMPTY,
   Subscription,
   catchError,
   distinctUntilChanged,
-  EMPTY,
+  expand,
   forkJoin,
   map,
+  reduce,
   switchMap,
   tap,
 } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import type { ChatApiMessage, ChatDetail } from '@core/models/deprecated/types/chat.types';
-import type { AuraChatWsServerMessage } from '@types/aura-chat-service.types';
-import type { CreateDocumentResponse } from '@core/models/deprecated/types/document.types';
+import type {
+  AuraChatWsServerMessage,
+  ChatDetailDto,
+  CursorPageResult,
+  FeedbackValue,
+  MessageDto,
+  MessageSenderType,
+} from '@types/aura-chat-service.types';
 import { ChatService } from '@core/services/chat/chat.service';
-import { AuraChatApiService } from '@core/services/aura-chat-api.service';
+import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
+import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
 import { ChatWebSocketService, type ChatSocketConnection } from '@core/services/websocket/chat-websocket.service';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { ToastService } from '@core/components/toast-service';
-import { DocumentProcessingHttpService } from '@core/http/document-processing-http.service';
-import { normalizeMessageRow } from '@core/models/chat-mappers';
-import { ChatOptionsDrawer } from '../chat-options-drawer/chat-options-drawer';
+import { ChatOptionsDrawer, type DocumentItem } from '../chat-options-drawer/chat-options-drawer';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
+
+interface ChatMessage {
+  readonly id: number;
+  readonly chat_id: number;
+  message: string;
+  readonly sender_type: MessageSenderType;
+  readonly created_by: number | null;
+  readonly created_at: string;
+  readonly is_bookmarked: boolean;
+  readonly user_feedback: FeedbackValue | null;
+  readonly thread_reply_count: number;
+}
 
 @Component({
   selector: 'app-chat-session',
@@ -48,11 +67,11 @@ export class ChatSessionComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly chatShell = inject(ChatService);
-  private readonly api = inject(AuraChatApiService);
+  private readonly http = inject(AuraChatServiceHttp);
+  private readonly documents = inject(AuraDocumentProcessingServiceHttp);
   private readonly wsFactory = inject(ChatWebSocketService);
   private readonly auth = inject(AuthenticationService);
   private readonly toast = inject(ToastService);
-  private readonly documents = inject(DocumentProcessingHttpService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -61,20 +80,17 @@ export class ChatSessionComponent implements OnDestroy {
   private socket: ChatSocketConnection | null = null;
   private wsMessagesSub: Subscription | undefined;
 
-  /** Negative temp id while assistant message streams in over WebSocket. */
   readonly streamingAssistantId = signal<number | null>(null);
 
-  chat: ChatDetail | null = null;
-  messages = signal<ChatApiMessage[]>([]);
+  chat: ChatDetailDto | null = null;
+  messages = signal<ChatMessage[]>([]);
   newMessage = '';
   loading = true;
   isTyping = signal(false);
   optionsOpen = signal(false);
   documentUploading = signal(false);
-  /** Overlay “soltá para subir” al arrastrar archivos sobre el chat. */
   readonly docDropOverlayVisible = signal(false);
-  /** Documentos subidos en esta sesión (se muestran en el drawer). */
-  readonly sessionDocuments = signal<CreateDocumentResponse[]>([]);
+  readonly sessionDocuments = signal<DocumentItem[]>([]);
 
   private deltaBuffer = '';
   private rafHandle: number | null = null;
@@ -109,8 +125,8 @@ export class ChatSessionComponent implements OnDestroy {
           const pending = this.consumePendingMessageFromHistory();
 
           return forkJoin({
-            detail: this.api.getChat(id),
-            messages: this.api.listAllMessagesChronological(id),
+            detail: this.http.getChat(id),
+            messages: this.loadAllMessagesChronological(id),
           }).pipe(
             catchError(() => {
               this.toast.show('No se pudo cargar el chat.', 'error');
@@ -131,6 +147,21 @@ export class ChatSessionComponent implements OnDestroy {
         takeUntilDestroyed(),
       )
       .subscribe();
+  }
+
+  private loadAllMessagesChronological(chatId: number): Observable<ChatMessage[]> {
+    return this.http.listMessages(chatId).pipe(
+      expand((page: CursorPageResult<MessageDto>) =>
+        page.next ? this.http.listMessages(chatId, { url: page.next }) : EMPTY
+      ),
+      map((page: CursorPageResult<MessageDto>) => page.results as unknown as ChatMessage[]),
+      reduce<ChatMessage[], ChatMessage[]>((acc, curr) => [...acc, ...curr], []),
+      map((msgs) =>
+        [...msgs].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+      ),
+    );
   }
 
   toggleOptions(): void {
@@ -156,11 +187,19 @@ export class ChatSessionComponent implements OnDestroy {
     if (!file || !this.chatId || this.documentUploading()) return;
     this.documentUploading.set(true);
     this.documents
-      .createDocument({ file, chat_id: this.chatId, prefer_docling: false })
+      .createDocumentFromInput({ file, chat_id: this.chatId, prefer_docling: false })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
-          this.sessionDocuments.update((d) => [...d, res]);
+          this.sessionDocuments.update((d) => [
+            ...d,
+            {
+              id: res.id,
+              name: res.name,
+              status: res.status,
+              created_at: new Date().toISOString(),
+            },
+          ]);
           this.toast.show('Documento subido; se procesará en segundo plano.', 'success');
           this.documentUploading.set(false);
           if (closeDrawerOnSuccess) {
@@ -217,7 +256,7 @@ export class ChatSessionComponent implements OnDestroy {
   onDrawerChatAction(e: { chatId: number; action: string }): void {
     if (e.action === 'delete') {
       if (!window.confirm('¿Eliminar esta conversación?')) return;
-      this.api.deleteChat(e.chatId).subscribe({
+      this.http.deleteChat(e.chatId).subscribe({
         next: () => {
           this.toast.show('Chat eliminado.', 'success');
           this.optionsOpen.set(false);
@@ -265,12 +304,12 @@ export class ChatSessionComponent implements OnDestroy {
 
     if (!this.chatId) return;
     this.isTyping.set(true);
-    this.api
-      .sendMessageRest(this.chatId, text)
+    this.http
+      .sendMessageJson(this.chatId, { message: text })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
-          const userRow = normalizeMessageRow(res.message, this.chatId!);
+          const userRow: ChatMessage = { ...res.message, created_by: res.message.created_by };
           this.messages.update((m) => [...m, userRow]);
           if (res.assistant?.answer) {
             this.messages.update((m) => [
@@ -279,10 +318,9 @@ export class ChatSessionComponent implements OnDestroy {
                 id: Date.now(),
                 chat_id: this.chatId!,
                 message: res.assistant!.answer,
-                sender_type: 'system',
+                sender_type: 'system' as MessageSenderType,
                 created_by: null,
                 created_at: new Date().toISOString(),
-                deleted_at: null,
                 is_bookmarked: false,
                 user_feedback: null,
                 thread_reply_count: 0,
@@ -329,7 +367,7 @@ export class ChatSessionComponent implements OnDestroy {
     }
   }
 
-  userBubbleInitials(message: ChatApiMessage): string {
+  userBubbleInitials(message: ChatMessage): string {
     const sessionName = this.chatShell.sessionViewerDisplayName();
     const sessionMemberId = this.chatShell.sessionViewerMemberId();
     if (message.created_by != null && sessionMemberId != null && message.created_by === sessionMemberId) {
@@ -341,7 +379,7 @@ export class ChatSessionComponent implements OnDestroy {
     return this.initialsFromUserId(message.created_by);
   }
 
-  userBubbleTitle(message: ChatApiMessage): string {
+  userBubbleTitle(message: ChatMessage): string {
     const sessionName = this.chatShell.sessionViewerDisplayName();
     const sessionMemberId = this.chatShell.sessionViewerMemberId();
     if (message.created_by != null && sessionMemberId != null && message.created_by === sessionMemberId) {
@@ -441,14 +479,13 @@ export class ChatSessionComponent implements OnDestroy {
     if (cid == null) return;
     switch (msg.type) {
       case 'user_message': {
-        const row: ChatApiMessage = {
+        const row: ChatMessage = {
           id: msg.id,
           chat_id: cid,
           message: msg.message,
           sender_type: msg.sender_type,
           created_by: msg.created_by,
           created_at: msg.created_at,
-          deleted_at: null,
           is_bookmarked: false,
           user_feedback: null,
           thread_reply_count: 0,
@@ -478,10 +515,9 @@ export class ChatSessionComponent implements OnDestroy {
                     id: msg.id!,
                     chat_id: cid,
                     message: text,
-                    sender_type: msg.sender_type ?? 'system',
+                    sender_type: (msg.sender_type ?? 'system') as MessageSenderType,
                     created_by: msg.created_by ?? null,
                     created_at: msg.created_at ?? new Date().toISOString(),
-                    deleted_at: null,
                     is_bookmarked: false,
                     user_feedback: null,
                     thread_reply_count: 0,
@@ -500,10 +536,9 @@ export class ChatSessionComponent implements OnDestroy {
               id: msg.id ?? Date.now(),
               chat_id: cid,
               message: text,
-              sender_type: msg.sender_type ?? 'system',
+              sender_type: (msg.sender_type ?? 'system') as MessageSenderType,
               created_by: msg.created_by ?? null,
               created_at: msg.created_at ?? new Date().toISOString(),
-              deleted_at: null,
               is_bookmarked: false,
               user_feedback: null,
               thread_reply_count: 0,
@@ -590,10 +625,9 @@ export class ChatSessionComponent implements OnDestroy {
           id: tempId,
           chat_id: cid,
           message: chunk,
-          sender_type: 'system',
+          sender_type: 'system' as MessageSenderType,
           created_by: null,
           created_at: new Date().toISOString(),
-          deleted_at: null,
           is_bookmarked: false,
           user_feedback: null,
           thread_reply_count: 0,

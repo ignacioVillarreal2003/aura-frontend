@@ -2,9 +2,9 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AuraChatApiService } from '@core/services/aura-chat-api.service';
+import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
-import type { ChatSummary } from '@core/models/deprecated/types/chat.types';
+import type { ChatListItemDto } from '@types/aura-chat-service.types';
 
 type ChatListItem = { id: string; title: string; sortKey: number };
 
@@ -16,11 +16,11 @@ type ChatListItem = { id: string; title: string; sortKey: number };
   styleUrls: ['./chat-search.component.css'],
 })
 export class ChatSearchComponent implements OnInit {
-  private readonly api = inject(AuraChatApiService);
+  private readonly api = inject(AuraChatServiceHttp);
   private readonly toast = inject(ToastService);
 
   searchQuery = '';
-  private readonly allChats = signal<ChatSummary[]>([]);
+  private readonly allChats = signal<ChatListItemDto[]>([]);
 
   readonly grouped = signal<{
     hoy: ChatListItem[];
@@ -31,7 +31,7 @@ export class ChatSearchComponent implements OnInit {
   ngOnInit(): void {
     this.api.listMyChats({ page_size: 100 }).subscribe({
       next: (page) => {
-        this.allChats.set(page.data);
+        this.allChats.set([...page.results]);
         this.rebuildGrouped();
       },
       error: () => this.toast.show('No se pudieron cargar los chats.', 'error'),
@@ -68,8 +68,6 @@ export class ChatSearchComponent implements OnInit {
         hoy.push(item);
       } else if (d >= startOfYesterday) {
         ayer.push(item);
-      } else if (d >= startOfWeek) {
-        semana.push(item);
       } else {
         semana.push(item);
       }

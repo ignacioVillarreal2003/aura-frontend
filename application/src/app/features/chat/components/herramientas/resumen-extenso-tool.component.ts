@@ -1,7 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ToolsHttpService } from '@core/http/tools-http.service';
+import { HttpClient } from '@angular/common/http';
+import { map } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-resumen-extenso-tool',
@@ -11,7 +14,21 @@ import { ToolsHttpService } from '@core/http/tools-http.service';
   styleUrl: './resumen-extenso-tool.component.css',
 })
 export class ResumenExtensoToolComponent {
-  private readonly tools = inject(ToolsHttpService);
+  private readonly http = inject(HttpClient);
+
+  private extensiveSummary(file: File): Observable<string> {
+    const form = new FormData();
+    form.append('document', file, file.name);
+    const url = `${environment.toolsApiUrl.replace(/\/$/, '')}/api/tools/extensive-summary`;
+    return this.http
+      .post<{ summary?: string; result?: string } | string>(url, form)
+      .pipe(
+        map((res) => {
+          if (typeof res === 'string') return res;
+          return res.summary ?? res.result ?? '';
+        }),
+      );
+  }
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -71,7 +88,7 @@ export class ResumenExtensoToolComponent {
     this.result.set(null);
     this.fileName.set(file.name);
     this.loading.set(true);
-    this.tools.extensiveSummary(file).subscribe({
+    this.extensiveSummary(file).subscribe({
       next: (text) => {
         this.loading.set(false);
         this.result.set(text || '(Sin contenido en la respuesta)');

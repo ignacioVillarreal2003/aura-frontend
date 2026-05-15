@@ -7,13 +7,14 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {Router, RouterLink} from '@angular/router';
-import {ChatOptionsDrawer} from '../chat-options-drawer/chat-options-drawer';
-import {ChatHttpService} from '@core/http/chat-http.service';
-import {AuthenticationService} from '@core/services/authentication/authentication.service';
-import {ToastService} from '@core/components/toast-service';
-import type {Chat} from '@core/models/deprecated/types/chat.types';
+import { CommonModule } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { ChatOptionsDrawer } from '../chat-options-drawer/chat-options-drawer';
+import type { ChatRef } from '../chat-options-drawer/chat-options-drawer';
+import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
+import { AuthenticationService } from '@core/services/authentication/authentication.service';
+import { ToastService } from '@core/components/toast-service';
+import type { ChatListItemDto } from '@types/aura-chat-service.types';
 
 @Component({
   selector: 'app-chat-sidebar',
@@ -23,7 +24,7 @@ import type {Chat} from '@core/models/deprecated/types/chat.types';
   styleUrls: ['./chat-sidebar.component.css'],
 })
 export class ChatSidebarComponent implements OnInit {
-  private readonly chatHttpService = inject(ChatHttpService);
+  private readonly chatHttp = inject(AuraChatServiceHttp);
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
@@ -34,27 +35,19 @@ export class ChatSidebarComponent implements OnInit {
   @Output() toggle = new EventEmitter<boolean>();
   @Output() chatAction = new EventEmitter<{ chatId: string; action: string }>();
 
-  chats: Chat[] = [];
+  chats: ChatListItemDto[] = [];
 
   chatActionsDrawerOpen = signal(false);
-  drawerContextChat = signal<Chat | null>(null);
-
-  renamingChatId = signal<string | null>(null);
-  renameValue = signal('');
-
-  private readonly renameInputs = viewChildren<ElementRef<HTMLInputElement>>('renameInput');
+  drawerContextChat = signal<ChatRef | null>(null);
 
   ngOnInit(): void {
     this.reloadChats();
   }
 
   reloadChats(): void {
-    this.chatHttpService.listMyChats({page_size: 50}).subscribe({
+    this.chatHttp.listMyChats({ page_size: 50 }).subscribe({
       next: (page) => {
-        this.chats = page.data.map((s) => ({
-          id: s.id,
-          name: s.name,
-        }));
+        this.chats = [...page.results];
       },
       error: () => {
         this.chats = [];
@@ -84,7 +77,7 @@ export class ChatSidebarComponent implements OnInit {
     event.stopPropagation();
     const row = this.chats.find((c) => c.id === chatId);
     if (!row) return;
-    this.drawerContextChat.set(row);
+    this.drawerContextChat.set({ id: row.id, name: row.name });
     this.chatActionsDrawerOpen.set(true);
   }
 
@@ -112,36 +105,6 @@ export class ChatSidebarComponent implements OnInit {
       return;
     }
 
-    this.chatAction.emit({chatId: String(id), action: data.action});
-  }
-
-  onRenameKeydown(event: KeyboardEvent, chatId: string): void {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      void this.commitRename(chatId);
-    } else if (event.key === 'Escape') {
-      this.renamingChatId.set(null);
-    }
-  }
-
-  onRenameBlur(chatId: string): void {
-    if (this.renamingChatId() === chatId) {
-      void this.commitRename(chatId);
-    }
-  }
-
-  private commitRename(chatId: string): void {
-    const newName = this.renameValue().trim();
-    const row = this.chats.find((c) => c.id === chatId);
-    this.renamingChatId.set(null);
-    if (!newName || newName === row?.title) return;
-    const id = Number.parseInt(chatId, 10);
-    this.api.patchChat(id, { name: newName }).subscribe({
-      next: () => {
-        this.toast.show('Chat renombrado.', 'success');
-        this.reloadChats();
-      },
-      error: () => this.toast.show('No se pudo renombrar el chat.', 'error'),
-    });
+    this.chatAction.emit({ chatId: String(id), action: data.action });
   }
 }

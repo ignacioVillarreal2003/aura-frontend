@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ignac\\\\Desktop\\\\AURA\\\\aura-frontend\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(find C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend *)",
+      "Bash(find \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\features\" -maxdepth 1 -type d)",
+      "Bash(cd \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\")",
+      "Bash(find \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\core\\\\\\\\types\" -type f -name \"*.ts\")",
+      "Bash(find \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\core\" -type f -name \"*.ts\")",
+      "Bash(find \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\core\" -type d)",
+      "Bash(find C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app *)",
+      "Bash(find \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\core\" -name \"*.ts\")",
+      "Bash(xargs grep -l \"ChatHttpService\\\\|ChatApiService\\\\|AuraChatApiService\")",
+      "Bash(grep -r \"ChatHttpService\\\\|ChatApiService\\\\|AuraChatApiService\" \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\core\")",
+      "Bash(grep *)",
+      "Bash(find C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\core *)",
+      "Bash(find \"C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\app\\\\\\\\features\" -type d)",
+      "Bash(find C:\\\\\\\\Users\\\\\\\\ignac\\\\\\\\Desktop\\\\\\\\AURA\\\\\\\\aura-frontend\\\\\\\\application\\\\\\\\src\\\\\\\\environments *)",
+      "Bash(npx tsc *)"
+    ]
+  }
+}
