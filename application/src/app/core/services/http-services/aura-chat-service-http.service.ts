@@ -38,7 +38,7 @@ import type {
   WebhookCreatedDto,
   WebhookDto,
   WebhookPatchBody,
-} from '@types/aura-chat-service.types';
+} from '@aura-types/aura-chat-service.types';
 
 interface PageFollowQuery {
   readonly url?: string;

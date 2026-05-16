@@ -9,7 +9,7 @@ import type {
   AuthRefreshBody,
   AuthTokenPairDto,
   AuthValidateUserDto,
-} from '@types/aura-auth-service.types';
+} from '@aura-types/aura-auth-service.types';
 
 @Injectable({ providedIn: 'root' })
 export class AuraAuthServiceHttp {

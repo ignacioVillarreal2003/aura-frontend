@@ -4,8 +4,8 @@ import { environment } from '../../../../environments/environment';
 import type {
   AuraChatWsClientMessage,
   AuraChatWsServerMessage,
-} from '@types/aura-chat-service.types';
-import { AURA_CHAT_WS_MESSAGE_MAX_CHAR } from '@types/aura-chat-service.types';
+} from '@aura-types/aura-chat-service.types';
+import { AURA_CHAT_WS_MESSAGE_MAX_CHAR } from '@aura-types/aura-chat-service.types';
 import { ToastService } from '@core/components/toast-service';
 
 const MAX_OUTBOUND_QUEUE = 50;

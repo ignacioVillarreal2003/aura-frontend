@@ -5,12 +5,12 @@ import { environment } from '../../../../environments/environment';
 import type {
   DocumentProcessingCreateDocumentMultipartInput,
   DocumentProcessingCreateDocumentResponseDto,
-} from '@types/aura-document-processing-service.types';
+} from '@aura-types/aura-document-processing-service.types';
 import {
   DOCUMENT_PROCESSING_UPLOAD_FIELD_NAME,
   DOCUMENT_PROCESSING_MAX_ID,
   DOCUMENT_PROCESSING_MIN_FILE_SIZE_BYTES,
-} from '@types/aura-document-processing-service.types';
+} from '@aura-types/aura-document-processing-service.types';
 
 @Injectable({ providedIn: 'root' })
 export class AuraDocumentProcessingServiceHttp {

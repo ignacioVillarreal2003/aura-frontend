@@ -4,16 +4,18 @@ import {
   Input,
   OnInit,
   Output,
+  computed,
   inject,
   signal,
 } from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {Router, RouterLink} from '@angular/router';
-import {ChatOptionsDrawer} from '../chat-options-drawer/chat-options-drawer';
-import {ChatHttpService} from '@core/http/chat-http.service';
-import {AuthenticationService} from '@core/services/authentication/authentication.service';
-import {ToastService} from '@core/components/toast-service';
-import type {Chat} from '@core/models/deprecated/types/chat.types';
+import { CommonModule } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { ChatOptionsDrawer } from '../chat-options-drawer/chat-options-drawer';
+import type { ChatRef } from '../chat-options-drawer/chat-options-drawer';
+import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
+import { AuthenticationService } from '@core/services/authentication/authentication.service';
+import { ToastService } from '@core/components/toast-service';
+import type { ChatListItemDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
   selector: 'app-chat-sidebar',
@@ -23,7 +25,7 @@ import type {Chat} from '@core/models/deprecated/types/chat.types';
   styleUrls: ['./chat-sidebar.component.css'],
 })
 export class ChatSidebarComponent implements OnInit {
-  private readonly chatHttpService = inject(ChatHttpService);
+  private readonly chatHttp = inject(AuraChatServiceHttp);
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
@@ -34,30 +36,30 @@ export class ChatSidebarComponent implements OnInit {
   @Output() toggle = new EventEmitter<boolean>();
   @Output() chatAction = new EventEmitter<{ chatId: string; action: string }>();
 
-  chats: Chat[] = [];
+  readonly chats = signal<ChatListItemDto[]>([]);
+  readonly sortedChats = computed(() =>
+    [...this.chats()].sort((a, b) => {
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+      const at = a.last_message_at ?? a.created_at;
+      const bt = b.last_message_at ?? b.created_at;
+      return new Date(bt).getTime() - new Date(at).getTime();
+    })
+  );
 
   chatActionsDrawerOpen = signal(false);
-  drawerContextChat = signal<Chat | null>(null);
-
-  renamingChatId = signal<string | null>(null);
-  renameValue = signal('');
-
-  private readonly renameInputs = viewChildren<ElementRef<HTMLInputElement>>('renameInput');
+  drawerContextChat = signal<ChatRef | null>(null);
 
   ngOnInit(): void {
     this.reloadChats();
   }
 
   reloadChats(): void {
-    this.chatHttpService.listMyChats({page_size: 50}).subscribe({
+    this.chatHttp.listMyChats({ page_size: 50 }).subscribe({
       next: (page) => {
-        this.chats = page.data.map((s) => ({
-          id: s.id,
-          name: s.name,
-        }));
+        this.chats.set([...page.results]);
       },
       error: () => {
-        this.chats = [];
+        this.chats.set([]);
         this.toastService.show('No se pudieron cargar los chats.', 'error');
       },
     });
@@ -82,9 +84,16 @@ export class ChatSidebarComponent implements OnInit {
 
   onChatOptionsClick(event: MouseEvent, chatId: number) {
     event.stopPropagation();
-    const row = this.chats.find((c) => c.id === chatId);
+    const row = this.chats().find((c) => c.id === chatId);
     if (!row) return;
-    this.drawerContextChat.set(row);
+    this.drawerContextChat.set({
+      id: row.id,
+      name: row.name,
+      is_pinned: row.is_pinned,
+      archived_at: row.archived_at,
+      is_locked: row.is_locked,
+      is_muted: row.is_muted,
+    });
     this.chatActionsDrawerOpen.set(true);
   }
 
@@ -103,45 +112,20 @@ export class ChatSidebarComponent implements OnInit {
     const id = data.chatId;
     if (!Number.isFinite(id)) return;
 
-    if (data.action === 'leave') {
+    const navigateAwayActions = new Set(['leave', 'archive']);
+    const reloadActions = new Set(['leave', 'archive', 'unarchive', 'pin', 'unpin', 'lock', 'unlock', 'mute', 'unmute']);
+
+    if (reloadActions.has(data.action)) {
       this.reloadChats();
-      const url = this.router.url.split('?')[0];
-      if (url.includes(`/main-container/chat/${id}`)) {
-        void this.router.navigate(['/main-container', 'chat-home']);
+      if (navigateAwayActions.has(data.action)) {
+        const url = this.router.url.split('?')[0];
+        if (url.includes(`/main-container/chat/${id}`)) {
+          void this.router.navigate(['/main-container', 'chat-home']);
+        }
       }
       return;
     }
 
-    this.chatAction.emit({chatId: String(id), action: data.action});
-  }
-
-  onRenameKeydown(event: KeyboardEvent, chatId: string): void {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      void this.commitRename(chatId);
-    } else if (event.key === 'Escape') {
-      this.renamingChatId.set(null);
-    }
-  }
-
-  onRenameBlur(chatId: string): void {
-    if (this.renamingChatId() === chatId) {
-      void this.commitRename(chatId);
-    }
-  }
-
-  private commitRename(chatId: string): void {
-    const newName = this.renameValue().trim();
-    const row = this.chats.find((c) => c.id === chatId);
-    this.renamingChatId.set(null);
-    if (!newName || newName === row?.title) return;
-    const id = Number.parseInt(chatId, 10);
-    this.api.patchChat(id, { name: newName }).subscribe({
-      next: () => {
-        this.toast.show('Chat renombrado.', 'success');
-        this.reloadChats();
-      },
-      error: () => this.toast.show('No se pudo renombrar el chat.', 'error'),
-    });
+    this.chatAction.emit({ chatId: String(id), action: data.action });
   }
 }

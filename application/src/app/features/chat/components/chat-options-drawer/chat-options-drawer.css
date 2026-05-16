@@ -405,6 +405,128 @@
   margin-top: 20px;
 }
 
+.drawer-webhook-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 16px;
+}
+
+.drawer-webhook-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #9a9aa3);
+  margin: 0;
+}
+
+.drawer-webhook-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #e8e8ea);
+  font-size: 13px;
+  font-family: 'Sora', sans-serif;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.drawer-webhook-input:focus {
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
+.drawer-webhook-events {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drawer-webhook-event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-primary, #e8e8ea);
+  cursor: pointer;
+}
+
+.drawer-webhook-checkbox {
+  accent-color: #6366f1;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.drawer-webhook-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.drawer-webhook-url {
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--text-primary, #e8e8ea);
+}
+
+.drawer-action-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.drawer-pinned-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.drawer-share-token {
+  font-family: monospace;
+  font-size: 11px;
+  word-break: break-all;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.drawer-share-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.drawer-share-badge--active {
+  color: #4ade80;
+}
+
+.drawer-share-badge--inactive {
+  color: #ef4444;
+}
+
+.drawer-member-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-secondary, #9a9aa3);
+  text-transform: capitalize;
+}
+
+.drawer-member-badge--role {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
 @keyframes drawer-spin {
   to {
     transform: rotate(360deg);

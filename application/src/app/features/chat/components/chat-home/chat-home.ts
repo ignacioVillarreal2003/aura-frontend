@@ -2,7 +2,7 @@ import { Component, ElementRef, inject, signal, viewChild } from '@angular/core'
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuraChatApiService } from '@core/services/aura-chat-api.service';
+import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 
 @Component({
@@ -14,7 +14,7 @@ import { ToastService } from '@core/components/toast-service';
 })
 export class ChatHomeComponent {
   private readonly router = inject(Router);
-  private readonly api = inject(AuraChatApiService);
+  private readonly api = inject(AuraChatServiceHttp);
   private readonly toast = inject(ToastService);
 
   message = signal('');

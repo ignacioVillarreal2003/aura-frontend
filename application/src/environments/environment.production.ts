@@ -8,4 +8,5 @@ export const environment = {
   authenticationApiUrl: '',
   documentProcessingUrl: '',
   toolsApiUrl: '',
+  notificationApiUrl: '',
 };

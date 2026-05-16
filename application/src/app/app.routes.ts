@@ -23,5 +23,13 @@ export const routes: Routes = [
       import('./features/user/user.routes').then((m) => m.USER_ROUTES),
   },
 
+  {
+    path: 'share/:token',
+    loadComponent: () =>
+      import('./features/chat/components/public-share/public-share').then(
+        (m) => m.PublicShareComponent
+      ),
+  },
+
   { path: '**', redirectTo: 'login' }
 ];

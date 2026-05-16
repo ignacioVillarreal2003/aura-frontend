@@ -34,7 +34,14 @@
     <app-chat-options-drawer
       [isOpen]="optionsOpen()"
       (isOpenChange)="optionsOpen.set($event)"
-      [contextChat]="{ id: chat.id, name: chat.name }"
+      [contextChat]="{
+        id: chat.id,
+        name: chat.name,
+        is_pinned: false,
+        archived_at: null,
+        is_locked: chat.is_locked,
+        is_muted: false
+      }"
       [attachedDocuments]="sessionDocuments()"
       [uploadDisabled]="documentUploading() || !chat"
       (documentSelected)="onDocumentFromDrawer($event)"
@@ -74,8 +81,129 @@
                   <div class="message-text message-text--md" [innerHTML]="message.message | markdown"></div>
                   <span class="message-time">{{ formatTime(message.created_at) }}</span>
                 </div>
+                @if (streamingAssistantId() !== message.id) {
+                  <div class="message-actions" role="toolbar" [attr.aria-label]="'Acciones del mensaje'">
+                    <button
+                      type="button"
+                      class="message-action-btn message-action-btn--thread"
+                      [class.message-action-btn--active]="activeThreadMessageId() === message.id"
+                      [disabled]="isProcessing(message.id)"
+                      [title]="message.thread_reply_count > 0 ? message.thread_reply_count + ' respuestas' : 'Responder en hilo'"
+                      (click)="toggleThread(message)">
+                      <i class="pi pi-comments" aria-hidden="true"></i>
+                      @if (message.thread_reply_count > 0) {
+                        <span class="message-action-badge">{{ message.thread_reply_count }}</span>
+                      }
+                    </button>
+                    @if (message.sender_type === 'system') {
+                      <button
+                        type="button"
+                        class="message-action-btn"
+                        [class.message-action-btn--active]="message.user_feedback === 1"
+                        [disabled]="isProcessing(message.id)"
+                        title="Útil"
+                        (click)="toggleFeedback(message, 1)">
+                        <i class="pi pi-thumbs-up" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="message-action-btn"
+                        [class.message-action-btn--active]="message.user_feedback === -1"
+                        [disabled]="isProcessing(message.id)"
+                        title="No útil"
+                        (click)="toggleFeedback(message, -1)">
+                        <i class="pi pi-thumbs-down" aria-hidden="true"></i>
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="message-action-btn"
+                      [disabled]="isProcessing(message.id) || exportingMessageId() !== null"
+                      title="Exportar como PDF"
+                      (click)="exportMessageAsPdf(message)">
+                      <i [ngClass]="['pi', exportingMessageId() === message.id ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="message-action-btn"
+                      [class.message-action-btn--active]="message.is_bookmarked"
+                      [disabled]="isProcessing(message.id)"
+                      [title]="message.is_bookmarked ? 'Quitar de guardados' : 'Guardar'"
+                      (click)="toggleBookmark(message)">
+                      <i [ngClass]="['pi', message.is_bookmarked ? 'pi-bookmark-fill' : 'pi-bookmark']" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="message-action-btn"
+                      [class.message-action-btn--active]="isPinned(message.id)"
+                      [disabled]="isProcessing(message.id)"
+                      [title]="isPinned(message.id) ? 'Desfijar mensaje' : 'Fijar mensaje'"
+                      (click)="togglePinMessage(message)">
+                      <i class="pi pi-thumbtack" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="message-action-btn message-action-btn--danger"
+                      [disabled]="isProcessing(message.id)"
+                      title="Eliminar mensaje"
+                      (click)="deleteMessage(message)">
+                      <i class="pi pi-trash" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                }
               </div>
             </div>
+            @if (activeThreadMessageId() === message.id) {
+              <div class="thread-panel">
+                <div class="thread-panel__header">
+                  <span class="thread-panel__title">
+                    <i class="pi pi-comments" aria-hidden="true"></i>
+                    Hilo de respuestas
+                  </span>
+                  <button
+                    type="button"
+                    class="thread-close-btn"
+                    (click)="toggleThread(message)"
+                    aria-label="Cerrar hilo">
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </div>
+                @if (threadLoading()) {
+                  <div class="thread-loading">
+                    <div class="thread-spinner"></div>
+                  </div>
+                } @else if (threadReplies().length === 0) {
+                  <p class="thread-empty">Sin respuestas todavía. Sé el primero en responder.</p>
+                } @else {
+                  <ul class="thread-reply-list">
+                    @for (reply of threadReplies(); track reply.id) {
+                      <li class="thread-reply">
+                        <p class="thread-reply__text">{{ reply.message }}</p>
+                        <span class="thread-reply__time">{{ formatTime(reply.created_at) }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
+                <div class="thread-compose">
+                  <textarea
+                    class="thread-input"
+                    rows="1"
+                    placeholder="Responder en el hilo…"
+                    [ngModel]="threadReplyText()"
+                    (ngModelChange)="threadReplyText.set($event)"
+                    (keydown)="onThreadReplyKey($event)"
+                  ></textarea>
+                  <button
+                    type="button"
+                    class="thread-send-btn"
+                    [disabled]="!threadReplyText().trim() || submittingReply()"
+                    (click)="submitThreadReply(message.id)"
+                    aria-label="Enviar respuesta">
+                    <i class="pi pi-send" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            }
           }
           @if (isTyping() && streamingAssistantId() === null) {
             <div class="message assistant-message">
@@ -91,6 +219,33 @@
               </div>
             </div>
           }
+          @if (peerTypingIds().size > 0) {
+            <div class="message user-message peer-typing">
+              <div class="message-content">
+                <div class="message-bubble typing-indicator peer-typing__bubble">
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                  <span class="dot"></span>
+                </div>
+                <span class="peer-typing__label">
+                  {{ peerTypingIds().size === 1 ? 'Alguien está escribiendo…' : peerTypingIds().size + ' personas están escribiendo…' }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+      @if (canRegenerate()) {
+        <div class="session-regenerate">
+          <button
+            type="button"
+            class="session-regenerate-btn"
+            [disabled]="regenerating()"
+            (click)="regenerateResponse()"
+            aria-label="Regenerar última respuesta">
+            <i class="pi pi-refresh" [class.pi-spin]="regenerating()" aria-hidden="true"></i>
+            <span>{{ regenerating() ? 'Regenerando…' : 'Regenerar respuesta' }}</span>
+          </button>
         </div>
       }
     </div>
