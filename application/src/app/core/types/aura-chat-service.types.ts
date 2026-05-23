@@ -363,6 +363,18 @@ export interface ChatExportBackupDto {
   readonly messages: readonly ChatExportBackupMessageDto[];
 }
 
+export type ChatMode = 'question' | 'summary';
+
+export interface SummarizeBody {
+  readonly document_ids: readonly number[];
+}
+
+export interface SummarizeResponseDto {
+  readonly message: MessageDto | null;
+  readonly summary: string;
+  readonly fragments: readonly Readonly<Record<string, unknown>>[];
+}
+
 export type AuraChatWsClientMessage =
   | { readonly type: 'chat.message'; readonly message: string }
   | { readonly type: 'chat.typing'; readonly is_typing: boolean };

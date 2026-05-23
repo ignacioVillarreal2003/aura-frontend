@@ -30,6 +30,8 @@ import type {
   SetFeedbackBody,
   ShareLinkCreateBody,
   ShareLinkDto,
+  SummarizeBody,
+  SummarizeResponseDto,
   ThreadReplyDto,
   UpdateChatBody,
   UpdateMemberRoleBody,
@@ -259,6 +261,16 @@ export class AuraChatServiceHttp {
     return this.http.post<RegenerateResponseDto>(
       `${this.messagesRoot(chatId)}regenerate/`,
       {},
+    );
+  }
+
+  summarizeDocuments(
+    chatId: number,
+    body: SummarizeBody,
+  ): Observable<SummarizeResponseDto> {
+    return this.http.post<SummarizeResponseDto>(
+      `${this.messagesRoot(chatId)}summary/`,
+      body,
     );
   }
 

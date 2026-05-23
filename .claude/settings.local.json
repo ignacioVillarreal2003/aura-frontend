@@ -22,7 +22,15 @@
       "Bash(Select-Object FullName, PSIsContainer)",
       "Bash(Sort-Object FullName)",
       "Bash(python *)",
-      "Bash(npx ng *)"
+      "Bash(npx ng *)",
+      "Bash(echo \"\")",
+      "Bash(echo \"LLM_DOCUMENT_SUMMARY_URL=http://localhost:8001/api/v1/document-summary\")",
+      "Bash(python3 -c \"import ast; files = ['core/clients/llm_client.py', 'apps/message/services/message_service.py', 'apps/message/views/summary_view.py', 'apps/message/urls.py']; [print\\(f\\) or ast.parse\\(open\\(f\\).read\\(\\)\\) for f in files]; print\\('All OK'\\)\")",
+      "Bash(ng serve *)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s http://localhost:4200)",
+      "Bash(DISPLAY=:0 google-chrome --headless --no-sandbox --disable-gpu --screenshot=/tmp/chat-screenshot.png --window-size=1280,800 http://localhost:4200)",
+      "Bash(node *)"
     ]
   }
 }

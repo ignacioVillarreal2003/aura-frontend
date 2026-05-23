@@ -17,9 +17,11 @@ import {
   EMPTY,
   Subscription,
   catchError,
+  concatMap,
   distinctUntilChanged,
   expand,
   forkJoin,
+  from,
   map,
   reduce,
   switchMap,
@@ -30,6 +32,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type {
   AuraChatWsServerMessage,
   ChatDetailDto,
+  ChatMode,
   CursorPageResult,
   FeedbackValue,
   MessageDto,
@@ -96,6 +99,9 @@ export class ChatSessionComponent implements OnDestroy {
   readonly submittingReply = signal(false);
   readonly exportingMessageId = signal<number | null>(null);
   readonly regenerating = signal(false);
+  readonly chatMode = this.chatShell.chatMode;
+  readonly summarizing = signal(false);
+  readonly modeDropdownOpen = signal(false);
   readonly canRegenerate = computed(() => {
     const msgs = this.messages();
     if (msgs.length === 0) return false;
@@ -170,6 +176,10 @@ export class ChatSessionComponent implements OnDestroy {
               void this.openWebSocketAfterLoad(id, pending);
               setTimeout(() => this.scrollToBottom(), 100);
               queueMicrotask(() => this.autosizeTextarea());
+              const summaryFiles = this.chatShell.consumePendingSummaryFiles();
+              if (summaryFiles.length > 0) {
+                this.uploadPendingFilesAndSummarize(summaryFiles);
+              }
             }),
           );
         }),
@@ -195,6 +205,71 @@ export class ChatSessionComponent implements OnDestroy {
 
   toggleOptions(): void {
     this.optionsOpen.update((v) => !v);
+  }
+
+  toggleModeDropdown(): void {
+    this.modeDropdownOpen.update((v) => !v);
+  }
+
+  setChatMode(mode: ChatMode): void {
+    this.chatShell.setChatMode(mode);
+    this.modeDropdownOpen.set(false);
+  }
+
+  summarize(): void {
+    if (!this.chatId || this.summarizing() || this.sendBlocked()) return;
+    const docs = this.sessionDocuments();
+    if (docs.length === 0) {
+      this.toast.show('Adjuntá al menos un documento para resumir.', 'error');
+      return;
+    }
+    const documentIds = docs.map((d) => d.id);
+    this.summarizing.set(true);
+    this.isTyping.set(true);
+    this.http
+      .summarizeDocuments(this.chatId, { document_ids: documentIds })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          if (res.message) {
+            const row: ChatMessage = {
+              id: res.message.id,
+              chat_id: res.message.chat_id,
+              message: res.message.message,
+              sender_type: 'system' as MessageSenderType,
+              created_by: res.message.created_by,
+              created_at: res.message.created_at,
+              is_bookmarked: false,
+              user_feedback: null,
+              thread_reply_count: 0,
+            };
+            this.messages.update((m) => [...m, row]);
+          } else if (res.summary) {
+            this.messages.update((m) => [
+              ...m,
+              {
+                id: Date.now(),
+                chat_id: this.chatId!,
+                message: res.summary,
+                sender_type: 'system' as MessageSenderType,
+                created_by: null,
+                created_at: new Date().toISOString(),
+                is_bookmarked: false,
+                user_feedback: null,
+                thread_reply_count: 0,
+              },
+            ]);
+          }
+          this.summarizing.set(false);
+          this.isTyping.set(false);
+          setTimeout(() => this.scrollToBottom(), 50);
+        },
+        error: () => {
+          this.toast.show('No se pudo generar el resumen.', 'error');
+          this.summarizing.set(false);
+          this.isTyping.set(false);
+        },
+      });
   }
 
   onAttachClick(fileInput: HTMLInputElement): void {
@@ -344,6 +419,47 @@ export class ChatSessionComponent implements OnDestroy {
     this.peerTypingTimers.forEach((t) => clearTimeout(t));
     this.peerTypingTimers.clear();
     this.peerTypingIds.set(new Set());
+  }
+
+  private uploadPendingFilesAndSummarize(files: File[]): void {
+    if (!this.chatId || files.length === 0) return;
+    this.documentUploading.set(true);
+    from(files).pipe(
+      concatMap((file) => {
+        let obs$;
+        try {
+          obs$ = this.documents.createDocumentFromInput({
+            file,
+            chat_id: this.chatId!,
+            prefer_docling: false,
+          }).pipe(
+            map((res) => ({
+              id: res.id,
+              name: res.name,
+              status: res.status,
+              created_at: new Date().toISOString(),
+            })),
+            catchError(() => EMPTY),
+          );
+        } catch {
+          obs$ = EMPTY;
+        }
+        return obs$;
+      }),
+      tap((doc) => this.sessionDocuments.update((d) => [...d, doc])),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      complete: () => {
+        this.documentUploading.set(false);
+        if (this.sessionDocuments().length > 0) {
+          this.summarize();
+        }
+      },
+      error: () => {
+        this.documentUploading.set(false);
+        this.toast.show('Error al subir los documentos.', 'error');
+      },
+    });
   }
 
   sendBlocked(): boolean {

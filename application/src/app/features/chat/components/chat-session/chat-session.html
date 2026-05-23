@@ -253,18 +253,31 @@
     <div class="chat-input-container">
       <div class="session-input-composer">
         <div class="session-composer-surface">
-          <label class="chat-session-visually-hidden" for="chat-session-message">Mensaje</label>
-          <textarea
-            #messageBox
-            id="chat-session-message"
-            name="chatSessionMessage"
-            class="message-input"
-            rows="1"
-            placeholder="Escribe un mensaje..."
-            [ngModel]="newMessage"
-            (ngModelChange)="onNewMessageChange($event)"
-            (keydown)="onEnterKey($event)"
-          ></textarea>
+
+          @if (chatMode() === 'question') {
+            <label class="chat-session-visually-hidden" for="chat-session-message">Mensaje</label>
+            <textarea
+              #messageBox
+              id="chat-session-message"
+              name="chatSessionMessage"
+              class="message-input"
+              rows="1"
+              placeholder="Escribe un mensaje..."
+              [ngModel]="newMessage"
+              (ngModelChange)="onNewMessageChange($event)"
+              (keydown)="onEnterKey($event)"
+            ></textarea>
+          } @else {
+            <div class="session-summary-hint-row">
+              @if (sessionDocuments().length === 0) {
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span>Adjuntá al menos un documento para generar el resumen</span>
+              } @else {
+                <i class="pi pi-file" aria-hidden="true"></i>
+                <span>Se resumirán <strong>{{ sessionDocuments().length }}</strong> documento{{ sessionDocuments().length > 1 ? 's' : '' }} adjunto{{ sessionDocuments().length > 1 ? 's' : '' }}</span>
+              }
+            </div>
+          }
 
           <div class="session-composer-footer">
             <input
@@ -284,15 +297,79 @@
               (click)="onAttachClick(sessionFileInput)">
               <i class="pi pi-plus" aria-hidden="true"></i>
             </button>
+
+            <div class="session-mode-trigger-wrap">
+              @if (modeDropdownOpen()) {
+                <div class="mode-dropdown-backdrop" (click)="modeDropdownOpen.set(false)" aria-hidden="true"></div>
+                <div class="mode-dropdown" role="listbox" aria-label="Modo del chat">
+                  <button type="button" class="mode-option"
+                    [class.mode-option--active]="chatMode() === 'question'"
+                    role="option" [attr.aria-selected]="chatMode() === 'question'"
+                    (click)="setChatMode('question')">
+                    <span class="mode-option__icon"><i class="pi pi-comment" aria-hidden="true"></i></span>
+                    <span class="mode-option__body">
+                      <span class="mode-option__label">Pregunta</span>
+                      <span class="mode-option__desc">Conversá con el agente sobre tus documentos</span>
+                    </span>
+                    @if (chatMode() === 'question') {
+                      <i class="pi pi-check mode-option__check" aria-hidden="true"></i>
+                    }
+                  </button>
+                  <button type="button" class="mode-option"
+                    [class.mode-option--active]="chatMode() === 'summary'"
+                    role="option" [attr.aria-selected]="chatMode() === 'summary'"
+                    (click)="setChatMode('summary')">
+                    <span class="mode-option__icon"><i class="pi pi-align-left" aria-hidden="true"></i></span>
+                    <span class="mode-option__body">
+                      <span class="mode-option__label">Resumen</span>
+                      <span class="mode-option__desc">Generá un resumen de los documentos adjuntos</span>
+                    </span>
+                    @if (chatMode() === 'summary') {
+                      <i class="pi pi-check mode-option__check" aria-hidden="true"></i>
+                    }
+                  </button>
+                </div>
+              }
+              <button
+                type="button"
+                class="session-mode-trigger"
+                [class.session-mode-trigger--open]="modeDropdownOpen()"
+                (click)="toggleModeDropdown()"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="modeDropdownOpen()">
+                <span>{{ chatMode() === 'question' ? 'Pregunta' : 'Resumen' }}</span>
+                <i
+                  class="pi pi-angle-up session-mode-trigger__chevron"
+                  [class.session-mode-trigger__chevron--down]="!modeDropdownOpen()"
+                  aria-hidden="true"></i>
+              </button>
+            </div>
+
             <span class="session-composer-spacer" aria-hidden="true"></span>
-            <button
-              type="button"
-              class="send-button"
-              aria-label="Enviar mensaje"
-              [disabled]="!newMessage.trim() || sendBlocked()"
-              (click)="sendMessage()">
-              <i class="pi pi-send" aria-hidden="true"></i>
-            </button>
+
+            @if (chatMode() === 'question') {
+              <button
+                type="button"
+                class="send-button"
+                aria-label="Enviar mensaje"
+                [disabled]="!newMessage.trim() || sendBlocked()"
+                (click)="sendMessage()">
+                <i class="pi pi-send" aria-hidden="true"></i>
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="send-button send-button--summary"
+                aria-label="Resumir documentos"
+                [disabled]="sessionDocuments().length === 0 || summarizing() || sendBlocked()"
+                (click)="summarize()">
+                @if (summarizing()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-align-left" aria-hidden="true"></i>
+                }
+              </button>
+            }
           </div>
         </div>
       </div>

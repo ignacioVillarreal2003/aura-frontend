@@ -1,4 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
+import type { ChatMode } from '@aura-types/aura-chat-service.types';
 
 export interface ChatShellContext {
   readonly id: number;
@@ -11,6 +12,7 @@ export class ChatService {
 
   readonly sessionViewerDisplayName = signal('');
   readonly sessionViewerMemberId = signal<number | null>(null);
+  readonly chatMode = signal<ChatMode>('question');
 
   readonly activeChatContext = computed(() => this.activeChat());
 
@@ -45,6 +47,22 @@ export class ChatService {
   resetSessionViewer(): void {
     this.sessionViewerDisplayName.set('');
     this.sessionViewerMemberId.set(null);
+  }
+
+  setChatMode(mode: ChatMode): void {
+    this.chatMode.set(mode);
+  }
+
+  readonly pendingSummaryFiles = signal<File[]>([]);
+
+  setPendingSummaryFiles(files: File[]): void {
+    this.pendingSummaryFiles.set(files);
+  }
+
+  consumePendingSummaryFiles(): File[] {
+    const files = this.pendingSummaryFiles();
+    this.pendingSummaryFiles.set([]);
+    return files;
   }
 
   reset(): void {

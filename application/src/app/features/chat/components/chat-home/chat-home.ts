@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
+import { ChatService } from '@core/services/chat/chat.service';
+import type { ChatMode } from '@aura-types/aura-chat-service.types';
 
 @Component({
   selector: 'app-chat-home',
@@ -16,9 +18,13 @@ export class ChatHomeComponent {
   private readonly router = inject(Router);
   private readonly api = inject(AuraChatServiceHttp);
   private readonly toast = inject(ToastService);
+  private readonly chatShell = inject(ChatService);
 
   message = signal('');
   submitting = signal(false);
+  readonly modeDropdownOpen = signal(false);
+  readonly chatMode = this.chatShell.chatMode;
+  readonly pendingFiles = signal<File[]>([]);
 
   private readonly messageBox = viewChild<ElementRef<HTMLTextAreaElement>>('messageBox');
 
@@ -42,13 +48,26 @@ export class ChatHomeComponent {
     el.style.overflowY = scrollH > maxPx ? 'auto' : 'hidden';
   }
 
+  toggleModeDropdown(): void {
+    this.modeDropdownOpen.update((v) => !v);
+  }
+
+  setChatMode(mode: ChatMode): void {
+    this.chatShell.setChatMode(mode);
+    this.modeDropdownOpen.set(false);
+  }
+
   onAttachClick(fileInput: HTMLInputElement): void {
     fileInput.click();
   }
 
   onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
     input.value = '';
+    if (this.chatMode() === 'summary' && files.length > 0) {
+      this.pendingFiles.update((prev) => [...prev, ...files]);
+    }
   }
 
   onSend(): void {
@@ -67,6 +86,25 @@ export class ChatHomeComponent {
       },
       error: () => {
         this.submitting.set(false);
+        this.toast.show('No se pudo crear el chat.', 'error');
+      },
+    });
+  }
+
+  onSummarizeSend(): void {
+    if (this.submitting() || this.pendingFiles().length === 0) return;
+    const name = 'Resumen de documentos';
+    this.submitting.set(true);
+    this.chatShell.setPendingSummaryFiles(this.pendingFiles());
+    this.api.createChat({ name }).subscribe({
+      next: (chat) => {
+        this.submitting.set(false);
+        this.pendingFiles.set([]);
+        void this.router.navigate(['/main-container', 'chat', String(chat.id)]);
+      },
+      error: () => {
+        this.submitting.set(false);
+        this.chatShell.setPendingSummaryFiles([]);
         this.toast.show('No se pudo crear el chat.', 'error');
       },
     });

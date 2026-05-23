@@ -40,14 +40,7 @@
         <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Chats</span>
       </button>
 
-      <button
-        type="button"
-        class="sidebar-link"
-        [class.is-active]="activeId === 'tools'"
-        [routerLink]="['/main-container', 'tools']">
-        <i class="pi pi-wrench" aria-hidden="true"></i>
-        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Herramientas</span>
-      </button>
+
     </nav>
 
     @if (sortedChats().length > 0) {
