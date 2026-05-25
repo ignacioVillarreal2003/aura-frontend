@@ -32,6 +32,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type {
   AuraChatWsServerMessage,
   ChatDetailDto,
+  ChatFragment,
   ChatMode,
   CursorPageResult,
   FeedbackValue,
@@ -60,6 +61,7 @@ interface ChatMessage {
   readonly is_bookmarked: boolean;
   readonly user_feedback: FeedbackValue | null;
   readonly thread_reply_count: number;
+  readonly fragments?: readonly ChatFragment[] | null;
 }
 
 @Component({
@@ -113,6 +115,10 @@ export class ChatSessionComponent implements OnDestroy {
       !this.regenerating()
     );
   });
+
+  readonly aiProgressStep = signal<string | null>(null);
+  readonly messageFragments = signal<Map<number, readonly ChatFragment[]>>(new Map());
+  readonly expandedFragmentIds = signal<Set<number>>(new Set());
 
   chat: ChatDetailDto | null = null;
   messages = signal<ChatMessage[]>([]);
@@ -170,6 +176,7 @@ export class ChatSessionComponent implements OnDestroy {
               this.chat = detail;
               this.chatShell.setCurrentChat(detail);
               this.messages.set(msgs);
+              this._loadFragmentsFromMessages(msgs);
               this.pinnedMessageIds.set(new Set(pinned.results.map((p: PinnedMessageDto) => p.message_id)));
               this.loading = false;
               this.http.markChatAsRead(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
@@ -827,6 +834,47 @@ export class ChatSessionComponent implements OnDestroy {
     return `${hours}:${minutes}`;
   }
 
+  progressLabel(step: string | null): string {
+    const labels: Record<string, string> = {
+      question_processing: 'Procesando pregunta…',
+      context_retrieval: 'Buscando contexto relevante…',
+      answer_generation: 'Generando respuesta…',
+    };
+    return step ? (labels[step] ?? step) : '';
+  }
+
+  hasFragments(id: number): boolean {
+    return (this.messageFragments().get(id)?.length ?? 0) > 0;
+  }
+
+  getFragments(id: number): readonly ChatFragment[] {
+    return this.messageFragments().get(id) ?? [];
+  }
+
+  isFragmentsExpanded(id: number): boolean {
+    return this.expandedFragmentIds().has(id);
+  }
+
+  toggleFragments(id: number): void {
+    this.expandedFragmentIds.update((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }
+
+  private _loadFragmentsFromMessages(msgs: readonly ChatMessage[]): void {
+    const entries = msgs
+      .filter((m) => m.fragments?.length)
+      .map((m) => [m.id, m.fragments as readonly ChatFragment[]] as const);
+    if (entries.length === 0) return;
+    this.messageFragments.update((map) => {
+      const n = new Map(map);
+      for (const [id, frags] of entries) n.set(id, frags);
+      return n;
+    });
+  }
+
   private consumePendingMessageFromHistory(): string | undefined {
     const navState = history.state as { pendingMessage?: string } | null;
     const pending = navState?.pendingMessage?.trim();
@@ -912,9 +960,14 @@ export class ChatSessionComponent implements OnDestroy {
       case 'ai_meta':
         this.isTyping.set(true);
         break;
+      case 'ai_progress':
+        this.aiProgressStep.set(msg.step);
+        this.cdr.markForCheck();
+        break;
       case 'ai_delta': {
         const delta = msg.delta ?? '';
         this.isTyping.set(false);
+        this.aiProgressStep.set(null);
         this.scheduleDeltaApply(cid, delta);
         break;
       }
@@ -962,6 +1015,15 @@ export class ChatSessionComponent implements OnDestroy {
         }
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
+        this.aiProgressStep.set(null);
+        if (msg.fragments?.length) {
+          const fragId = msg.id ?? sid ?? Date.now();
+          this.messageFragments.update((m) => {
+            const n = new Map(m);
+            n.set(fragId as number, msg.fragments);
+            return n;
+          });
+        }
         setTimeout(() => this.scrollToBottom(), 50);
         this.cdr.markForCheck();
         break;
@@ -970,6 +1032,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.flushPendingDeltas();
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
+        this.aiProgressStep.set(null);
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
         break;
@@ -977,6 +1040,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.flushPendingDeltas();
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
+        this.aiProgressStep.set(null);
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
         break;

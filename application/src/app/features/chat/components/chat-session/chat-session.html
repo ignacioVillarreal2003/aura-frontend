@@ -150,6 +150,28 @@
                       <i class="pi pi-trash" aria-hidden="true"></i>
                     </button>
                   </div>
+                  @if (message.sender_type === 'system' && hasFragments(message.id)) {
+                    <button
+                      type="button"
+                      class="fragments-toggle"
+                      (click)="toggleFragments(message.id)">
+                      <i [ngClass]="['pi', isFragmentsExpanded(message.id) ? 'pi-chevron-up' : 'pi-chevron-down']" aria-hidden="true"></i>
+                      Ver fuentes ({{ getFragments(message.id).length }})
+                    </button>
+                    @if (isFragmentsExpanded(message.id)) {
+                      <div class="fragments-panel">
+                        @for (frag of getFragments(message.id); track frag.id) {
+                          <div class="fragment-item">
+                            <span class="fragment-doc">
+                              <i class="pi pi-file" aria-hidden="true"></i>
+                              {{ frag.document.name }}
+                            </span>
+                            <p class="fragment-content">{{ frag.content.length > 280 ? (frag.content | slice:0:280) + '…' : frag.content }}</p>
+                          </div>
+                        }
+                      </div>
+                    }
+                  }
                 }
               </div>
             </div>
@@ -211,11 +233,17 @@
                 <i class="pi pi-sparkles"></i>
               </div>
               <div class="message-content">
-                <div class="message-bubble typing-indicator">
-                  <span class="dot"></span>
-                  <span class="dot"></span>
-                  <span class="dot"></span>
-                </div>
+                @if (aiProgressStep()) {
+                  <div class="message-bubble ai-progress">
+                    <span class="ai-progress__label">{{ progressLabel(aiProgressStep()) }}</span>
+                  </div>
+                } @else {
+                  <div class="message-bubble typing-indicator">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                  </div>
+                }
               </div>
             </div>
           }
