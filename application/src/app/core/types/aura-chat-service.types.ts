@@ -128,6 +128,7 @@ export interface MessageDto {
   readonly is_bookmarked: boolean;
   readonly user_feedback: FeedbackValue | null;
   readonly thread_reply_count: number;
+  readonly fragments?: readonly ChatFragment[] | null;
 }
 
 export interface ThreadReplyDto {
@@ -156,10 +157,28 @@ export interface PinnedMessageDto {
   readonly message: MessageDto;
 }
 
+export interface ChatFragmentDocument {
+  readonly id: number;
+  readonly name: string;
+  readonly description?: string | null;
+  readonly type?: string | null;
+  readonly category?: string | null;
+}
+
+export interface ChatFragment {
+  readonly id: number;
+  readonly content: string;
+  readonly fragment_index: number;
+  readonly summary?: string | null;
+  readonly topics?: readonly string[] | null;
+  readonly document: ChatFragmentDocument;
+  readonly document_id?: number;
+}
+
 export interface AssistantBlockDto {
   readonly question: string;
   readonly answer: string;
-  readonly fragments: readonly Readonly<Record<string, unknown>>[];
+  readonly fragments: readonly ChatFragment[];
 }
 
 export interface AssistantErrorDto {
@@ -386,15 +405,16 @@ export type AuraChatWsServerMessage =
   | {
       readonly type: 'ai_context';
       readonly question: string;
-      readonly fragments: readonly unknown[];
+      readonly fragments: readonly ChatFragment[];
     }
+  | { readonly type: 'ai_progress'; readonly step: string; readonly message: string }
   | { readonly type: 'ai_delta'; readonly delta: string }
   | {
       readonly type: 'ai_complete';
       readonly message: string;
       readonly answer: string;
       readonly question: string;
-      readonly fragments: readonly unknown[];
+      readonly fragments: readonly ChatFragment[];
       readonly id?: number;
       readonly sender_type?: MessageSenderType;
       readonly created_by?: number;
