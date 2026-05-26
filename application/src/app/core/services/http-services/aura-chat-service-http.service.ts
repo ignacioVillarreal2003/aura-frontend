@@ -5,6 +5,8 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import type {
   AddMembersBody,
+  AssistantAdminDto,
+  AssistantDto,
   BulkArchiveChatResultDto,
   BulkChatIdsBody,
   BulkUnarchiveChatResultDto,
@@ -12,7 +14,12 @@ import type {
   ChatExportBackupDto,
   ChatListItemDto,
   ChatListQueryParams,
+  ChecklistDto,
+  ChecklistListItemDto,
+  CreateAssistantBody,
+  CreateChecklistBody,
   CreateChatBody,
+  CreateReportBody,
   CursorPageResult,
   CursorPaginationQueryParams,
   HealthResponseDto,
@@ -24,6 +31,8 @@ import type {
   PageNumberResult,
   PinnedMessageDto,
   RegenerateResponseDto,
+  ReportDto,
+  ReportListItemDto,
   SendMessageResponseDto,
   SendMessageTextJsonBody,
   SendThreadReplyBody,
@@ -32,8 +41,12 @@ import type {
   ShareLinkDto,
   ThreadReplyDto,
   UpdateChatBody,
+  StartChatResponseDto,
+  UpdateAssistantBody,
+  UpdateChecklistBody,
   UpdateMemberRoleBody,
   UpdateMemberStatusBody,
+  UpdateReportBody,
   WebhookCreateBody,
   WebhookCreatedDto,
   WebhookDto,
@@ -405,6 +418,101 @@ export class AuraChatServiceHttp {
       `${this.membersRoot(chatId)}${memberId}/role/`,
       body,
     );
+  }
+
+  // ── Reports ────────────────────────────────────────────────────────────────
+
+  listReports(query: { type?: string; page?: number; page_size?: number } = {}): Observable<PageNumberResult<ReportListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.type) p = p.set('type', query.type);
+    return this.http.get<PageNumberResult<ReportListItemDto>>(`${this.base}/reports/`, { params: p });
+  }
+
+  createReport(body: CreateReportBody): Observable<ReportDto> {
+    return this.http.post<ReportDto>(`${this.base}/reports/`, body);
+  }
+
+  getReport(reportId: number): Observable<ReportDto> {
+    return this.http.get<ReportDto>(`${this.base}/reports/${reportId}/`);
+  }
+
+  patchReport(reportId: number, body: UpdateReportBody): Observable<ReportDto> {
+    return this.http.patch<ReportDto>(`${this.base}/reports/${reportId}/`, body);
+  }
+
+  deleteReport(reportId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/reports/${reportId}/`);
+  }
+
+  exportReportPdf(reportId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/reports/${reportId}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportReportMarkdown(reportId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/reports/${reportId}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── Checklists ──────────────────────────────────────────────────────────────
+
+  listChecklists(query: { page?: number; page_size?: number } = {}): Observable<PageNumberResult<ChecklistListItemDto>> {
+    const p = this.paramsForPaging(query);
+    return this.http.get<PageNumberResult<ChecklistListItemDto>>(`${this.base}/checklists/`, { params: p });
+  }
+
+  createChecklist(body: CreateChecklistBody): Observable<ChecklistDto> {
+    return this.http.post<ChecklistDto>(`${this.base}/checklists/`, body);
+  }
+
+  getChecklist(checklistId: number): Observable<ChecklistDto> {
+    return this.http.get<ChecklistDto>(`${this.base}/checklists/${checklistId}/`);
+  }
+
+  patchChecklist(checklistId: number, body: UpdateChecklistBody): Observable<ChecklistDto> {
+    return this.http.patch<ChecklistDto>(`${this.base}/checklists/${checklistId}/`, body);
+  }
+
+  deleteChecklist(checklistId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/checklists/${checklistId}/`);
+  }
+
+  exportChecklistPdf(checklistId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/checklists/${checklistId}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportChecklistMarkdown(checklistId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/checklists/${checklistId}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── Assistants ──────────────────────────────────────────────────────────────
+
+  listAssistants(query: { page?: number; page_size?: number } = {}): Observable<PageNumberResult<AssistantDto>> {
+    const p = this.paramsForPaging(query);
+    return this.http.get<PageNumberResult<AssistantDto>>(`${this.base}/assistants/`, { params: p });
+  }
+
+  listAssistantsAdmin(query: { page?: number; page_size?: number } = {}): Observable<PageNumberResult<AssistantAdminDto>> {
+    const p = this.paramsForPaging(query);
+    return this.http.get<PageNumberResult<AssistantAdminDto>>(`${this.base}/assistants/manage/`, { params: p });
+  }
+
+  createAssistant(body: CreateAssistantBody): Observable<AssistantAdminDto> {
+    return this.http.post<AssistantAdminDto>(`${this.base}/assistants/`, body);
+  }
+
+  getAssistant(assistantId: number): Observable<AssistantDto> {
+    return this.http.get<AssistantDto>(`${this.base}/assistants/${assistantId}/`);
+  }
+
+  patchAssistant(assistantId: number, body: UpdateAssistantBody): Observable<AssistantAdminDto> {
+    return this.http.patch<AssistantAdminDto>(`${this.base}/assistants/${assistantId}/`, body);
+  }
+
+  deleteAssistant(assistantId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/assistants/${assistantId}/`);
+  }
+
+  startAssistantChat(assistantId: number): Observable<StartChatResponseDto> {
+    return this.http.post<StartChatResponseDto>(`${this.base}/assistants/${assistantId}/start-chat/`, {});
   }
 
   listPublicShareMessages(

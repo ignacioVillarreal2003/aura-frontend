@@ -41,5 +41,23 @@ export class HerramientasHubComponent {
       description: 'Estructurar información relevante del documento.',
       icon: 'pi pi-table',
     },
+    {
+      path: 'informes',
+      title: 'Informes Estandarizados',
+      description: 'Generá SITREP, INTSUM u OPORD con asistencia de IA y exportá en PDF o Markdown.',
+      icon: 'pi pi-file-edit',
+    },
+    {
+      path: 'checklist',
+      title: 'Checklist desde Procedimiento',
+      description: 'Convertí manuales y SOPs en checklists interactivas verificables durante la operación.',
+      icon: 'pi pi-list-check',
+    },
+    {
+      path: 'asistentes',
+      title: 'Asistentes Especializados',
+      description: 'Iniciá sesiones con asistentes configurados para tareas específicas, sin configurar nada.',
+      icon: 'pi pi-android',
+    },
   ];
 }

@@ -1,6 +1,5 @@
 /**
- * Production: configure `chatApiUrl`, `authenticationApiUrl`, and `documentProcessingUrl`
- * in your release pipeline (file replacement or runtime config). `devAccessToken` is absent.
+ * Production: configure all API URLs in your release pipeline via file replacement or runtime config.
  */
 export const environment = {
   production: true,

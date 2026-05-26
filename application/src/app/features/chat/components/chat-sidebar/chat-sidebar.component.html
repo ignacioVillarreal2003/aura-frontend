@@ -103,6 +103,19 @@
       <button
         type="button"
         class="sidebar-link"
+        [routerLink]="['/user', 'notifications']">
+        <span class="notif-bell-wrap">
+          <i class="pi pi-bell" aria-hidden="true"></i>
+          @if (notifState.unreadCount() > 0) {
+            <span class="notif-badge">{{ notifState.unreadCount() > 99 ? '99+' : notifState.unreadCount() }}</span>
+          }
+        </span>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Notificaciones</span>
+      </button>
+
+      <button
+        type="button"
+        class="sidebar-link"
         [class.is-active]="activeId === 'profile'"
         routerLink="/user">
         <span class="avatar-fallback" aria-hidden="true">{{ initials() }}</span>

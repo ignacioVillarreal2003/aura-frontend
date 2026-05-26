@@ -1,0 +1,202 @@
+<div class="cl-page">
+  <a routerLink="/main-container/tools" class="cl-back">← Herramientas</a>
+
+  <header class="cl-header">
+    <h1 class="cl-title">Checklist desde Procedimiento</h1>
+    <p class="cl-subtitle">
+      Pegá un procedimiento operacional y la IA extraerá y estructurará los pasos en una checklist
+      interactiva lista para usar durante la operación.
+    </p>
+  </header>
+
+  <!-- Mode toggle -->
+  <section class="cl-section">
+    <span class="cl-label">Modo de generación</span>
+    <div class="cl-mode-toggle">
+      <button
+        type="button"
+        class="cl-mode-btn"
+        [class.cl-mode-btn--active]="selectedMode() === 'direct'"
+        [disabled]="loading()"
+        (click)="selectMode('direct')"
+      >
+        <i class="pi pi-pencil"></i>
+        <span>Directo</span>
+        <span class="cl-mode-hint">Solo usa el texto que pegás</span>
+      </button>
+      <button
+        type="button"
+        class="cl-mode-btn"
+        [class.cl-mode-btn--active]="selectedMode() === 'rag'"
+        [disabled]="loading()"
+        (click)="selectMode('rag')"
+      >
+        <i class="pi pi-database"></i>
+        <span>Con documentos</span>
+        <span class="cl-mode-hint">Recupera contexto de tus colecciones</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Input area -->
+  <section class="cl-section">
+    <span class="cl-label">Texto del procedimiento</span>
+    <textarea
+      class="cl-textarea"
+      placeholder="Pegá aquí el procedimiento operacional — puede ser texto de un manual, SOP, descripción de pasos, etc. La IA extraerá cada paso como ítem de la checklist."
+      [value]="userInput()"
+      [disabled]="loading()"
+      (input)="onInputChange($any($event.target).value); autosizeTextarea($any($event.target))"
+      rows="7"
+    ></textarea>
+    <div class="cl-input-footer">
+      <button
+        type="button"
+        class="cl-btn cl-btn--primary"
+        [disabled]="!canGenerate()"
+        (click)="generate()"
+      >
+        @if (loading() && !hasGenerated()) {
+          <i class="pi pi-spin pi-spinner"></i> Generando…
+        } @else {
+          <i class="pi pi-list-check"></i> Generar checklist
+        }
+      </button>
+    </div>
+  </section>
+
+  @if (error()) {
+    <div class="cl-alert" role="alert">{{ error() }}</div>
+  }
+
+  <!-- Generated checklist -->
+  @if (hasGenerated()) {
+    <section class="cl-result">
+
+      <!-- Title + progress -->
+      <div class="cl-result__head">
+        <div>
+          <h2 class="cl-result__title">{{ generatedTitle() }}</h2>
+          <div class="cl-progress">
+            <div class="cl-progress__bar">
+              <div class="cl-progress__fill" [style.width.%]="progressPct()"></div>
+            </div>
+            <span class="cl-progress__label">{{ checkedItems() }}/{{ totalItems() }} verificados ({{ progressPct() }}%)</span>
+          </div>
+        </div>
+        @if (saveSuccess()) {
+          <span class="cl-badge cl-badge--ok">
+            <i class="pi pi-check"></i> Guardada
+          </span>
+        }
+      </div>
+
+      <!-- Sections & items -->
+      <div class="cl-checklist">
+        @for (section of groupedSections(); track section.name) {
+          <div class="cl-section-group">
+            <h3 class="cl-section-title">{{ section.name }}</h3>
+            @for (item of section.items; track item.id) {
+              <label
+                class="cl-item"
+                [class.cl-item--checked]="item.is_checked"
+              >
+                <input
+                  type="checkbox"
+                  class="cl-item__checkbox"
+                  [checked]="item.is_checked"
+                  [disabled]="loading()"
+                  (change)="toggleItem(item.id)"
+                />
+                <span class="cl-item__text">{{ item.text }}</span>
+              </label>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Action row -->
+      <div class="cl-actions">
+        <button
+          type="button"
+          class="cl-btn cl-btn--secondary"
+          [disabled]="saving()"
+          (click)="saveChecklist()"
+        >
+          @if (saving()) {
+            <i class="pi pi-spin pi-spinner"></i> Guardando…
+          } @else if (savedChecklistId()) {
+            <i class="pi pi-refresh"></i> Actualizar
+          } @else {
+            <i class="pi pi-save"></i> Guardar
+          }
+        </button>
+
+        <button
+          type="button"
+          class="cl-btn cl-btn--ghost"
+          [disabled]="exporting() !== null"
+          (click)="exportPdf()"
+          [title]="!savedChecklistId() ? 'Guardá la checklist para exportar como PDF' : ''"
+        >
+          @if (exporting() === 'pdf') {
+            <i class="pi pi-spin pi-spinner"></i> Exportando…
+          } @else {
+            <i class="pi pi-file-pdf"></i> PDF
+          }
+        </button>
+
+        <button
+          type="button"
+          class="cl-btn cl-btn--ghost"
+          [disabled]="exporting() !== null"
+          (click)="exportMarkdown()"
+        >
+          @if (exporting() === 'markdown') {
+            <i class="pi pi-spin pi-spinner"></i> Exportando…
+          } @else {
+            <i class="pi pi-file"></i> Markdown
+          }
+        </button>
+
+        <button
+          type="button"
+          class="cl-btn cl-btn--danger"
+          [disabled]="loading()"
+          (click)="reset()"
+        >
+          <i class="pi pi-trash"></i> Reiniciar
+        </button>
+      </div>
+
+      <!-- Refine section -->
+      <div class="cl-refine">
+        <span class="cl-label">Refinar checklist</span>
+        <div class="cl-refine__row">
+          <textarea
+            class="cl-textarea cl-textarea--sm"
+            placeholder="Instrucción de refinamiento — p. ej.: «Agregá una sección de contingencias» o «Dividí el paso 3 en sub-pasos»…"
+            [value]="refineInput()"
+            [disabled]="loading()"
+            (input)="onRefineChange($any($event.target).value); autosizeTextarea($any($event.target), 200)"
+            rows="3"
+          ></textarea>
+          <button
+            type="button"
+            class="cl-btn cl-btn--primary cl-btn--refine"
+            [disabled]="!canRefine()"
+            (click)="refine()"
+          >
+            @if (loading() && hasGenerated()) {
+              <i class="pi pi-spin pi-spinner"></i>
+            } @else {
+              <i class="pi pi-refresh"></i>
+            }
+            Refinar
+          </button>
+        </div>
+      </div>
+
+    </section>
+  }
+</div>

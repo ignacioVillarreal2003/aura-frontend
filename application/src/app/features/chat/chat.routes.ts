@@ -76,6 +76,27 @@ export const chatShellRoutes: Routes = [
                 'Identificación y organización de datos relevantes (fechas, cifras, entidades, etc.).',
             },
           },
+          {
+            path: 'informes',
+            loadComponent: () =>
+              import('./components/herramientas/informes-tool.component').then(
+                (m) => m.InformesToolComponent
+              ),
+          },
+          {
+            path: 'checklist',
+            loadComponent: () =>
+              import('./components/herramientas/checklist-tool.component').then(
+                (m) => m.ChecklistToolComponent
+              ),
+          },
+          {
+            path: 'asistentes',
+            loadComponent: () =>
+              import('./components/herramientas/asistentes-hub.component').then(
+                (m) => m.AsistentesHubComponent
+              ),
+          },
         ],
       },
       {
