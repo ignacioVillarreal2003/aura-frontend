@@ -1,7 +1,7 @@
 import { Injectable, NgZone, OnDestroy, inject } from '@angular/core';
 import { Observable, Subject, Subscription, retry, repeat, timer } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { environment } from '../../../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import type { SseEvent, SseEventType } from '@core/types/aura-notification-service.types';
 

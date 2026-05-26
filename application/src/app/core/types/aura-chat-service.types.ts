@@ -382,6 +382,132 @@ export interface ChatExportBackupDto {
   readonly messages: readonly ChatExportBackupMessageDto[];
 }
 
+// ── Reports ────────────────────────────────────────────────────────────────────
+
+export type ReportType = 'SITREP' | 'INTSUM' | 'OPORD';
+export type ReportMode = 'direct' | 'rag';
+
+export interface ReportDto {
+  readonly id: number;
+  readonly type: ReportType;
+  readonly title: string;
+  readonly content: string;
+  readonly mode: ReportMode;
+  readonly metadata: Record<string, unknown>;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface ReportListItemDto {
+  readonly id: number;
+  readonly type: ReportType;
+  readonly title: string;
+  readonly mode: ReportMode;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface CreateReportBody {
+  readonly type: ReportType;
+  readonly title?: string;
+  readonly content: string;
+  readonly mode: ReportMode;
+  readonly metadata?: Record<string, unknown>;
+}
+
+export interface UpdateReportBody {
+  readonly title?: string;
+  readonly content?: string;
+}
+
+// ── Checklists ─────────────────────────────────────────────────────────────────
+
+export type ChecklistMode = 'direct' | 'rag';
+
+export interface ChecklistItemDto {
+  readonly id: string;
+  readonly section: string;
+  readonly order: number;
+  readonly text: string;
+  readonly is_checked: boolean;
+  readonly notes: string;
+}
+
+export interface ChecklistDto {
+  readonly id: number;
+  readonly title: string;
+  readonly items: readonly ChecklistItemDto[];
+  readonly mode: ChecklistMode;
+  readonly metadata: Record<string, unknown>;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface ChecklistListItemDto {
+  readonly id: number;
+  readonly title: string;
+  readonly mode: ChecklistMode;
+  readonly item_count: number;
+  readonly checked_count: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface CreateChecklistBody {
+  readonly title: string;
+  readonly items: readonly ChecklistItemDto[];
+  readonly mode: ChecklistMode;
+  readonly metadata?: Record<string, unknown>;
+}
+
+export interface UpdateChecklistBody {
+  readonly title?: string;
+  readonly items?: readonly ChecklistItemDto[];
+}
+
+// ── Assistants ─────────────────────────────────────────────────────────────────
+
+export interface AssistantDto {
+  readonly id: number;
+  readonly name: string;
+  readonly description: string;
+  readonly avatar_emoji: string;
+  readonly is_active: boolean;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface AssistantAdminDto extends AssistantDto {
+  readonly system_prompt: string;
+  readonly created_by: number;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface CreateAssistantBody {
+  readonly name: string;
+  readonly description?: string;
+  readonly system_prompt: string;
+  readonly avatar_emoji?: string;
+  readonly is_active?: boolean;
+}
+
+export interface UpdateAssistantBody {
+  readonly name?: string;
+  readonly description?: string;
+  readonly system_prompt?: string;
+  readonly avatar_emoji?: string;
+  readonly is_active?: boolean;
+}
+
+export interface StartChatResponseDto {
+  readonly chat_id: number;
+  readonly chat_name: string;
+}
+
 export type AuraChatWsClientMessage =
   | { readonly type: 'chat.message'; readonly message: string }
   | { readonly type: 'chat.typing'; readonly is_typing: boolean };

@@ -5,4 +5,5 @@ export const environment = {
   documentProcessingUrl: 'http://localhost:8000',
   toolsApiUrl: 'http://localhost:8000',
   notificationApiUrl: 'http://localhost:8004',
+  llmApiUrl: 'http://localhost:8001',
 };
