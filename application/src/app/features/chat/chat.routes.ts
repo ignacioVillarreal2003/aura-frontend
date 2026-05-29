@@ -79,16 +79,28 @@ export const chatShellRoutes: Routes = [
           {
             path: 'informes',
             loadComponent: () =>
-              import('./components/herramientas/informes-tool.component').then(
-                (m) => m.InformesToolComponent
+              import('./components/herramientas/tool-generator-page.component').then(
+                (m) => m.ToolGeneratorPageComponent
               ),
+            data: {
+              initialKind: 'SITREP',
+              pageTitle: 'Generador de Informes',
+              pageSubtitle:
+                'Redactá informes militares estandarizados (SITREP, INTSUM, OPORD) con asistencia de IA y exportalos en PDF o Markdown.',
+            },
           },
           {
             path: 'checklist',
             loadComponent: () =>
-              import('./components/herramientas/checklist-tool.component').then(
-                (m) => m.ChecklistToolComponent
+              import('./components/herramientas/tool-generator-page.component').then(
+                (m) => m.ToolGeneratorPageComponent
               ),
+            data: {
+              initialKind: 'CHECKLIST',
+              pageTitle: 'Checklist desde Procedimiento',
+              pageSubtitle:
+                'Convertí manuales y SOPs en checklists interactivas verificables durante la operación.',
+            },
           },
           {
             path: 'asistentes',

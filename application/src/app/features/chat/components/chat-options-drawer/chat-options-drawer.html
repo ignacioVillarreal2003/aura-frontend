@@ -82,6 +82,26 @@
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
+              @if (canListReports()) {
+                <button type="button" class="drawer-section-tile" (click)="openSub('reports')">
+                  <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-file-edit"></i></span>
+                  <span class="drawer-section-tile__text">
+                    <span class="drawer-section-tile__title">Informes</span>
+                    <span class="drawer-section-tile__hint">SITREP, INTSUM y OPORD de este chat</span>
+                  </span>
+                  <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+                </button>
+              }
+              @if (canListChecklists()) {
+                <button type="button" class="drawer-section-tile" (click)="openSub('checklists')">
+                  <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-list-check"></i></span>
+                  <span class="drawer-section-tile__text">
+                    <span class="drawer-section-tile__title">Checklists</span>
+                    <span class="drawer-section-tile__hint">Checklists generadas en este chat</span>
+                  </span>
+                  <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+                </button>
+              }
             </nav>
           }
           @case ('documents') {
@@ -442,6 +462,160 @@
                 <span class="drawer-action-item__label">Copia de seguridad (JSON)</span>
               </button>
             </nav>
+          }
+          @case ('reports') {
+            @if (selectedReport(); as report) {
+              <div class="drawer-toolbar">
+                <button type="button" class="drawer-btn drawer-btn--secondary" (click)="closeReport()">
+                  <i class="pi pi-arrow-left" aria-hidden="true"></i>
+                  Volver a la lista
+                </button>
+              </div>
+              <div class="drawer-editor">
+                <label class="drawer-webhook-label" for="report-title">Título</label>
+                <input
+                  id="report-title"
+                  type="text"
+                  class="drawer-webhook-input"
+                  [value]="reportEditTitle()"
+                  (input)="onReportTitleInput($event)"
+                />
+                <label class="drawer-webhook-label" for="report-content">Contenido</label>
+                <textarea
+                  id="report-content"
+                  class="drawer-editor-textarea"
+                  rows="14"
+                  [value]="reportEditContent()"
+                  (input)="onReportContentInput($event)"
+                ></textarea>
+                <div class="drawer-webhook-form-actions">
+                  <button type="button" class="drawer-btn drawer-btn--primary" [disabled]="reportSaving()" (click)="saveReport()">
+                    <i [ngClass]="['pi', reportSaving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
+                    Guardar
+                  </button>
+                  <button type="button" class="drawer-btn drawer-btn--secondary" [disabled]="exportingItemId() !== null" (click)="exportReport(report.id, 'pdf', report.title)">
+                    <i class="pi pi-file-pdf" aria-hidden="true"></i> PDF
+                  </button>
+                  <button type="button" class="drawer-btn drawer-btn--secondary" [disabled]="exportingItemId() !== null" (click)="exportReport(report.id, 'markdown', report.title)">
+                    <i class="pi pi-file" aria-hidden="true"></i> Markdown
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="drawer-toolbar">
+                <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadReports()" [disabled]="reportsLoading()">
+                  <i class="pi pi-refresh" [class.pi-spin]="reportsLoading()" aria-hidden="true"></i>
+                  Actualizar
+                </button>
+              </div>
+              @if (reportsLoading() && reports().length === 0) {
+                <p class="drawer-muted">Cargando informes…</p>
+              } @else if (reports().length === 0) {
+                <p class="drawer-muted">No hay informes generados en este chat.</p>
+              } @else {
+                <ul class="drawer-doc-list" aria-label="Informes">
+                  @for (r of reports(); track r.id) {
+                    <li class="drawer-doc-card">
+                      <div class="drawer-doc-card__main">
+                        <span class="drawer-doc-card__name">
+                          <span class="drawer-tag">{{ r.type }}</span>
+                          {{ r.title }}
+                        </span>
+                        <span class="drawer-doc-card__meta">{{ r.created_at | date: 'short' }}</span>
+                      </div>
+                      <div class="drawer-share-actions">
+                        <button type="button" class="drawer-linkish" (click)="openReport(r.id)">Ver / Editar</button>
+                        <button type="button" class="drawer-linkish" [disabled]="exportingItemId() !== null" (click)="exportReport(r.id, 'pdf', r.title)">PDF</button>
+                        <button type="button" class="drawer-linkish" [disabled]="exportingItemId() !== null" (click)="exportReport(r.id, 'markdown', r.title)">MD</button>
+                        <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="deleteReport(r.id)">Borrar</button>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          }
+          @case ('checklists') {
+            @if (selectedChecklist(); as checklist) {
+              <div class="drawer-toolbar">
+                <button type="button" class="drawer-btn drawer-btn--secondary" (click)="closeChecklist()">
+                  <i class="pi pi-arrow-left" aria-hidden="true"></i>
+                  Volver a la lista
+                </button>
+              </div>
+              <div class="drawer-editor">
+                <label class="drawer-webhook-label" for="checklist-title">Título</label>
+                <input
+                  id="checklist-title"
+                  type="text"
+                  class="drawer-webhook-input"
+                  [value]="checklistEditTitle()"
+                  (input)="onChecklistTitleInput($event)"
+                />
+                <p class="drawer-webhook-label">Ítems</p>
+                <ul class="drawer-checklist-edit">
+                  @for (item of checklistEditItems(); track item.id) {
+                    <li class="drawer-checklist-edit__item">
+                      <input
+                        type="checkbox"
+                        class="drawer-webhook-checkbox"
+                        [checked]="item.is_checked"
+                        (change)="toggleChecklistItem(item.id)"
+                      />
+                      <input
+                        type="text"
+                        class="drawer-checklist-edit__text"
+                        [value]="item.text"
+                        (input)="onChecklistItemTextInput(item.id, $event)"
+                      />
+                    </li>
+                  }
+                </ul>
+                <div class="drawer-webhook-form-actions">
+                  <button type="button" class="drawer-btn drawer-btn--primary" [disabled]="checklistSaving()" (click)="saveChecklist()">
+                    <i [ngClass]="['pi', checklistSaving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
+                    Guardar
+                  </button>
+                  <button type="button" class="drawer-btn drawer-btn--secondary" [disabled]="exportingItemId() !== null" (click)="exportChecklist(checklist.id, 'pdf', checklist.title)">
+                    <i class="pi pi-file-pdf" aria-hidden="true"></i> PDF
+                  </button>
+                  <button type="button" class="drawer-btn drawer-btn--secondary" [disabled]="exportingItemId() !== null" (click)="exportChecklist(checklist.id, 'markdown', checklist.title)">
+                    <i class="pi pi-file" aria-hidden="true"></i> Markdown
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="drawer-toolbar">
+                <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadChecklists()" [disabled]="checklistsLoading()">
+                  <i class="pi pi-refresh" [class.pi-spin]="checklistsLoading()" aria-hidden="true"></i>
+                  Actualizar
+                </button>
+              </div>
+              @if (checklistsLoading() && checklists().length === 0) {
+                <p class="drawer-muted">Cargando checklists…</p>
+              } @else if (checklists().length === 0) {
+                <p class="drawer-muted">No hay checklists generadas en este chat.</p>
+              } @else {
+                <ul class="drawer-doc-list" aria-label="Checklists">
+                  @for (c of checklists(); track c.id) {
+                    <li class="drawer-doc-card">
+                      <div class="drawer-doc-card__main">
+                        <span class="drawer-doc-card__name">{{ c.title }}</span>
+                        <span class="drawer-doc-card__meta">
+                          {{ c.checked_count }}/{{ c.item_count }} ítems · {{ c.created_at | date: 'short' }}
+                        </span>
+                      </div>
+                      <div class="drawer-share-actions">
+                        <button type="button" class="drawer-linkish" (click)="openChecklist(c.id)">Ver / Editar</button>
+                        <button type="button" class="drawer-linkish" [disabled]="exportingItemId() !== null" (click)="exportChecklist(c.id, 'pdf', c.title)">PDF</button>
+                        <button type="button" class="drawer-linkish" [disabled]="exportingItemId() !== null" (click)="exportChecklist(c.id, 'markdown', c.title)">MD</button>
+                        <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="deleteChecklist(c.id)">Borrar</button>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            }
           }
         }
       }

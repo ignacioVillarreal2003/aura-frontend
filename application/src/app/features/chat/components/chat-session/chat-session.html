@@ -49,6 +49,12 @@
       (chatMetaUpdated)="onChatMetaUpdated($event)"
     />
 
+    @if (toolsOpen()) {
+      <app-modal [title]="'Generar informe o checklist'" (onClose)="closeTools()">
+        <app-tool-generator [chatId]="chat.id" (created)="onToolCreated()" />
+      </app-modal>
+    }
+
     <div class="messages-container">
       @if (messages().length === 0) {
         <div class="empty-state">
@@ -312,6 +318,16 @@
               (click)="onAttachClick(sessionFileInput)">
               <i class="pi pi-plus" aria-hidden="true"></i>
             </button>
+            @if (canUseTools()) {
+              <button
+                type="button"
+                class="session-attach"
+                aria-label="Generar informe o checklist"
+                title="Generar informe o checklist"
+                (click)="openTools()">
+                <i class="pi pi-file-edit" aria-hidden="true"></i>
+              </button>
+            }
             <span class="session-composer-spacer" aria-hidden="true"></span>
             <button
               type="button"

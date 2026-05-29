@@ -394,6 +394,7 @@ export interface ReportDto {
   readonly content: string;
   readonly mode: ReportMode;
   readonly metadata: Record<string, unknown>;
+  readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
   readonly updated_by: number | null;
@@ -405,16 +406,32 @@ export interface ReportListItemDto {
   readonly type: ReportType;
   readonly title: string;
   readonly mode: ReportMode;
+  readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
 
-export interface CreateReportBody {
-  readonly type: ReportType;
-  readonly title?: string;
+export interface GenerateMessageDto {
+  readonly role: 'human' | 'assistant';
   readonly content: string;
+}
+
+export interface GenerateFragmentDto {
+  readonly document?: Record<string, unknown>;
+  readonly content?: string;
+}
+
+export interface GenerateReportBody {
+  readonly type: ReportType;
   readonly mode: ReportMode;
-  readonly metadata?: Record<string, unknown>;
+  readonly message: string;
+  readonly chat_id?: number | null;
+}
+
+export interface ReportGenerateResponseDto {
+  readonly report: ReportDto;
+  readonly messages: readonly GenerateMessageDto[];
+  readonly fragments: readonly GenerateFragmentDto[];
 }
 
 export interface UpdateReportBody {
@@ -441,6 +458,7 @@ export interface ChecklistDto {
   readonly items: readonly ChecklistItemDto[];
   readonly mode: ChecklistMode;
   readonly metadata: Record<string, unknown>;
+  readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
   readonly updated_by: number | null;
@@ -451,17 +469,23 @@ export interface ChecklistListItemDto {
   readonly id: number;
   readonly title: string;
   readonly mode: ChecklistMode;
+  readonly source_chat_id: number | null;
   readonly item_count: number;
   readonly checked_count: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
 
-export interface CreateChecklistBody {
-  readonly title: string;
-  readonly items: readonly ChecklistItemDto[];
+export interface GenerateChecklistBody {
   readonly mode: ChecklistMode;
-  readonly metadata?: Record<string, unknown>;
+  readonly message: string;
+  readonly chat_id?: number | null;
+}
+
+export interface ChecklistGenerateResponseDto {
+  readonly checklist: ChecklistDto;
+  readonly messages: readonly GenerateMessageDto[];
+  readonly fragments: readonly GenerateFragmentDto[];
 }
 
 export interface UpdateChecklistBody {

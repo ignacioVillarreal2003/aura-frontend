@@ -15,13 +15,14 @@ import type {
   ChatListItemDto,
   ChatListQueryParams,
   ChecklistDto,
+  ChecklistGenerateResponseDto,
   ChecklistListItemDto,
   CreateAssistantBody,
-  CreateChecklistBody,
   CreateChatBody,
-  CreateReportBody,
   CursorPageResult,
   CursorPaginationQueryParams,
+  GenerateChecklistBody,
+  GenerateReportBody,
   HealthResponseDto,
   MemberListQueryParams,
   MembershipDto,
@@ -32,6 +33,7 @@ import type {
   PinnedMessageDto,
   RegenerateResponseDto,
   ReportDto,
+  ReportGenerateResponseDto,
   ReportListItemDto,
   SendMessageResponseDto,
   SendMessageTextJsonBody,
@@ -422,14 +424,15 @@ export class AuraChatServiceHttp {
 
   // ── Reports ────────────────────────────────────────────────────────────────
 
-  listReports(query: { type?: string; page?: number; page_size?: number } = {}): Observable<PageNumberResult<ReportListItemDto>> {
+  listReports(query: { type?: string; chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<ReportListItemDto>> {
     let p = this.paramsForPaging(query);
     if (query.type) p = p.set('type', query.type);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
     return this.http.get<PageNumberResult<ReportListItemDto>>(`${this.base}/reports/`, { params: p });
   }
 
-  createReport(body: CreateReportBody): Observable<ReportDto> {
-    return this.http.post<ReportDto>(`${this.base}/reports/`, body);
+  generateReport(body: GenerateReportBody): Observable<ReportGenerateResponseDto> {
+    return this.http.post<ReportGenerateResponseDto>(`${this.base}/reports/generate/`, body);
   }
 
   getReport(reportId: number): Observable<ReportDto> {
@@ -454,13 +457,14 @@ export class AuraChatServiceHttp {
 
   // ── Checklists ──────────────────────────────────────────────────────────────
 
-  listChecklists(query: { page?: number; page_size?: number } = {}): Observable<PageNumberResult<ChecklistListItemDto>> {
-    const p = this.paramsForPaging(query);
+  listChecklists(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<ChecklistListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
     return this.http.get<PageNumberResult<ChecklistListItemDto>>(`${this.base}/checklists/`, { params: p });
   }
 
-  createChecklist(body: CreateChecklistBody): Observable<ChecklistDto> {
-    return this.http.post<ChecklistDto>(`${this.base}/checklists/`, body);
+  generateChecklist(body: GenerateChecklistBody): Observable<ChecklistGenerateResponseDto> {
+    return this.http.post<ChecklistGenerateResponseDto>(`${this.base}/checklists/generate/`, body);
   }
 
   getChecklist(checklistId: number): Observable<ChecklistDto> {

@@ -45,8 +45,11 @@ import { ChatWebSocketService, type ChatSocketConnection } from '@core/services/
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { ToastService } from '@core/components/toast-service';
 import { ChatOptionsDrawer, type DocumentItem } from '../chat-options-drawer/chat-options-drawer';
+import { ToolGeneratorComponent } from '../herramientas/tool-generator.component';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
+import { Modal } from '../../../../shared/components/modals/modal/modal';
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
+import { UserState } from '@core/state/user.state';
 
 interface ChatMessage {
   readonly id: number;
@@ -64,7 +67,7 @@ interface ChatMessage {
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe],
+  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, ToolGeneratorComponent, Modal, MarkdownPipe],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
 })
@@ -80,6 +83,12 @@ export class ChatSessionComponent implements OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly userState = inject(UserState);
+
+  readonly canUseTools = computed(() => {
+    const perms = this.userState.user()?.permissions ?? [];
+    return perms.includes('LLM_REPORT_GENERATE') || perms.includes('LLM_CHECKLIST_GENERATE');
+  });
 
   private chatId: number | null = null;
   private socket: ChatSocketConnection | null = null;
@@ -120,6 +129,7 @@ export class ChatSessionComponent implements OnDestroy {
   loading = true;
   isTyping = signal(false);
   optionsOpen = signal(false);
+  toolsOpen = signal(false);
   documentUploading = signal(false);
   readonly docDropOverlayVisible = signal(false);
   readonly sessionDocuments = signal<DocumentItem[]>([]);
@@ -202,6 +212,18 @@ export class ChatSessionComponent implements OnDestroy {
 
   toggleOptions(): void {
     this.optionsOpen.update((v) => !v);
+  }
+
+  openTools(): void {
+    this.toolsOpen.set(true);
+  }
+
+  closeTools(): void {
+    this.toolsOpen.set(false);
+  }
+
+  onToolCreated(): void {
+    this.toast.show('Disponible en Opciones del chat → Informes / Checklists.', 'success');
   }
 
   onAttachClick(fileInput: HTMLInputElement): void {

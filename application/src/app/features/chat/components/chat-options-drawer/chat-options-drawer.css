@@ -537,3 +537,76 @@
   display: inline-block;
   animation: drawer-spin 0.9s linear infinite;
 }
+
+/* ── Reports / Checklists ──────────────────────────────────── */
+.drawer-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  margin-right: 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.04em;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.drawer-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-editor-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary, #fafaf9);
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.drawer-editor-textarea:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.55);
+}
+
+.drawer-checklist-edit {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.drawer-checklist-edit__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-checklist-edit__text {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #fafaf9);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.drawer-checklist-edit__text:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.55);
+}
