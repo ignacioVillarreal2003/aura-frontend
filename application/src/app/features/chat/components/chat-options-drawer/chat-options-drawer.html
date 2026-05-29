@@ -35,10 +35,6 @@
       @if (contextChatId() == null) {
         <p class="drawer-panel__intro">No hay un chat seleccionado.</p>
       } @else {
-        @if (contextChatTitle()) {
-          <p class="drawer-panel__chat-name">{{ contextChatTitle() }}</p>
-        }
-
         @switch (panelView()) {
           @case ('root') {
             <nav class="drawer-sections" aria-label="Secciones del chat">
@@ -119,21 +115,12 @@
               />
               <button
                 type="button"
-                class="drawer-btn drawer-btn--primary"
+                class="drawer-btn drawer-btn--primary drawer-btn--full"
                 [disabled]="uploadDisabled()"
                 (click)="docInput.click()"
               >
                 <i class="pi pi-upload" aria-hidden="true"></i>
                 Añadir documento
-              </button>
-              <button
-                type="button"
-                class="drawer-btn drawer-btn--secondary"
-                (click)="refreshDocumentsList()"
-                [disabled]="documentsLoading()"
-              >
-                <i class="pi pi-refresh" [class.pi-spin]="documentsLoading()" aria-hidden="true"></i>
-                Actualizar lista
               </button>
             </div>
             @if (documentsLoading() && mergedDocuments().length === 0) {
@@ -151,13 +138,28 @@
                         <span class="drawer-doc-card__date">{{ doc.created_at | date: 'short' }}</span>
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      class="drawer-linkish"
-                      (click)="documentUpdateSoon(doc)"
-                    >
-                      Actualizar documento
-                    </button>
+                    <div class="drawer-doc-card__actions">
+                      @if (canDownloadDocument()) {
+                        <button
+                          type="button"
+                          class="drawer-doc-action"
+                          [disabled]="downloadingDocId() === doc.id || deletingDocId() === doc.id"
+                          title="Descargar"
+                          (click)="downloadDocument(doc)">
+                          <i [ngClass]="['pi', downloadingDocId() === doc.id ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
+                        </button>
+                      }
+                      @if (canDeleteDocument()) {
+                        <button
+                          type="button"
+                          class="drawer-doc-action drawer-doc-action--danger"
+                          [disabled]="deletingDocId() === doc.id || downloadingDocId() === doc.id"
+                          title="Eliminar"
+                          (click)="deleteDocument(doc)">
+                          <i [ngClass]="['pi', deletingDocId() === doc.id ? 'pi-spin pi-spinner' : 'pi-trash']" aria-hidden="true"></i>
+                        </button>
+                      }
+                    </div>
                   </li>
                 }
               </ul>

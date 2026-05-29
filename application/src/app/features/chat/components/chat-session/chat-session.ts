@@ -31,11 +31,14 @@ import type {
   AuraChatWsServerMessage,
   ChatDetailDto,
   ChatFragment,
+  ChecklistMode,
   CursorPageResult,
   FeedbackValue,
   MessageDto,
   MessageSenderType,
   PinnedMessageDto,
+  ReportMode,
+  ReportType,
   ThreadReplyDto,
 } from '@aura-types/aura-chat-service.types';
 import { ChatService } from '@core/services/chat/chat.service';
@@ -45,9 +48,7 @@ import { ChatWebSocketService, type ChatSocketConnection } from '@core/services/
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { ToastService } from '@core/components/toast-service';
 import { ChatOptionsDrawer, type DocumentItem } from '../chat-options-drawer/chat-options-drawer';
-import { ToolGeneratorComponent } from '../herramientas/tool-generator.component';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
-import { Modal } from '../../../../shared/components/modals/modal/modal';
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
 import { UserState } from '@core/state/user.state';
 
@@ -64,10 +65,16 @@ interface ChatMessage {
   readonly fragments?: readonly ChatFragment[] | null;
 }
 
+const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: string }[] = [
+  { value: 'SITREP', label: 'SITREP — Situación', placeholder: 'Describí la situación, unidades involucradas, área de operaciones…' },
+  { value: 'INTSUM', label: 'INTSUM — Inteligencia', placeholder: 'Describí la amenaza, período cubierto, eventos relevantes…' },
+  { value: 'OPORD', label: 'OPORD — Operaciones', placeholder: 'Describí la misión, situación, plan de ejecución…' },
+];
+
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, ToolGeneratorComponent, Modal, MarkdownPipe],
+  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
 })
@@ -89,6 +96,9 @@ export class ChatSessionComponent implements OnDestroy {
     const perms = this.userState.user()?.permissions ?? [];
     return perms.includes('LLM_REPORT_GENERATE') || perms.includes('LLM_CHECKLIST_GENERATE');
   });
+
+  readonly canReport = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_REPORT_GENERATE'));
+  readonly canChecklist = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_CHECKLIST_GENERATE'));
 
   private chatId: number | null = null;
   private socket: ChatSocketConnection | null = null;
@@ -129,7 +139,30 @@ export class ChatSessionComponent implements OnDestroy {
   loading = true;
   isTyping = signal(false);
   optionsOpen = signal(false);
-  toolsOpen = signal(false);
+  readonly composerMode = signal<'chat' | 'report' | 'checklist'>('chat');
+  readonly genReportType = signal<ReportType>('SITREP');
+  readonly genMode = signal<'direct' | 'rag'>('direct');
+  readonly genMessage = signal('');
+  readonly genLoading = signal(false);
+  readonly modeDropdownOpen = signal(false);
+
+  readonly reportTypes = REPORT_TYPES;
+
+  readonly composerModeLabel = computed(() => {
+    switch (this.composerMode()) {
+      case 'report':    return { icon: 'pi-file-edit',    label: 'Informe' };
+      case 'checklist': return { icon: 'pi-check-square', label: 'Checklist' };
+      default:          return { icon: 'pi-comments',     label: 'Chat' };
+    }
+  });
+
+  readonly genTextareaPlaceholder = computed(() => {
+    if (this.composerMode() === 'checklist') return 'Describí el procedimiento o SOP a convertir en checklist…';
+    return REPORT_TYPES.find((t) => t.value === this.genReportType())?.placeholder ?? 'Ingresá el contenido…';
+  });
+
+  readonly canGenerate = computed(() => this.genMessage().trim().length > 0 && !this.genLoading());
+
   documentUploading = signal(false);
   readonly docDropOverlayVisible = signal(false);
   readonly sessionDocuments = signal<DocumentItem[]>([]);
@@ -160,6 +193,9 @@ export class ChatSessionComponent implements OnDestroy {
           this.chatId = id;
           this.docDropOverlayVisible.set(false);
           this.sessionDocuments.set([]);
+          this.composerMode.set('chat');
+          this.genMessage.set('');
+          this.modeDropdownOpen.set(false);
           this.loading = true;
           this.chat = null;
           this.messages.set([]);
@@ -214,16 +250,67 @@ export class ChatSessionComponent implements OnDestroy {
     this.optionsOpen.update((v) => !v);
   }
 
-  openTools(): void {
-    this.toolsOpen.set(true);
+  toggleModeDropdown(): void {
+    this.modeDropdownOpen.update((v) => !v);
   }
 
-  closeTools(): void {
-    this.toolsOpen.set(false);
+  setComposerMode(mode: 'chat' | 'report' | 'checklist'): void {
+    this.composerMode.set(mode);
+    this.genMessage.set('');
+    this.genMode.set('direct');
+    this.modeDropdownOpen.set(false);
+    if (mode === 'chat') {
+      setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
+    }
   }
 
-  onToolCreated(): void {
-    this.toast.show('Disponible en Opciones del chat → Informes / Checklists.', 'success');
+  onGenTypeChange(value: string): void {
+    this.genReportType.set(value as ReportType);
+  }
+
+  generateTool(): void {
+    const message = this.genMessage().trim();
+    if (!message) return;
+
+    const chatId = this.chatId ?? undefined;
+    const mode = this.genMode();
+
+    this.genLoading.set(true);
+
+    if (this.composerMode() === 'checklist') {
+      this.http
+        .generateChecklist({ mode: mode as ChecklistMode, message, chat_id: chatId })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.genLoading.set(false);
+            this.genMessage.set('');
+            this.composerMode.set('chat');
+            this.toast.show('Checklist generada. Disponible en Opciones del chat → Checklists.', 'success');
+          },
+          error: () => {
+            this.genLoading.set(false);
+            this.toast.show('No se pudo generar la checklist.', 'error');
+          },
+        });
+      return;
+    }
+
+    this.http
+      .generateReport({ type: this.genReportType(), mode: mode as ReportMode, message, chat_id: chatId })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.genLoading.set(false);
+          this.genMessage.set('');
+          this.composerMode.set('chat');
+          this.toast.show('Informe generado. Disponible en Opciones del chat → Informes.', 'success');
+        },
+        error: () => {
+          this.genLoading.set(false);
+          this.toast.show('No se pudo generar el informe.', 'error');
+        },
+      });
   }
 
   onAttachClick(fileInput: HTMLInputElement): void {

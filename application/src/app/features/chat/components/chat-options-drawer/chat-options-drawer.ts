@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 import { take } from 'rxjs';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
+import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import { UserState } from '@core/state/user.state';
 import {
@@ -64,6 +65,7 @@ type PanelView = 'root' | 'documents' | 'participants' | 'chat' | 'share' | 'mut
 })
 export class ChatOptionsDrawer {
   private readonly chatHttp = inject(AuraChatServiceHttp);
+  private readonly docHttp = inject(AuraDocumentProcessingServiceHttp);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
   private readonly userState = inject(UserState);
@@ -73,6 +75,12 @@ export class ChatOptionsDrawer {
   );
   readonly canListChecklists = computed(() =>
     this.userState.user()?.permissions.includes('LIST_CHECKLISTS') ?? false
+  );
+  readonly canDownloadDocument = computed(() =>
+    this.userState.user()?.permissions.includes('DOWNLOAD_DOCUMENT') ?? false
+  );
+  readonly canDeleteDocument = computed(() =>
+    this.userState.user()?.permissions.includes('SOFT_DELETE_DOCUMENT') ?? false
   );
 
   readonly isOpen = input.required<boolean>();
@@ -93,6 +101,9 @@ export class ChatOptionsDrawer {
   readonly members = signal<MembershipDto[]>([]);
   readonly membersLoading = signal(false);
   readonly documentsLoading = signal(false);
+  readonly fetchedDocuments = signal<readonly DocumentItem[]>([]);
+  readonly downloadingDocId = signal<number | null>(null);
+  readonly deletingDocId = signal<number | null>(null);
   readonly shareLinks = signal<ShareLinkDto[]>([]);
   readonly shareLinksLoading = signal(false);
   readonly webhooks = signal<WebhookDto[]>([]);
@@ -146,11 +157,14 @@ export class ChatOptionsDrawer {
   readonly isChatLocked = computed(() => this.contextChat()?.is_locked ?? false);
   readonly isChatMuted = computed(() => this.contextChat()?.is_muted ?? false);
 
-  readonly mergedDocuments = computed((): DocumentItem[] =>
-    [...this.attachedDocuments()].sort(
+  readonly mergedDocuments = computed((): DocumentItem[] => {
+    const byId = new Map<number, DocumentItem>();
+    for (const doc of this.fetchedDocuments()) byId.set(doc.id, doc);
+    for (const doc of this.attachedDocuments()) byId.set(doc.id, doc);
+    return [...byId.values()].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
-  );
+    );
+  });
 
   constructor() {
     effect(() => {
@@ -171,6 +185,9 @@ export class ChatOptionsDrawer {
   openSub(view: Exclude<PanelView, 'root'>): void {
     if (this.contextChatId() == null) return;
     this.panelView.set(view);
+    if (view === 'documents') {
+      this.refreshDocumentsList();
+    }
     if (view === 'participants') {
       this.reloadMembers(this.contextChatId()!);
     }
@@ -217,7 +234,61 @@ export class ChatOptionsDrawer {
   }
 
   refreshDocumentsList(): void {
-    // Documents update reactively via attachedDocuments input from parent
+    const chatId = this.contextChatId();
+    if (chatId == null || this.documentsLoading()) return;
+    this.documentsLoading.set(true);
+    this.docHttp.listDocumentsByChat(chatId).pipe(take(1)).subscribe({
+      next: (res) => {
+        this.fetchedDocuments.set(res.documents.map((d) => ({
+          id: d.id,
+          name: d.name,
+          status: d.status,
+          created_at: d.created_at,
+        })));
+        this.documentsLoading.set(false);
+      },
+      error: () => {
+        this.toastService.show('No se pudieron cargar los documentos.', 'error');
+        this.documentsLoading.set(false);
+      },
+    });
+  }
+
+  downloadDocument(doc: DocumentItem): void {
+    if (this.downloadingDocId() !== null) return;
+    this.downloadingDocId.set(doc.id);
+    this.docHttp.downloadDocument(doc.id).pipe(take(1)).subscribe({
+      next: (blob) => {
+        this.downloadingDocId.set(null);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.name;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.downloadingDocId.set(null);
+        this.toastService.show('No se pudo descargar el documento.', 'error');
+      },
+    });
+  }
+
+  deleteDocument(doc: DocumentItem): void {
+    if (!window.confirm(`¿Eliminar el documento "${doc.name}"?`)) return;
+    if (this.deletingDocId() !== null) return;
+    this.deletingDocId.set(doc.id);
+    this.docHttp.deleteDocument(doc.id).pipe(take(1)).subscribe({
+      next: () => {
+        this.deletingDocId.set(null);
+        this.fetchedDocuments.update((docs) => docs.filter((d) => d.id !== doc.id));
+        this.toastService.show('Documento eliminado.', 'success');
+      },
+      error: () => {
+        this.deletingDocId.set(null);
+        this.toastService.show('No se pudo eliminar el documento.', 'error');
+      },
+    });
   }
 
   renameChat(): void {
@@ -489,10 +560,6 @@ export class ChatOptionsDrawer {
     });
   }
 
-  documentUpdateSoon(item: DocumentItem): void {
-    void item;
-    this.toastService.show('Actualizar documento: próximamente.', 'success');
-  }
 
   clearChatHistory(): void {
     const cid = this.contextChatId();

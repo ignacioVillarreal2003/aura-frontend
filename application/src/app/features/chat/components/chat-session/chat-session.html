@@ -49,12 +49,6 @@
       (chatMetaUpdated)="onChatMetaUpdated($event)"
     />
 
-    @if (toolsOpen()) {
-      <app-modal [title]="'Generar informe o checklist'" (onClose)="closeTools()">
-        <app-tool-generator [chatId]="chat.id" (created)="onToolCreated()" />
-      </app-modal>
-    }
-
     <div class="messages-container">
       @if (messages().length === 0) {
         <div class="empty-state">
@@ -287,18 +281,68 @@
     <div class="chat-input-container">
       <div class="session-input-composer">
         <div class="session-composer-surface">
-          <label class="chat-session-visually-hidden" for="chat-session-message">Mensaje</label>
-          <textarea
-            #messageBox
-            id="chat-session-message"
-            name="chatSessionMessage"
-            class="message-input"
-            rows="1"
-            placeholder="Escribe un mensaje..."
-            [ngModel]="newMessage"
-            (ngModelChange)="onNewMessageChange($event)"
-            (keydown)="onEnterKey($event)"
-          ></textarea>
+          @if (composerMode() !== 'chat') {
+            <div class="gen-inline-controls">
+              @if (composerMode() === 'report') {
+                <select
+                  class="gen-type-select"
+                  [value]="genReportType()"
+                  [disabled]="genLoading()"
+                  (change)="onGenTypeChange($any($event.target).value)"
+                  aria-label="Tipo de informe">
+                  @for (opt of reportTypes; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              }
+              <div class="gen-mode-pills">
+                <button
+                  type="button"
+                  class="gen-mode-pill"
+                  [class.gen-mode-pill--active]="genMode() === 'direct'"
+                  [disabled]="genLoading()"
+                  (click)="genMode.set('direct')"
+                  title="Solo usa lo que ingresás">
+                  <i class="pi pi-pencil" aria-hidden="true"></i>
+                  Directo
+                </button>
+                <button
+                  type="button"
+                  class="gen-mode-pill"
+                  [class.gen-mode-pill--active]="genMode() === 'rag'"
+                  [disabled]="genLoading()"
+                  (click)="genMode.set('rag')"
+                  title="Recupera fragmentos del chat">
+                  <i class="pi pi-database" aria-hidden="true"></i>
+                  Con docs
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (composerMode() === 'chat') {
+            <label class="chat-session-visually-hidden" for="chat-session-message">Mensaje</label>
+            <textarea
+              #messageBox
+              id="chat-session-message"
+              name="chatSessionMessage"
+              class="message-input"
+              rows="1"
+              placeholder="Escribe un mensaje..."
+              [ngModel]="newMessage"
+              (ngModelChange)="onNewMessageChange($event)"
+              (keydown)="onEnterKey($event)"
+            ></textarea>
+          } @else {
+            <textarea
+              class="message-input gen-message-input"
+              rows="3"
+              [placeholder]="genTextareaPlaceholder()"
+              [value]="genMessage()"
+              [disabled]="genLoading()"
+              (input)="genMessage.set($any($event.target).value)"
+            ></textarea>
+          }
 
           <div class="session-composer-footer">
             <input
@@ -311,6 +355,44 @@
               aria-hidden="true"
               tabindex="-1"
             />
+            @if (canUseTools()) {
+              <div class="composer-mode-selector">
+                @if (modeDropdownOpen()) {
+                  <div class="mode-backdrop" (click)="modeDropdownOpen.set(false)"></div>
+                }
+                <button
+                  type="button"
+                  class="composer-mode-trigger"
+                  [class.composer-mode-trigger--active]="composerMode() !== 'chat'"
+                  (click)="toggleModeDropdown()"
+                  [attr.aria-expanded]="modeDropdownOpen()"
+                  aria-label="Cambiar modo">
+                  <i [ngClass]="['pi', composerModeLabel().icon]" aria-hidden="true"></i>
+                  <span>{{ composerModeLabel().label }}</span>
+                  <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="modeDropdownOpen()" aria-hidden="true"></i>
+                </button>
+                @if (modeDropdownOpen()) {
+                  <div class="mode-dropdown-menu">
+                    <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'chat'" (click)="setComposerMode('chat')">
+                      <i class="pi pi-comments" aria-hidden="true"></i>
+                      Chat
+                    </button>
+                    @if (canReport()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'report'" (click)="setComposerMode('report')">
+                        <i class="pi pi-file-edit" aria-hidden="true"></i>
+                        Informe
+                      </button>
+                    }
+                    @if (canChecklist()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'checklist'" (click)="setComposerMode('checklist')">
+                        <i class="pi pi-check-square" aria-hidden="true"></i>
+                        Checklist
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
             <button
               type="button"
               class="session-attach"
@@ -318,25 +400,30 @@
               (click)="onAttachClick(sessionFileInput)">
               <i class="pi pi-plus" aria-hidden="true"></i>
             </button>
-            @if (canUseTools()) {
+            <span class="session-composer-spacer" aria-hidden="true"></span>
+            @if (composerMode() === 'chat') {
               <button
                 type="button"
-                class="session-attach"
-                aria-label="Generar informe o checklist"
-                title="Generar informe o checklist"
-                (click)="openTools()">
-                <i class="pi pi-file-edit" aria-hidden="true"></i>
+                class="send-button"
+                aria-label="Enviar mensaje"
+                [disabled]="!newMessage.trim() || sendBlocked()"
+                (click)="sendMessage()">
+                <i class="pi pi-send" aria-hidden="true"></i>
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="send-button"
+                aria-label="Generar"
+                [disabled]="!canGenerate()"
+                (click)="generateTool()">
+                @if (genLoading()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-send" aria-hidden="true"></i>
+                }
               </button>
             }
-            <span class="session-composer-spacer" aria-hidden="true"></span>
-            <button
-              type="button"
-              class="send-button"
-              aria-label="Enviar mensaje"
-              [disabled]="!newMessage.trim() || sendBlocked()"
-              (click)="sendMessage()">
-              <i class="pi pi-send" aria-hidden="true"></i>
-            </button>
           </div>
         </div>
       </div>

@@ -138,15 +138,6 @@
   background: var(--overlay-hover);
 }
 
-.drawer-panel__chat-name {
-  margin: 0 0 16px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  line-height: 1.4;
-  word-break: break-word;
-}
-
 .drawer-action-list {
   display: flex;
   flex-direction: column;
@@ -316,6 +307,11 @@
   background: rgba(99, 102, 241, 0.5);
 }
 
+.drawer-btn--full {
+  width: 100%;
+  justify-content: center;
+}
+
 .drawer-btn--secondary {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary, #e8e8ea);
@@ -347,6 +343,9 @@
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .drawer-doc-card__main,
@@ -354,7 +353,45 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-doc-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.drawer-doc-action {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #9a9aa3);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.drawer-doc-action:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #e8e8ea);
+}
+
+.drawer-doc-action--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.drawer-doc-action:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .drawer-doc-card__name,
