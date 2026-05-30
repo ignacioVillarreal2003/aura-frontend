@@ -10,6 +10,25 @@ export const DOCUMENT_PROCESSING_MAX_STATUS_CHARS = 64 as const;
 
 export const DOCUMENT_PROCESSING_UPLOAD_FIELD_NAME = 'file' as const;
 
+export interface DocumentQueryChatDocumentDto {
+  readonly id: number;
+  readonly chat_id: number | null;
+  readonly name: string;
+  readonly description: string | null;
+  readonly mime_type: string;
+  readonly status: string;
+  readonly file_size_bytes: number;
+  readonly type: string | null;
+  readonly category: string | null;
+  readonly created_by: number;
+  readonly created_at: string;
+  readonly updated_at: string | null;
+}
+
+export interface DocumentQueryListByChatResponseDto {
+  readonly documents: readonly DocumentQueryChatDocumentDto[];
+}
+
 export interface DocumentProcessingCreateDocumentResponseDto {
   readonly id: number;
   readonly name: string;

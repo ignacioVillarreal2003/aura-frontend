@@ -33,12 +33,14 @@ import type {
   AuraChatWsServerMessage,
   ChatDetailDto,
   ChatFragment,
-  ChatMode,
+  ChecklistMode,
   CursorPageResult,
   FeedbackValue,
   MessageDto,
   MessageSenderType,
   PinnedMessageDto,
+  ReportMode,
+  ReportType,
   ThreadReplyDto,
 } from '@aura-types/aura-chat-service.types';
 import { ChatService } from '@core/services/chat/chat.service';
@@ -50,6 +52,7 @@ import { ToastService } from '@core/components/toast-service';
 import { ChatOptionsDrawer, type DocumentItem } from '../chat-options-drawer/chat-options-drawer';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
+import { UserState } from '@core/state/user.state';
 
 interface ChatMessage {
   readonly id: number;
@@ -63,6 +66,12 @@ interface ChatMessage {
   readonly thread_reply_count: number;
   readonly fragments?: readonly ChatFragment[] | null;
 }
+
+const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: string }[] = [
+  { value: 'SITREP', label: 'SITREP — Situación', placeholder: 'Describí la situación, unidades involucradas, área de operaciones…' },
+  { value: 'INTSUM', label: 'INTSUM — Inteligencia', placeholder: 'Describí la amenaza, período cubierto, eventos relevantes…' },
+  { value: 'OPORD', label: 'OPORD — Operaciones', placeholder: 'Describí la misión, situación, plan de ejecución…' },
+];
 
 @Component({
   selector: 'app-chat-session',
@@ -83,6 +92,15 @@ export class ChatSessionComponent implements OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly userState = inject(UserState);
+
+  readonly canUseTools = computed(() => {
+    const perms = this.userState.user()?.permissions ?? [];
+    return perms.includes('LLM_REPORT_GENERATE') || perms.includes('LLM_CHECKLIST_GENERATE');
+  });
+
+  readonly canReport = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_REPORT_GENERATE'));
+  readonly canChecklist = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_CHECKLIST_GENERATE'));
 
   private chatId: number | null = null;
   private socket: ChatSocketConnection | null = null;
@@ -126,6 +144,30 @@ export class ChatSessionComponent implements OnDestroy {
   loading = true;
   isTyping = signal(false);
   optionsOpen = signal(false);
+  readonly composerMode = signal<'chat' | 'report' | 'checklist'>('chat');
+  readonly genReportType = signal<ReportType>('SITREP');
+  readonly genMode = signal<'direct' | 'rag'>('direct');
+  readonly genMessage = signal('');
+  readonly genLoading = signal(false);
+  readonly modeDropdownOpen = signal(false);
+
+  readonly reportTypes = REPORT_TYPES;
+
+  readonly composerModeLabel = computed(() => {
+    switch (this.composerMode()) {
+      case 'report':    return { icon: 'pi-file-edit',    label: 'Informe' };
+      case 'checklist': return { icon: 'pi-check-square', label: 'Checklist' };
+      default:          return { icon: 'pi-comments',     label: 'Chat' };
+    }
+  });
+
+  readonly genTextareaPlaceholder = computed(() => {
+    if (this.composerMode() === 'checklist') return 'Describí el procedimiento o SOP a convertir en checklist…';
+    return REPORT_TYPES.find((t) => t.value === this.genReportType())?.placeholder ?? 'Ingresá el contenido…';
+  });
+
+  readonly canGenerate = computed(() => this.genMessage().trim().length > 0 && !this.genLoading());
+
   documentUploading = signal(false);
   readonly docDropOverlayVisible = signal(false);
   readonly sessionDocuments = signal<DocumentItem[]>([]);
@@ -156,6 +198,9 @@ export class ChatSessionComponent implements OnDestroy {
           this.chatId = id;
           this.docDropOverlayVisible.set(false);
           this.sessionDocuments.set([]);
+          this.composerMode.set('chat');
+          this.genMessage.set('');
+          this.modeDropdownOpen.set(false);
           this.loading = true;
           this.chat = null;
           this.messages.set([]);
@@ -218,63 +263,61 @@ export class ChatSessionComponent implements OnDestroy {
     this.modeDropdownOpen.update((v) => !v);
   }
 
-  setChatMode(mode: ChatMode): void {
-    this.chatShell.setChatMode(mode);
+  setComposerMode(mode: 'chat' | 'report' | 'checklist'): void {
+    this.composerMode.set(mode);
+    this.genMessage.set('');
+    this.genMode.set('direct');
     this.modeDropdownOpen.set(false);
+    if (mode === 'chat') {
+      setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
+    }
   }
 
-  summarize(): void {
-    if (!this.chatId || this.summarizing() || this.sendBlocked()) return;
-    const docs = this.sessionDocuments();
-    if (docs.length === 0) {
-      this.toast.show('Adjuntá al menos un documento para resumir.', 'error');
+  onGenTypeChange(value: string): void {
+    this.genReportType.set(value as ReportType);
+  }
+
+  generateTool(): void {
+    const message = this.genMessage().trim();
+    if (!message) return;
+
+    const chatId = this.chatId ?? undefined;
+    const mode = this.genMode();
+
+    this.genLoading.set(true);
+
+    if (this.composerMode() === 'checklist') {
+      this.http
+        .generateChecklist({ mode: mode as ChecklistMode, message, chat_id: chatId })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.genLoading.set(false);
+            this.genMessage.set('');
+            this.composerMode.set('chat');
+            this.toast.show('Checklist generada. Disponible en Opciones del chat → Checklists.', 'success');
+          },
+          error: () => {
+            this.genLoading.set(false);
+            this.toast.show('No se pudo generar la checklist.', 'error');
+          },
+        });
       return;
     }
-    const documentIds = docs.map((d) => d.id);
-    this.summarizing.set(true);
-    this.isTyping.set(true);
+
     this.http
-      .summarizeDocuments(this.chatId, { document_ids: documentIds })
+      .generateReport({ type: this.genReportType(), mode: mode as ReportMode, message, chat_id: chatId })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res) => {
-          if (res.message) {
-            const row: ChatMessage = {
-              id: res.message.id,
-              chat_id: res.message.chat_id,
-              message: res.message.message,
-              sender_type: 'system' as MessageSenderType,
-              created_by: res.message.created_by,
-              created_at: res.message.created_at,
-              is_bookmarked: false,
-              user_feedback: null,
-              thread_reply_count: 0,
-            };
-            this.messages.update((m) => [...m, row]);
-          } else if (res.summary) {
-            this.messages.update((m) => [
-              ...m,
-              {
-                id: Date.now(),
-                chat_id: this.chatId!,
-                message: res.summary,
-                sender_type: 'system' as MessageSenderType,
-                created_by: null,
-                created_at: new Date().toISOString(),
-                is_bookmarked: false,
-                user_feedback: null,
-                thread_reply_count: 0,
-              },
-            ]);
-          }
-          this.summarizing.set(false);
-          this.isTyping.set(false);
-          setTimeout(() => this.scrollToBottom(), 50);
+        next: () => {
+          this.genLoading.set(false);
+          this.genMessage.set('');
+          this.composerMode.set('chat');
+          this.toast.show('Informe generado. Disponible en Opciones del chat → Informes.', 'success');
         },
         error: () => {
-          this.toast.show('No se pudo generar el resumen.', 'error');
-          this.summarizing.set(false);
-          this.isTyping.set(false);
+          this.genLoading.set(false);
+          this.toast.show('No se pudo generar el informe.', 'error');
         },
       });
   }
@@ -401,6 +444,14 @@ export class ChatSessionComponent implements OnDestroy {
     }
     if (e.action === 'unlock' && this.chat) {
       this.chat = { ...this.chat, is_locked: false };
+      return;
+    }
+    if (e.action === 'pin') {
+      if (this.chat) this.chat = { ...this.chat, is_pinned: true };
+      return;
+    }
+    if (e.action === 'unpin') {
+      if (this.chat) this.chat = { ...this.chat, is_pinned: false };
       return;
     }
   }

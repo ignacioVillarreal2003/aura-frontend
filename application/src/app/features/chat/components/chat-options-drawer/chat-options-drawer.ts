@@ -14,15 +14,19 @@ import { Router } from '@angular/router';
 import { take } from 'rxjs';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
+import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
 import { ToastService } from '@core/components/toast-service';
+import { UserState } from '@core/state/user.state';
 import {
   AURA_CHAT_WEBHOOK_EVENTS,
   type ChatExportBackupDto,
+  type ChecklistListItemDto,
   type MembershipDto,
   type MembershipRole,
   type MembershipStatus,
   type MessageDto,
   type PinnedMessageDto,
+  type ReportListItemDto,
   type ShareLinkDto,
   type WebhookDto,
   type WebhookEvent,
@@ -44,7 +48,7 @@ export interface DocumentItem {
   readonly created_at: string;
 }
 
-type PanelView = 'root' | 'documents' | 'participants' | 'chat' | 'share' | 'mute' | 'webhooks' | 'pinned' | 'bookmarks' | 'export';
+type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'mute' | 'webhooks' | 'pinned' | 'bookmarks' | 'export' | 'reports' | 'checklists' | 'rename';
 
 @Component({
   selector: 'app-chat-options-drawer',
@@ -58,8 +62,23 @@ type PanelView = 'root' | 'documents' | 'participants' | 'chat' | 'share' | 'mut
 })
 export class ChatOptionsDrawer {
   private readonly chatHttp = inject(AuraChatServiceHttp);
+  private readonly docHttp = inject(AuraDocumentProcessingServiceHttp);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
+  private readonly userState = inject(UserState);
+
+  readonly canListReports = computed(() =>
+    this.userState.user()?.permissions.includes('LIST_REPORTS') ?? false
+  );
+  readonly canListChecklists = computed(() =>
+    this.userState.user()?.permissions.includes('LIST_CHECKLISTS') ?? false
+  );
+  readonly canDownloadDocument = computed(() =>
+    this.userState.user()?.permissions.includes('DOWNLOAD_DOCUMENT') ?? false
+  );
+  readonly canDeleteDocument = computed(() =>
+    this.userState.user()?.permissions.includes('SOFT_DELETE_DOCUMENT') ?? false
+  );
 
   readonly isOpen = input.required<boolean>();
   readonly isOpenChange = output<boolean>();
@@ -78,7 +97,11 @@ export class ChatOptionsDrawer {
   readonly panelView = signal<PanelView>('root');
   readonly members = signal<MembershipDto[]>([]);
   readonly membersLoading = signal(false);
+  readonly roleUpdatingId = signal<number | null>(null);
   readonly documentsLoading = signal(false);
+  readonly fetchedDocuments = signal<readonly DocumentItem[]>([]);
+  readonly downloadingDocId = signal<number | null>(null);
+  readonly deletingDocId = signal<number | null>(null);
   readonly shareLinks = signal<ShareLinkDto[]>([]);
   readonly shareLinksLoading = signal(false);
   readonly webhooks = signal<WebhookDto[]>([]);
@@ -93,8 +116,31 @@ export class ChatOptionsDrawer {
   readonly bookmarkedLoading = signal(false);
   readonly exportingAs = signal<'pdf' | 'markdown' | 'json' | 'ai' | null>(null);
 
+  readonly reports = signal<ReportListItemDto[]>([]);
+  readonly reportsLoading = signal(false);
+  readonly reportsPage = signal(1);
+  readonly reportsHasNext = signal(false);
+  readonly reportsHasPrev = signal(false);
+  readonly reportsTotalCount = signal(0);
+  private readonly reportsPageSize = 8;
+  readonly exportingItemId = signal<number | null>(null);
+
+  readonly checklists = signal<ChecklistListItemDto[]>([]);
+  readonly checklistsLoading = signal(false);
+  readonly checklistsPage = signal(1);
+  readonly checklistsHasNext = signal(false);
+  readonly checklistsHasPrev = signal(false);
+  readonly checklistsTotalCount = signal(0);
+  private readonly checklistsPageSize = 8;
+  readonly renameValue = signal('');
+  readonly renameSubmitting = signal(false);
+  readonly inviteInput = signal('');
+  readonly inviteIds = signal<number[]>([]);
+  readonly inviting = signal(false);
+
   readonly headerTitle = computed(() => {
     switch (this.panelView()) {
+      case 'add-participants': return 'Añadir participantes';
       case 'chat': return 'Gestionar chat';
       case 'participants': return 'Participantes';
       case 'documents': return 'Documentos';
@@ -104,24 +150,42 @@ export class ChatOptionsDrawer {
       case 'pinned': return 'Mensajes fijados';
       case 'bookmarks': return 'Guardados';
       case 'export': return 'Exportar chat';
+      case 'reports': return 'Informes';
+      case 'checklists': return 'Checklists';
+      case 'rename': return 'Cambiar nombre';
       default: return this.panelTitle();
     }
   });
 
   readonly contextChatId = computed(() => this.contextChat()?.id ?? null);
   readonly contextChatTitle = computed(() => this.contextChat()?.name ?? '');
-  readonly isChatPinned = computed(() => this.contextChat()?.is_pinned ?? false);
+
+  private readonly _pinned = signal(false);
+  private _pinnedInitForId: number | null = null;
+  readonly isChatPinned = computed(() => this._pinned());
+
   readonly isChatArchived = computed(() => this.contextChat()?.archived_at != null);
   readonly isChatLocked = computed(() => this.contextChat()?.is_locked ?? false);
   readonly isChatMuted = computed(() => this.contextChat()?.is_muted ?? false);
 
-  readonly mergedDocuments = computed((): DocumentItem[] =>
-    [...this.attachedDocuments()].sort(
+  readonly mergedDocuments = computed((): DocumentItem[] => {
+    const byId = new Map<number, DocumentItem>();
+    for (const doc of this.fetchedDocuments()) byId.set(doc.id, doc);
+    for (const doc of this.attachedDocuments()) byId.set(doc.id, doc);
+    return [...byId.values()].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
-  );
+    );
+  });
 
   constructor() {
+    effect(() => {
+      const chat = this.contextChat();
+      const chatId = chat?.id ?? null;
+      if (chatId !== this._pinnedInitForId) {
+        this._pinnedInitForId = chatId;
+        untracked(() => this._pinned.set(chat?.is_pinned ?? false));
+      }
+    });
     effect(() => {
       if (!this.isOpen()) {
         untracked(() => this.panelView.set('root'));
@@ -140,6 +204,9 @@ export class ChatOptionsDrawer {
   openSub(view: Exclude<PanelView, 'root'>): void {
     if (this.contextChatId() == null) return;
     this.panelView.set(view);
+    if (view === 'documents') {
+      this.refreshDocumentsList();
+    }
     if (view === 'participants') {
       this.reloadMembers(this.contextChatId()!);
     }
@@ -150,6 +217,15 @@ export class ChatOptionsDrawer {
       this.reloadWebhooks();
       this.cancelWebhookForm();
     }
+    if (view === 'rename') {
+      this.renameValue.set(this.contextChatTitle()?.trim() ?? '');
+      this.renameSubmitting.set(false);
+    }
+    if (view === 'add-participants') {
+      this.inviteInput.set('');
+      this.inviteIds.set([]);
+      this.inviting.set(false);
+    }
     if (view === 'pinned') {
       this.reloadPinnedMessages();
     }
@@ -158,6 +234,14 @@ export class ChatOptionsDrawer {
     }
     if (view === 'export') {
       this.exportingAs.set(null);
+    }
+    if (view === 'reports') {
+      this.reportsPage.set(1);
+      this.reloadReports();
+    }
+    if (view === 'checklists') {
+      this.checklistsPage.set(1);
+      this.reloadChecklists();
     }
   }
 
@@ -178,21 +262,80 @@ export class ChatOptionsDrawer {
   }
 
   refreshDocumentsList(): void {
-    // Documents update reactively via attachedDocuments input from parent
+    const chatId = this.contextChatId();
+    if (chatId == null || this.documentsLoading()) return;
+    this.documentsLoading.set(true);
+    this.docHttp.listDocumentsByChat(chatId).pipe(take(1)).subscribe({
+      next: (res) => {
+        this.fetchedDocuments.set(res.documents.map((d) => ({
+          id: d.id,
+          name: d.name,
+          status: d.status,
+          created_at: d.created_at,
+        })));
+        this.documentsLoading.set(false);
+      },
+      error: () => {
+        this.toastService.show('No se pudieron cargar los documentos.', 'error');
+        this.documentsLoading.set(false);
+      },
+    });
   }
 
-  renameChat(): void {
+  downloadDocument(doc: DocumentItem): void {
+    if (this.downloadingDocId() !== null) return;
+    this.downloadingDocId.set(doc.id);
+    this.docHttp.downloadDocument(doc.id).pipe(take(1)).subscribe({
+      next: (blob) => {
+        this.downloadingDocId.set(null);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.name;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.downloadingDocId.set(null);
+        this.toastService.show('No se pudo descargar el documento.', 'error');
+      },
+    });
+  }
+
+  deleteDocument(doc: DocumentItem): void {
+    if (!window.confirm(`¿Eliminar el documento "${doc.name}"?`)) return;
+    if (this.deletingDocId() !== null) return;
+    this.deletingDocId.set(doc.id);
+    this.docHttp.deleteDocument(doc.id).pipe(take(1)).subscribe({
+      next: () => {
+        this.deletingDocId.set(null);
+        this.fetchedDocuments.update((docs) => docs.filter((d) => d.id !== doc.id));
+        this.toastService.show('Documento eliminado.', 'success');
+      },
+      error: () => {
+        this.deletingDocId.set(null);
+        this.toastService.show('No se pudo eliminar el documento.', 'error');
+      },
+    });
+  }
+
+  submitRename(): void {
     const cid = this.contextChatId();
-    if (cid == null) return;
+    const next = this.renameValue().trim();
     const current = this.contextChatTitle()?.trim() || '';
-    const next = window.prompt('Nuevo nombre del chat', current)?.trim();
-    if (!next || next === current) return;
+    if (cid == null || !next || next === current) return;
+    this.renameSubmitting.set(true);
     this.chatHttp.patchChat(cid, { name: next }).subscribe({
       next: () => {
         this.toastService.show('Nombre actualizado.', 'success');
         this.chatMetaUpdated.emit({ chatId: cid, name: next });
+        this.renameSubmitting.set(false);
+        this.openSub('chat');
       },
-      error: () => this.toastService.show('No se pudo actualizar el nombre.', 'error'),
+      error: () => {
+        this.toastService.show('No se pudo actualizar el nombre.', 'error');
+        this.renameSubmitting.set(false);
+      },
     });
   }
 
@@ -217,9 +360,10 @@ export class ChatOptionsDrawer {
   togglePin(): void {
     const cid = this.contextChatId();
     if (cid == null) return;
-    if (this.isChatPinned()) {
+    if (this._pinned()) {
       this.chatHttp.unpinChat(cid).subscribe({
         next: () => {
+          this._pinned.set(false);
           this.toastService.show('Chat desfijado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'unpin' });
           this.close();
@@ -229,6 +373,7 @@ export class ChatOptionsDrawer {
     } else {
       this.chatHttp.pinChat(cid).subscribe({
         next: () => {
+          this._pinned.set(true);
           this.toastService.show('Chat fijado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'pin' });
           this.close();
@@ -347,10 +492,21 @@ export class ChatOptionsDrawer {
       });
   }
 
-  revokeShareLink(linkId: number): void {
+  readonly revokeConfirmId = signal<number | null>(null);
+  readonly revoking = signal(false);
+
+  requestRevoke(linkId: number): void {
+    this.revokeConfirmId.set(linkId);
+  }
+
+  cancelRevoke(): void {
+    this.revokeConfirmId.set(null);
+  }
+
+  confirmRevoke(linkId: number): void {
     const cid = this.contextChatId();
     if (cid == null) return;
-    if (!window.confirm('¿Revocar este enlace de compartir?')) return;
+    this.revoking.set(true);
     this.chatHttp
       .revokeShareLink(cid, linkId)
       .pipe(take(1))
@@ -358,8 +514,13 @@ export class ChatOptionsDrawer {
         next: () => {
           this.shareLinks.update((links) => links.filter((l) => l.id !== linkId));
           this.toastService.show('Enlace revocado.', 'success');
+          this.revokeConfirmId.set(null);
+          this.revoking.set(false);
         },
-        error: () => this.toastService.show('No se pudo revocar el enlace.', 'error'),
+        error: () => {
+          this.toastService.show('No se pudo revocar el enlace.', 'error');
+          this.revoking.set(false);
+        },
       });
   }
 
@@ -385,56 +546,70 @@ export class ChatOptionsDrawer {
     });
   }
 
-  addParticipants(): void {
-    const cid = this.contextChatId();
-    if (cid == null) return;
-    const raw = window.prompt('IDs de miembro a agregar (separados por comas):');
-    if (!raw?.trim()) return;
-    const ids = raw
-      .split(',')
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => Number.isFinite(n) && n > 0);
-    if (ids.length === 0) {
-      this.toastService.show('No se ingresaron IDs válidos.', 'error');
+  addInviteId(): void {
+    const raw = this.inviteInput().trim();
+    if (!raw) return;
+    const id = parseInt(raw, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      this.toastService.show('ID inválido. Ingresá un número positivo.', 'error');
       return;
     }
-    this.chatHttp.addMembers(cid, { member_ids: ids }).subscribe({
+    if (this.inviteIds().includes(id)) {
+      this.toastService.show('Ese ID ya está en la lista.', 'error');
+      return;
+    }
+    this.inviteIds.update((ids) => [...ids, id]);
+    this.inviteInput.set('');
+  }
+
+  removeInviteId(id: number): void {
+    this.inviteIds.update((ids) => ids.filter((i) => i !== id));
+  }
+
+  submitInvite(): void {
+    const cid = this.contextChatId();
+    if (cid == null || this.inviteIds().length === 0) return;
+    this.inviting.set(true);
+    this.chatHttp.addMembers(cid, { member_ids: this.inviteIds() }).subscribe({
       next: (added) => {
-        this.toastService.show(`${added.length} participante(s) agregado(s).`, 'success');
+        this.toastService.show(`${added.length} participante(s) invitado(s).`, 'success');
+        this.inviting.set(false);
+        this.panelView.set('participants');
         this.reloadMembers(cid);
       },
-      error: () => this.toastService.show('No se pudieron agregar los participantes.', 'error'),
+      error: () => {
+        this.toastService.show('No se pudieron agregar los participantes.', 'error');
+        this.inviting.set(false);
+      },
     });
   }
 
-  changeRole(member: MembershipDto): void {
+  changeRoleTo(member: MembershipDto, role: MembershipRole): void {
     const cid = this.contextChatId();
-    if (cid == null) return;
-    const roles: MembershipRole[] = ['owner', 'editor', 'reader'];
-    const next = roles[(roles.indexOf(member.role) + 1) % roles.length];
-    if (!window.confirm(`¿Cambiar rol de usuario ${member.member_id} a "${next}"?`)) return;
-    this.chatHttp.patchMemberRole(cid, member.id, { role: next }).subscribe({
+    if (cid == null || member.role === role) return;
+    this.roleUpdatingId.set(member.id);
+    this.chatHttp.patchMemberRole(cid, member.member_id, { role }).subscribe({
       next: (updated) => {
         this.toastService.show('Rol actualizado.', 'success');
         this.members.update((list) => list.map((m) => (m.id === updated.id ? updated : m)));
+        this.roleUpdatingId.set(null);
       },
-      error: () => this.toastService.show('No se pudo actualizar el rol.', 'error'),
+      error: () => {
+        this.toastService.show('No se pudo actualizar el rol. Solo el dueño del chat puede cambiar roles.', 'error');
+        // Revert the select to the previous value by forcing a re-read of members
+        this.members.update((list) => [...list]);
+        this.roleUpdatingId.set(null);
+      },
     });
   }
 
-  changeStatus(member: MembershipDto): void {
-    const cid = this.contextChatId();
-    if (cid == null) return;
-    const statuses: MembershipStatus[] = ['active', 'inactive', 'pending'];
-    const next = statuses[(statuses.indexOf(member.status) + 1) % statuses.length];
-    if (!window.confirm(`¿Cambiar estado de usuario ${member.member_id} a "${next}"?`)) return;
-    this.chatHttp.patchMember(cid, member.id, { status: next }).subscribe({
-      next: (updated) => {
-        this.toastService.show('Estado actualizado.', 'success');
-        this.members.update((list) => list.map((m) => (m.id === updated.id ? updated : m)));
-      },
-      error: () => this.toastService.show('No se pudo actualizar el estado.', 'error'),
-    });
+  statusLabel(status: MembershipStatus): string {
+    switch (status) {
+      case 'active': return 'Activo';
+      case 'inactive': return 'Inactivo';
+      case 'pending': return 'Pendiente';
+      default: return status;
+    }
   }
 
   removeMember(row: MembershipDto): void {
@@ -450,10 +625,6 @@ export class ChatOptionsDrawer {
     });
   }
 
-  documentUpdateSoon(item: DocumentItem): void {
-    void item;
-    this.toastService.show('Actualizar documento: próximamente.', 'success');
-  }
 
   clearChatHistory(): void {
     const cid = this.contextChatId();
@@ -665,6 +836,162 @@ export class ChatOptionsDrawer {
           this.toastService.show('No se pudieron cargar los participantes.', 'error');
         },
       });
+  }
+
+  // ── Reports ──────────────────────────────────────────────────────────────
+  reloadReports(): void {
+    const cid = this.contextChatId();
+    if (cid == null) return;
+    this.reportsLoading.set(true);
+    this.chatHttp
+      .listReports({ chat_id: cid, page: this.reportsPage(), page_size: this.reportsPageSize })
+      .pipe(take(1))
+      .subscribe({
+        next: (page) => {
+          this.reports.set([...page.results]);
+          this.reportsHasNext.set(page.next !== null);
+          this.reportsHasPrev.set(page.previous !== null);
+          this.reportsTotalCount.set(page.count);
+          this.reportsLoading.set(false);
+        },
+        error: () => {
+          this.reportsLoading.set(false);
+          this.toastService.show('No se pudieron cargar los informes.', 'error');
+        },
+      });
+  }
+
+  openReport(reportId: number): void {
+    void this.router.navigate(['/main-container', 'report', reportId]);
+    this.close();
+  }
+
+  reportsNextPage(): void {
+    this.reportsPage.update((p) => p + 1);
+    this.reloadReports();
+  }
+
+  reportsPrevPage(): void {
+    this.reportsPage.update((p) => p - 1);
+    this.reloadReports();
+  }
+
+  deleteReport(reportId: number): void {
+    if (!window.confirm('¿Eliminar este informe?')) return;
+    this.chatHttp
+      .deleteReport(reportId)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.reports.update((list) => list.filter((r) => r.id !== reportId));
+          this.toastService.show('Informe eliminado.', 'success');
+          if (this.reports().length === 0 && this.reportsPage() > 1) {
+            this.reportsPage.update((p) => p - 1);
+            this.reloadReports();
+          } else {
+            this.reportsTotalCount.update((c) => c - 1);
+          }
+        },
+        error: () => this.toastService.show('No se pudo eliminar el informe.', 'error'),
+      });
+  }
+
+  exportReport(reportId: number, format: 'pdf' | 'markdown', title: string): void {
+    if (this.exportingItemId() != null) return;
+    this.exportingItemId.set(reportId);
+    const slug = (title || `informe-${reportId}`).replace(/[^\w-]/g, '_').slice(0, 60);
+    const req$ =
+      format === 'pdf'
+        ? this.chatHttp.exportReportPdf(reportId)
+        : this.chatHttp.exportReportMarkdown(reportId);
+    req$.pipe(take(1)).subscribe({
+      next: (blob) => {
+        this.downloadBlob(blob, `${slug}.${format === 'pdf' ? 'pdf' : 'md'}`);
+        this.exportingItemId.set(null);
+      },
+      error: () => {
+        this.exportingItemId.set(null);
+        this.toastService.show('No se pudo exportar el informe.', 'error');
+      },
+    });
+  }
+
+  // ── Checklists ───────────────────────────────────────────────────────────
+  reloadChecklists(): void {
+    const cid = this.contextChatId();
+    if (cid == null) return;
+    this.checklistsLoading.set(true);
+    this.chatHttp
+      .listChecklists({ chat_id: cid, page: this.checklistsPage(), page_size: this.checklistsPageSize })
+      .pipe(take(1))
+      .subscribe({
+        next: (page) => {
+          this.checklists.set([...page.results]);
+          this.checklistsHasNext.set(page.next !== null);
+          this.checklistsHasPrev.set(page.previous !== null);
+          this.checklistsTotalCount.set(page.count);
+          this.checklistsLoading.set(false);
+        },
+        error: () => {
+          this.checklistsLoading.set(false);
+          this.toastService.show('No se pudieron cargar las checklists.', 'error');
+        },
+      });
+  }
+
+  openChecklist(checklistId: number): void {
+    void this.router.navigate(['/main-container', 'checklist', checklistId]);
+    this.close();
+  }
+
+  checklistsNextPage(): void {
+    this.checklistsPage.update((p) => p + 1);
+    this.reloadChecklists();
+  }
+
+  checklistsPrevPage(): void {
+    this.checklistsPage.update((p) => p - 1);
+    this.reloadChecklists();
+  }
+
+  deleteChecklist(checklistId: number): void {
+    if (!window.confirm('¿Eliminar esta checklist?')) return;
+    this.chatHttp
+      .deleteChecklist(checklistId)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.checklists.update((list) => list.filter((c) => c.id !== checklistId));
+          this.toastService.show('Checklist eliminada.', 'success');
+          if (this.checklists().length === 0 && this.checklistsPage() > 1) {
+            this.checklistsPage.update((p) => p - 1);
+            this.reloadChecklists();
+          } else {
+            this.checklistsTotalCount.update((c) => c - 1);
+          }
+        },
+        error: () => this.toastService.show('No se pudo eliminar la checklist.', 'error'),
+      });
+  }
+
+  exportChecklist(checklistId: number, format: 'pdf' | 'markdown', title: string): void {
+    if (this.exportingItemId() != null) return;
+    this.exportingItemId.set(checklistId);
+    const slug = (title || `checklist-${checklistId}`).replace(/[^\w-]/g, '_').slice(0, 60);
+    const req$ =
+      format === 'pdf'
+        ? this.chatHttp.exportChecklistPdf(checklistId)
+        : this.chatHttp.exportChecklistMarkdown(checklistId);
+    req$.pipe(take(1)).subscribe({
+      next: (blob) => {
+        this.downloadBlob(blob, `${slug}.${format === 'pdf' ? 'pdf' : 'md'}`);
+        this.exportingItemId.set(null);
+      },
+      error: () => {
+        this.exportingItemId.set(null);
+        this.toastService.show('No se pudo exportar la checklist.', 'error');
+      },
+    });
   }
 
   @HostListener('document:keydown', ['$event'])

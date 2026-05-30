@@ -489,6 +489,37 @@
   background: var(--accent-surface);
 }
 
+/* Notification bell badge */
+.notif-bell-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.notif-bell-wrap .pi-bell {
+  font-size: 1rem;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #dc2626;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 4px;
+  min-width: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
 .sidebar-rename-input {
   flex: 1;
   min-width: 0;

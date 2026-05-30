@@ -1,0 +1,12 @@
+<div class="gen-page">
+  <a routerLink="/main-container/tools" class="gen-page__back">← Herramientas</a>
+
+  <header class="gen-page__header">
+    <h1 class="gen-page__title">{{ pageTitle() }}</h1>
+    @if (pageSubtitle()) {
+      <p class="gen-page__subtitle">{{ pageSubtitle() }}</p>
+    }
+  </header>
+
+  <app-tool-generator [initialKind]="initialKind()" />
+</div>

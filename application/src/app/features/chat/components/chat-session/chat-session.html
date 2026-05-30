@@ -37,10 +37,10 @@
       [contextChat]="{
         id: chat.id,
         name: chat.name,
-        is_pinned: false,
-        archived_at: null,
+        is_pinned: chat.is_pinned,
+        archived_at: chat.archived_at,
         is_locked: chat.is_locked,
-        is_muted: false
+        is_muted: chat.is_muted
       }"
       [attachedDocuments]="sessionDocuments()"
       [uploadDisabled]="documentUploading() || !chat"
@@ -281,8 +281,46 @@
     <div class="chat-input-container">
       <div class="session-input-composer">
         <div class="session-composer-surface">
+          @if (composerMode() !== 'chat') {
+            <div class="gen-inline-controls">
+              @if (composerMode() === 'report') {
+                <select
+                  class="gen-type-select"
+                  [value]="genReportType()"
+                  [disabled]="genLoading()"
+                  (change)="onGenTypeChange($any($event.target).value)"
+                  aria-label="Tipo de informe">
+                  @for (opt of reportTypes; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              }
+              <div class="gen-mode-pills">
+                <button
+                  type="button"
+                  class="gen-mode-pill"
+                  [class.gen-mode-pill--active]="genMode() === 'direct'"
+                  [disabled]="genLoading()"
+                  (click)="genMode.set('direct')"
+                  title="Solo usa lo que ingresás">
+                  <i class="pi pi-pencil" aria-hidden="true"></i>
+                  Directo
+                </button>
+                <button
+                  type="button"
+                  class="gen-mode-pill"
+                  [class.gen-mode-pill--active]="genMode() === 'rag'"
+                  [disabled]="genLoading()"
+                  (click)="genMode.set('rag')"
+                  title="Recupera fragmentos del chat">
+                  <i class="pi pi-database" aria-hidden="true"></i>
+                  Con docs
+                </button>
+              </div>
+            </div>
+          }
 
-          @if (chatMode() === 'question') {
+          @if (composerMode() === 'chat') {
             <label class="chat-session-visually-hidden" for="chat-session-message">Mensaje</label>
             <textarea
               #messageBox
@@ -296,15 +334,14 @@
               (keydown)="onEnterKey($event)"
             ></textarea>
           } @else {
-            <div class="session-summary-hint-row">
-              @if (sessionDocuments().length === 0) {
-                <i class="pi pi-info-circle" aria-hidden="true"></i>
-                <span>Adjuntá al menos un documento para generar el resumen</span>
-              } @else {
-                <i class="pi pi-file" aria-hidden="true"></i>
-                <span>Se resumirán <strong>{{ sessionDocuments().length }}</strong> documento{{ sessionDocuments().length > 1 ? 's' : '' }} adjunto{{ sessionDocuments().length > 1 ? 's' : '' }}</span>
-              }
-            </div>
+            <textarea
+              class="message-input gen-message-input"
+              rows="3"
+              [placeholder]="genTextareaPlaceholder()"
+              [value]="genMessage()"
+              [disabled]="genLoading()"
+              (input)="genMessage.set($any($event.target).value)"
+            ></textarea>
           }
 
           <div class="session-composer-footer">
@@ -318,6 +355,44 @@
               aria-hidden="true"
               tabindex="-1"
             />
+            @if (canUseTools()) {
+              <div class="composer-mode-selector">
+                @if (modeDropdownOpen()) {
+                  <div class="mode-backdrop" (click)="modeDropdownOpen.set(false)"></div>
+                }
+                <button
+                  type="button"
+                  class="composer-mode-trigger"
+                  [class.composer-mode-trigger--active]="composerMode() !== 'chat'"
+                  (click)="toggleModeDropdown()"
+                  [attr.aria-expanded]="modeDropdownOpen()"
+                  aria-label="Cambiar modo">
+                  <i [ngClass]="['pi', composerModeLabel().icon]" aria-hidden="true"></i>
+                  <span>{{ composerModeLabel().label }}</span>
+                  <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="modeDropdownOpen()" aria-hidden="true"></i>
+                </button>
+                @if (modeDropdownOpen()) {
+                  <div class="mode-dropdown-menu">
+                    <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'chat'" (click)="setComposerMode('chat')">
+                      <i class="pi pi-comments" aria-hidden="true"></i>
+                      Chat
+                    </button>
+                    @if (canReport()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'report'" (click)="setComposerMode('report')">
+                        <i class="pi pi-file-edit" aria-hidden="true"></i>
+                        Informe
+                      </button>
+                    }
+                    @if (canChecklist()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'checklist'" (click)="setComposerMode('checklist')">
+                        <i class="pi pi-check-square" aria-hidden="true"></i>
+                        Checklist
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
             <button
               type="button"
               class="session-attach"
@@ -374,8 +449,7 @@
             </div>
 
             <span class="session-composer-spacer" aria-hidden="true"></span>
-
-            @if (chatMode() === 'question') {
+            @if (composerMode() === 'chat') {
               <button
                 type="button"
                 class="send-button"
@@ -387,14 +461,14 @@
             } @else {
               <button
                 type="button"
-                class="send-button send-button--summary"
-                aria-label="Resumir documentos"
-                [disabled]="sessionDocuments().length === 0 || summarizing() || sendBlocked()"
-                (click)="summarize()">
-                @if (summarizing()) {
+                class="send-button"
+                aria-label="Generar"
+                [disabled]="!canGenerate()"
+                (click)="generateTool()">
+                @if (genLoading()) {
                   <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
                 } @else {
-                  <i class="pi pi-align-left" aria-hidden="true"></i>
+                  <i class="pi pi-send" aria-hidden="true"></i>
                 }
               </button>
             }

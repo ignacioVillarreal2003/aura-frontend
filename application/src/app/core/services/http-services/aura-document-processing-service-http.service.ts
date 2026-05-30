@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import type {
   DocumentProcessingCreateDocumentMultipartInput,
   DocumentProcessingCreateDocumentResponseDto,
+  DocumentQueryListByChatResponseDto,
 } from '@aura-types/aura-document-processing-service.types';
 import {
   DOCUMENT_PROCESSING_UPLOAD_FIELD_NAME,
@@ -16,6 +17,25 @@ import {
 export class AuraDocumentProcessingServiceHttp {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.documentProcessingUrl.replace(/\/$/, '')}/api/v1`;
+
+  listDocumentsByChat(chatId: number): Observable<DocumentQueryListByChatResponseDto> {
+    return this.http.get<DocumentQueryListByChatResponseDto>(
+      `${this.base}/document-query/documents/chat/${chatId}`,
+    );
+  }
+
+  downloadDocument(documentId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.base}/document-download/document/${documentId}/download`,
+      { responseType: 'blob' },
+    );
+  }
+
+  deleteDocument(documentId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.base}/delete-document/soft/document/${documentId}`,
+    );
+  }
 
   createDocument(
     formData: FormData,

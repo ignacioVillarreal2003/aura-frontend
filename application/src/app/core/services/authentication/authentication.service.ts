@@ -9,7 +9,6 @@ import {
   tap,
   throwError,
 } from 'rxjs';
-import { environment } from '../../../../environments/environment';
 import type { AuthValidateUserDto } from '@core/types/aura-auth-service.types';
 import { AuraAuthServiceHttp } from '@core/services/http-services/aura-auth-service-http.service';
 import { UserState } from '@core/state/user.state';
@@ -21,7 +20,7 @@ const SESSION_REFRESH_KEY = 'aura-refresh-token';
 export class AuthenticationService {
   private readonly authHttp = inject(AuraAuthServiceHttp);
   private readonly userState = inject(UserState);
-  private readonly accessToken = signal<string | null>(initialAccessToken());
+  private readonly accessToken = signal<string | null>(sessionStorage.getItem(SESSION_TOKEN_KEY));
   private readonly refreshToken = signal<string | null>(null);
   private readonly sessionActive = signal(false);
   private readonly sessionDisplayName = signal<string | null>(null);
@@ -98,8 +97,22 @@ export class AuthenticationService {
       }),
       map(() => true),
       catchError(() => {
-        this.clearLocalSession();
-        return of(false);
+        if (!storedRefresh) {
+          this.clearLocalSession();
+          return of(false);
+        }
+        return this.refreshSession().pipe(
+          switchMap(() => this.authHttp.validate()),
+          tap((user) => {
+            this.applyValidatedUser(user);
+            this.sessionActive.set(true);
+          }),
+          map(() => true),
+          catchError(() => {
+            this.clearLocalSession();
+            return of(false);
+          }),
+        );
       }),
     );
   }
@@ -149,18 +162,9 @@ export class AuthenticationService {
     this.sessionActive.set(false);
     this.refreshToken.set(null);
     this.sessionDisplayName.set(null);
-    this.accessToken.set(initialAccessToken());
+    this.accessToken.set(null);
     this.userState.setUser(null);
     sessionStorage.removeItem(SESSION_TOKEN_KEY);
     sessionStorage.removeItem(SESSION_REFRESH_KEY);
   }
-}
-
-function initialAccessToken(): string | null {
-  if (environment.production) {
-    return null;
-  }
-  return 'devAccessToken' in environment && typeof environment.devAccessToken === 'string'
-    ? environment.devAccessToken
-    : null;
 }

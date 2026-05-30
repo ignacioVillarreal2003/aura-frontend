@@ -1,106 +1,154 @@
 :host {
   display: block;
   min-height: 100dvh;
-  background: var(--surface-page, #0d0d0f);
+  background: #0d0d0f;
   color: var(--text-primary, #e8e8ea);
   font-family: 'Sora', sans-serif;
 }
 
+/* ── Page layout ───────────────────────────────────────────── */
 .share-page {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(99, 102, 241, 0.18) 0%, transparent 70%),
+    #0d0d0f;
 }
 
+/* ── Header ────────────────────────────────────────────────── */
 .share-header {
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: 14px 24px;
-  background: rgba(13, 13, 15, 0.88);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(13, 13, 15, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.share-header__inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 14px 24px;
 }
 
 .share-header__brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  max-width: 780px;
-  margin: 0 auto;
+  gap: 12px;
 }
 
-.share-header__icon {
-  font-size: 20px;
-  color: #818cf8;
-}
-
-.share-header__title {
+.share-header__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary, #e8e8ea);
+  color: #fff;
+  flex-shrink: 0;
 }
 
+.share-header__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1;
+}
+
+.share-header__name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: linear-gradient(90deg, #a5b4fc, #e879f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.share-header__sub {
+  font-size: 11px;
+  color: var(--text-secondary, #9a9aa3);
+  font-weight: 400;
+}
+
+/* ── Main content ──────────────────────────────────────────── */
 .share-main {
   flex: 1;
   max-width: 780px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 20px 40px;
+  padding: 32px 20px 48px;
   box-sizing: border-box;
 }
 
-.share-loading,
-.share-error,
-.share-empty {
+/* ── States (loading / error / empty) ─────────────────────── */
+.share-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 60px 20px;
+  gap: 16px;
+  padding: 80px 20px;
   text-align: center;
+}
+
+.share-state__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.share-state__icon-wrap--error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.share-state__text {
+  margin: 0;
+  font-size: 14px;
   color: var(--text-secondary, #9a9aa3);
+  max-width: 340px;
+  line-height: 1.6;
 }
 
 .share-spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgba(255, 255, 255, 0.08);
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(255, 255, 255, 0.07);
   border-top-color: #818cf8;
   border-radius: 50%;
-  animation: share-spin 0.9s linear infinite;
+  animation: share-spin 0.85s linear infinite;
 }
 
 @keyframes share-spin {
   to { transform: rotate(360deg); }
 }
 
-.share-error__icon,
-.share-empty__icon {
-  font-size: 2.5rem;
-  opacity: 0.6;
-}
-
-.share-error__text {
-  margin: 0;
-  font-size: 14px;
-  max-width: 360px;
-}
-
+/* ── Message list ──────────────────────────────────────────── */
 .share-message-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .share-message {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-start;
 }
 
@@ -108,16 +156,18 @@
   flex-direction: row-reverse;
 }
 
+/* ── Avatar ────────────────────────────────────────────────── */
 .share-message__avatar {
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 15px;
   color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 .share-message--system .share-message__avatar {
@@ -128,84 +178,135 @@
   background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
 }
 
+/* ── Message body ──────────────────────────────────────────── */
 .share-message__body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-width: min(75%, 620px);
+  gap: 5px;
+  max-width: min(78%, 620px);
 }
 
 .share-message--system .share-message__body {
   max-width: 100%;
 }
 
+.share-message--user .share-message__body {
+  align-items: flex-end;
+}
+
+.share-message__sender {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.share-message--system .share-message__sender {
+  background: linear-gradient(90deg, #a5b4fc, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Bubble ────────────────────────────────────────────────── */
 .share-message__bubble {
-  padding: 12px 16px;
-  border-radius: 14px;
+  padding: 13px 17px;
+  border-radius: 16px;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
   word-break: break-word;
 }
 
 .share-message--system .share-message__bubble {
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top-left-radius: 4px;
 }
 
 .share-message--user .share-message__bubble {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: #fff;
+  border-top-right-radius: 4px;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
 }
 
 .share-message__text {
   margin: 0;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .share-message__time {
-  font-size: 11px;
-  color: var(--text-secondary, #9a9aa3);
-  align-self: flex-end;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.28);
 }
 
+.share-message--system .share-message__time {
+  color: var(--text-secondary, #9a9aa3);
+  opacity: 0.6;
+}
+
+/* ── Load more ─────────────────────────────────────────────── */
 .share-load-more {
   display: flex;
   justify-content: center;
-  margin-top: 28px;
+  margin-top: 36px;
 }
 
 .share-load-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary, #9a9aa3);
   font-family: 'Sora', sans-serif;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .share-load-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary, #e8e8ea);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .share-load-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
+/* ── Footer ────────────────────────────────────────────────── */
+.share-footer {
+  padding: 16px 24px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.share-footer strong {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 600px) {
+  .share-header__inner {
+    padding: 12px 16px;
+  }
+
   .share-main {
-    padding: 16px 12px 32px;
+    padding: 20px 12px 36px;
   }
 
   .share-message__body {
-    max-width: 90%;
+    max-width: 88%;
   }
 }

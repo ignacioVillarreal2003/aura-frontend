@@ -1,26 +1,37 @@
 <div class="share-page">
   <header class="share-header">
-    <div class="share-header__brand">
-      <i class="pi pi-sparkles share-header__icon" aria-hidden="true"></i>
-      <span class="share-header__title">Chat compartido</span>
+    <div class="share-header__inner">
+      <div class="share-header__brand">
+        <span class="share-header__logo">
+          <i class="pi pi-sparkles" aria-hidden="true"></i>
+        </span>
+        <div class="share-header__brand-text">
+          <span class="share-header__name">AURA</span>
+          <span class="share-header__sub">Chat compartido</span>
+        </div>
+      </div>
     </div>
   </header>
 
   <main class="share-main">
     @if (loading()) {
-      <div class="share-loading">
+      <div class="share-state">
         <div class="share-spinner"></div>
-        <p>Cargando mensajes…</p>
+        <p class="share-state__text">Cargando mensajes…</p>
       </div>
     } @else if (error()) {
-      <div class="share-error">
-        <i class="pi pi-exclamation-triangle share-error__icon" aria-hidden="true"></i>
-        <p class="share-error__text">{{ error() }}</p>
+      <div class="share-state">
+        <div class="share-state__icon-wrap share-state__icon-wrap--error">
+          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        </div>
+        <p class="share-state__text">{{ error() }}</p>
       </div>
     } @else if (messages().length === 0) {
-      <div class="share-empty">
-        <i class="pi pi-comments share-empty__icon" aria-hidden="true"></i>
-        <p>No hay mensajes para mostrar.</p>
+      <div class="share-state">
+        <div class="share-state__icon-wrap">
+          <i class="pi pi-comments" aria-hidden="true"></i>
+        </div>
+        <p class="share-state__text">No hay mensajes para mostrar.</p>
       </div>
     } @else {
       <ol class="share-message-list">
@@ -34,6 +45,9 @@
               }
             </div>
             <div class="share-message__body">
+              <span class="share-message__sender">
+                {{ msg.sender_type === 'system' ? 'AURA' : 'Usuario' }}
+              </span>
               <div class="share-message__bubble">
                 <div class="share-message__text" [innerHTML]="msg.message | markdown"></div>
               </div>
@@ -54,6 +68,7 @@
               <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
               Cargando…
             } @else {
+              <i class="pi pi-arrow-down" aria-hidden="true"></i>
               Cargar más mensajes
             }
           </button>
@@ -61,4 +76,8 @@
       }
     }
   </main>
+
+  <footer class="share-footer">
+    <span>Generado con <strong>AURA</strong></span>
+  </footer>
 </div>

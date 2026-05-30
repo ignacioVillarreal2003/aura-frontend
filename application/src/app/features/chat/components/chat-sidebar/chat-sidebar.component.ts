@@ -15,6 +15,7 @@ import type { ChatRef } from '../chat-options-drawer/chat-options-drawer';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { ToastService } from '@core/components/toast-service';
+import { NotificationState } from '@core/state/notification.state';
 import type { ChatListItemDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
@@ -29,6 +30,7 @@ export class ChatSidebarComponent implements OnInit {
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
+  readonly notifState = inject(NotificationState);
 
   @Input() collapsed = false;
   @Input() activeId: string | null = null;
@@ -54,7 +56,7 @@ export class ChatSidebarComponent implements OnInit {
   }
 
   reloadChats(): void {
-    this.chatHttp.listMyChats({ page_size: 50 }).subscribe({
+    this.chatHttp.listChats({ page_size: 50 }).subscribe({
       next: (page) => {
         this.chats.set([...page.results]);
       },
