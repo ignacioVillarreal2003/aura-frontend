@@ -302,9 +302,11 @@
   gap: 0.1rem;
 }
 
-.gen-checklist__section {
+.gen-checklist__section-header {
+  padding: 0.35rem 0.7rem 0.1rem;
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #78716c;
+  list-style: none;
 }

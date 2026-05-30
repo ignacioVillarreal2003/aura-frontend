@@ -112,10 +112,10 @@
             <!-- Items drop list -->
             <div
               cdkDropList
-              [id]="'items-' + group.name"
+              [id]="'items-' + group.id"
               [cdkDropListData]="group.items"
               [cdkDropListConnectedTo]="sectionListIds()"
-              (cdkDropListDropped)="dropItem($event, group.name)"
+              (cdkDropListDropped)="dropItem($event)"
               class="ce-section-items"
             >
               @if (group.items.length === 0) {

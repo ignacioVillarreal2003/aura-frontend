@@ -1,264 +1,80 @@
 <div class="as-page">
-  <a routerLink="/main-container/tools" class="as-back">← Herramientas</a>
 
   <header class="as-header">
-    <div class="as-header__text">
-      <h1 class="as-title">Asistentes Especializados</h1>
-      <p class="as-subtitle">
-        Iniciá una conversación con un asistente configurado para una tarea específica.
-        Cada sesión abre un chat independiente con instrucciones fijas.
-      </p>
-    </div>
-    @if (isAdmin()) {
-      <button type="button" class="as-btn as-btn--primary" (click)="openCreatePanel()">
-        <i class="pi pi-plus"></i> Nuevo asistente
-      </button>
-    }
+    <h1 class="as-title">Asistentes</h1>
+    <p class="as-subtitle">
+      Seleccioná un asistente para iniciar una sesión de chat especializada.
+    </p>
   </header>
 
   @if (error()) {
     <div class="as-alert" role="alert">{{ error() }}</div>
   }
 
-  <!-- Loading skeleton -->
   @if (loading()) {
     <div class="as-grid">
-      @for (_ of [1, 2, 3, 4]; track $index) {
+      @for (_ of [1, 2, 3, 4, 5, 6]; track $index) {
         <div class="as-card as-card--skeleton"></div>
       }
     </div>
   }
 
-  <!-- Empty state -->
   @if (!loading() && assistants().length === 0) {
     <div class="as-empty">
       <span class="as-empty__icon">🤖</span>
-      <p class="as-empty__text">
-        @if (isAdmin()) {
-          No hay asistentes configurados. Creá el primero con el botón de arriba.
-        } @else {
-          No hay asistentes disponibles por el momento.
-        }
-      </p>
+      <p class="as-empty__text">No hay asistentes disponibles por el momento.</p>
     </div>
   }
 
-  <!-- Assistant grid -->
   @if (!loading() && assistants().length > 0) {
-    <div class="as-grid">
-      @for (assistant of assistants(); track assistant.id) {
-        <div
-          class="as-card"
-          [class.as-card--inactive]="!assistant.is_active"
-        >
-          <!-- Admin badge -->
-          @if (isAdmin() && !assistant.is_active) {
-            <span class="as-tag as-tag--inactive">Inactivo</span>
-          }
+    <div class="as-search-row">
+      <i class="pi pi-search as-search-icon" aria-hidden="true"></i>
+      <input
+        type="text"
+        class="as-search-input"
+        placeholder="Buscar asistente…"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+        aria-label="Buscar asistente"
+      />
+    </div>
 
-          <div class="as-card__body">
-            <span class="as-card__emoji">{{ assistant.avatar_emoji || '🤖' }}</span>
-            <div class="as-card__info">
-              <h2 class="as-card__name">{{ assistant.name }}</h2>
-              @if (assistant.description) {
-                <p class="as-card__desc">{{ assistant.description }}</p>
-              }
-            </div>
-          </div>
-
-          <div class="as-card__footer">
-            <button
-              type="button"
-              class="as-btn as-btn--start"
-              [disabled]="startingId() === assistant.id || !assistant.is_active"
-              (click)="startChat(assistant)"
-            >
-              @if (startingId() === assistant.id) {
-                <i class="pi pi-spin pi-spinner"></i> Iniciando…
-              } @else {
-                <i class="pi pi-comments"></i> Iniciar sesión
-              }
-            </button>
-
-            @if (isAdmin()) {
-              <div class="as-card__admin-actions">
-                @if (canUpdate()) {
-                  <button
-                    type="button"
-                    class="as-icon-btn"
-                    title="Editar"
-                    (click)="openEditPanel(assistant)"
-                  >
-                    <i class="pi pi-pencil"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="as-icon-btn"
-                    [title]="assistant.is_active ? 'Desactivar' : 'Activar'"
-                    (click)="toggleActive(assistant)"
-                  >
-                    <i [class]="assistant.is_active ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-                  </button>
-                }
-                @if (canDelete()) {
-                  @if (confirmDeleteId() === assistant.id) {
-                    <span class="as-confirm-delete">
-                      <button
-                        type="button"
-                        class="as-icon-btn as-icon-btn--danger"
-                        [disabled]="deleteLoading()"
-                        (click)="confirmDelete(assistant.id)"
-                        title="Confirmar eliminación"
-                      >
-                        <i class="pi pi-check"></i>
-                      </button>
-                      <button
-                        type="button"
-                        class="as-icon-btn"
-                        (click)="cancelDelete()"
-                        title="Cancelar"
-                      >
-                        <i class="pi pi-times"></i>
-                      </button>
-                    </span>
-                  } @else {
-                    <button
-                      type="button"
-                      class="as-icon-btn as-icon-btn--danger"
-                      title="Eliminar"
-                      (click)="requestDelete(assistant.id)"
-                    >
-                      <i class="pi pi-trash"></i>
-                    </button>
-                  }
+    @if (filtered().length === 0) {
+      <div class="as-empty">
+        <p class="as-empty__text">Sin resultados para "{{ search() }}".</p>
+      </div>
+    } @else {
+      <div class="as-grid">
+        @for (assistant of filtered(); track assistant.id) {
+          <div class="as-card">
+            <div class="as-card__body">
+              <span class="as-card__emoji">{{ assistant.avatar_emoji || '🤖' }}</span>
+              <div class="as-card__info">
+                <h2 class="as-card__name">{{ assistant.name }}</h2>
+                @if (assistant.description) {
+                  <p class="as-card__desc">{{ assistant.description }}</p>
                 }
               </div>
-            }
+            </div>
+
+            <div class="as-card__footer">
+              <button
+                type="button"
+                class="as-btn as-btn--start"
+                [disabled]="startingId() !== null"
+                (click)="startChat(assistant)"
+              >
+                @if (startingId() === assistant.id) {
+                  <i class="pi pi-spin pi-spinner"></i> Iniciando…
+                } @else {
+                  Iniciar <i class="pi pi-arrow-right"></i>
+                }
+              </button>
+            </div>
           </div>
-        </div>
-      }
-    </div>
-  }
-</div>
-
-<!-- Slide-over panel (create / edit) -->
-@if (panelOpen()) {
-  <div class="as-overlay" (click)="closePanel()"></div>
-  <aside class="as-panel" role="dialog" [attr.aria-label]="panelMode() === 'create' ? 'Crear asistente' : 'Editar asistente'">
-    <div class="as-panel__header">
-      <h2 class="as-panel__title">
-        {{ panelMode() === 'create' ? 'Nuevo asistente' : 'Editar asistente' }}
-      </h2>
-      <button type="button" class="as-icon-btn" (click)="closePanel()">
-        <i class="pi pi-times"></i>
-      </button>
-    </div>
-
-    <div class="as-panel__body">
-      @if (formError()) {
-        <div class="as-alert" role="alert">{{ formError() }}</div>
-      }
-
-      <!-- Emoji picker -->
-      <div class="as-field">
-        <label class="as-field__label">Emoji / avatar</label>
-        <div class="as-emoji-picker">
-          @for (emoji of defaultEmojis; track emoji) {
-            <button
-              type="button"
-              class="as-emoji-btn"
-              [class.as-emoji-btn--active]="formEmoji() === emoji"
-              (click)="setEmoji(emoji)"
-            >{{ emoji }}</button>
-          }
-          <input
-            type="text"
-            class="as-emoji-input"
-            maxlength="10"
-            placeholder="otro"
-            [value]="formEmoji()"
-            (input)="setEmoji($any($event.target).value)"
-          />
-        </div>
-      </div>
-
-      <!-- Name -->
-      <div class="as-field">
-        <label class="as-field__label" for="as-name">Nombre <span class="as-required">*</span></label>
-        <input
-          id="as-name"
-          type="text"
-          class="as-input"
-          maxlength="200"
-          placeholder="Experto en Reglamentos de Tránsito Aéreo"
-          [value]="formName()"
-          (input)="formName.set($any($event.target).value)"
-        />
-      </div>
-
-      <!-- Description -->
-      <div class="as-field">
-        <label class="as-field__label" for="as-desc">Descripción</label>
-        <input
-          id="as-desc"
-          type="text"
-          class="as-input"
-          maxlength="500"
-          placeholder="Breve descripción para los usuarios (opcional)"
-          [value]="formDescription()"
-          (input)="formDescription.set($any($event.target).value)"
-        />
-      </div>
-
-      <!-- System prompt -->
-      <div class="as-field">
-        <label class="as-field__label" for="as-prompt">
-          Instrucciones del sistema <span class="as-required">*</span>
-        </label>
-        <p class="as-field__hint">
-          El system prompt define el comportamiento del asistente. No es visible para los usuarios.
-        </p>
-        <textarea
-          id="as-prompt"
-          class="as-textarea"
-          rows="8"
-          placeholder="Sos un experto en reglamentos de tránsito aéreo…"
-          [value]="formSystemPrompt()"
-          (input)="formSystemPrompt.set($any($event.target).value); autosizeTextarea($any($event.target))"
-        ></textarea>
-      </div>
-
-      <!-- Active toggle -->
-      <div class="as-field as-field--row">
-        <label class="as-field__label" for="as-active">Disponible para usuarios</label>
-        <button
-          type="button"
-          id="as-active"
-          class="as-toggle"
-          [class.as-toggle--on]="formActive()"
-          (click)="formActive.set(!formActive())"
-          [attr.aria-checked]="formActive()"
-          role="switch"
-        >
-          <span class="as-toggle__knob"></span>
-        </button>
-      </div>
-    </div>
-
-    <div class="as-panel__footer">
-      <button type="button" class="as-btn as-btn--ghost" (click)="closePanel()">Cancelar</button>
-      <button
-        type="button"
-        class="as-btn as-btn--primary"
-        [disabled]="!formValid() || formLoading()"
-        (click)="submitForm()"
-      >
-        @if (formLoading()) {
-          <i class="pi pi-spin pi-spinner"></i> Guardando…
-        } @else {
-          <i class="pi pi-check"></i> {{ panelMode() === 'create' ? 'Crear' : 'Guardar cambios' }}
         }
-      </button>
-    </div>
-  </aside>
-}
+      </div>
+    }
+  }
+
+</div>

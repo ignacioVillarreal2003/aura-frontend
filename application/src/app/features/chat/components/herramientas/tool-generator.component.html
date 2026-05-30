@@ -99,14 +99,16 @@
           <pre class="gen-result__body">{{ generatedReport()!.content }}</pre>
         } @else {
           <ul class="gen-checklist">
-            @for (item of checklistItems(); track item.id) {
-              <li class="gen-checklist__item">
-                <i [ngClass]="['pi', item.is_checked ? 'pi-check-square' : 'pi-stop']" aria-hidden="true"></i>
-                <span class="gen-checklist__text">
-                  <span class="gen-checklist__section">{{ item.section }}</span>
-                  {{ item.text }}
-                </span>
-              </li>
+            @for (section of checklistSections(); track section.id) {
+              @if (checklistSections().length > 1) {
+                <li class="gen-checklist__section-header">{{ section.title }}</li>
+              }
+              @for (item of section.items; track item.id) {
+                <li class="gen-checklist__item">
+                  <i [ngClass]="['pi', item.is_checked ? 'pi-check-square' : 'pi-stop']" aria-hidden="true"></i>
+                  <span class="gen-checklist__text">{{ item.text }}</span>
+                </li>
+              }
             }
           </ul>
         }

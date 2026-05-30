@@ -7,8 +7,8 @@ import { ToastService } from '@core/components/toast-service';
 import { UserState } from '@core/state/user.state';
 import type {
   ChecklistDto,
-  ChecklistItemDto,
   ChecklistMode,
+  ChecklistSectionDto,
   ReportDto,
   ReportMode,
   ReportType,
@@ -156,7 +156,7 @@ export class ToolGeneratorComponent {
 
   readonly hasResult = computed(() => this.generatedReport() !== null || this.generatedChecklist() !== null);
 
-  readonly checklistItems = computed<readonly ChecklistItemDto[]>(() => this.generatedChecklist()?.items ?? []);
+  readonly checklistSections = computed<readonly ChecklistSectionDto[]>(() => this.generatedChecklist()?.sections ?? []);
 
   selectKind(kind: GeneratorKind): void {
     if (this.loading()) return;

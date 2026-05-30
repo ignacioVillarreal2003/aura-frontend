@@ -36,6 +36,13 @@ export const chatShellRoutes: Routes = [
             (m) => m.ChecklistEditorComponent
           ),
       },
+      {
+        path: 'assistants',
+        loadComponent: () =>
+          import('./components/herramientas/asistentes-hub.component').then(
+            (m) => m.AsistentesHubComponent
+          ),
+      },
     ],
   },
 ];

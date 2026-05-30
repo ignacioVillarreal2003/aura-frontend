@@ -14,18 +14,17 @@ import {
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
-import type { ChecklistDto, ChecklistItemDto } from '@aura-types/aura-chat-service.types';
+import type { ChecklistDto, ChecklistSectionDto } from '@aura-types/aura-chat-service.types';
 
 interface EditItem {
   id: string;
-  section: string;
-  order: number;
   text: string;
   is_checked: boolean;
   notes: string;
 }
 
 interface SectionGroup {
+  id: string;
   name: string;
   items: EditItem[];
 }
@@ -69,20 +68,24 @@ export class ChecklistEditorComponent implements OnInit {
     const c = this.checklist();
     if (!c) return false;
     if (this.editTitle().trim() !== c.title) return true;
-    const curr = this.sections().flatMap((s) => s.items);
-    const orig = [...c.items].sort((a, b) => a.order - b.order);
+    const curr = this.sections();
+    const orig = [...c.sections].sort((a, b) => a.position - b.position);
     if (curr.length !== orig.length) return true;
-    return curr.some(
-      (item, idx) =>
-        item.text !== orig[idx].text ||
-        item.section !== orig[idx].section ||
-        item.notes !== orig[idx].notes ||
-        item.is_checked !== orig[idx].is_checked,
-    );
+    for (let si = 0; si < curr.length; si++) {
+      if (curr[si].name !== orig[si].title) return true;
+      const origItems = [...orig[si].items].sort((a, b) => a.position - b.position);
+      if (curr[si].items.length !== origItems.length) return true;
+      for (let ii = 0; ii < curr[si].items.length; ii++) {
+        const ci = curr[si].items[ii];
+        const oi = origItems[ii];
+        if (ci.text !== oi.text || ci.is_checked !== oi.is_checked || ci.notes !== oi.notes) return true;
+      }
+    }
+    return false;
   });
 
   // ── IDs for cdkDropListConnectedTo ────────────────────────────────────────
-  readonly sectionListIds = computed(() => this.sections().map((s) => 'items-' + s.name));
+  readonly sectionListIds = computed(() => this.sections().map((s) => 'items-' + s.id));
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit(): void {
@@ -92,7 +95,7 @@ export class ChecklistEditorComponent implements OnInit {
       next: (c) => {
         this.checklist.set(c);
         this.editTitle.set(c.title);
-        this.sections.set(this._buildSections([...c.items].sort((a, b) => a.order - b.order)));
+        this.sections.set(this._buildSections(c.sections));
         this.loading.set(false);
       },
       error: () => {
@@ -102,14 +105,16 @@ export class ChecklistEditorComponent implements OnInit {
     });
   }
 
-  private _buildSections(items: readonly { id: string; section: string; order: number; text: string; is_checked: boolean; notes: string }[]): SectionGroup[] {
-    const map = new Map<string, EditItem[]>();
-    for (const item of items) {
-      const key = item.section ?? '';
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push({ ...item });
-    }
-    return Array.from(map.entries()).map(([name, sectionItems]) => ({ name, items: sectionItems }));
+  private _buildSections(sections: readonly ChecklistSectionDto[]): SectionGroup[] {
+    return [...sections]
+      .sort((a, b) => a.position - b.position)
+      .map((s) => ({
+        id: s.id,
+        name: s.title,
+        items: [...s.items]
+          .sort((a, b) => a.position - b.position)
+          .map((item) => ({ id: item.id, text: item.text, is_checked: item.is_checked, notes: item.notes })),
+      }));
   }
 
   goBack(): void {
@@ -125,19 +130,16 @@ export class ChecklistEditorComponent implements OnInit {
   }
 
   // ── Item DnD (cross-list) ─────────────────────────────────────────────────
-  dropItem(event: CdkDragDrop<EditItem[]>, targetSectionName: string): void {
+  dropItem(event: CdkDragDrop<EditItem[]>): void {
     if (event.previousContainer === event.container) {
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
-      const movedItem = event.previousContainer.data[event.previousIndex];
       transferArrayItem(
         event.previousContainer.data,
         event.container.data,
         event.previousIndex,
         event.currentIndex,
       );
-      // Update section field on the moved item
-      event.container.data[event.currentIndex] = { ...movedItem, section: targetSectionName };
     }
     // Trigger signal update (CDK mutates arrays in place, signal needs notify)
     this.sections.update((s) => [...s]);
@@ -187,8 +189,7 @@ export class ChecklistEditorComponent implements OnInit {
 
   addItemToSection(sectionIdx: number): void {
     const newId = crypto.randomUUID();
-    const sectionName = this.sections()[sectionIdx].name;
-    const newItem: EditItem = { id: newId, section: sectionName, order: 0, text: '', is_checked: false, notes: '' };
+    const newItem: EditItem = { id: newId, text: '', is_checked: false, notes: '' };
     this.sections.update((sections) => {
       const arr = [...sections];
       arr[sectionIdx] = { ...arr[sectionIdx], items: [...arr[sectionIdx].items, newItem] };
@@ -202,11 +203,7 @@ export class ChecklistEditorComponent implements OnInit {
     const name = (event.target as HTMLInputElement).value;
     this.sections.update((sections) => {
       const arr = [...sections];
-      arr[sectionIdx] = {
-        ...arr[sectionIdx],
-        name,
-        items: arr[sectionIdx].items.map((i) => ({ ...i, section: name })),
-      };
+      arr[sectionIdx] = { ...arr[sectionIdx], name };
       return arr;
     });
   }
@@ -216,7 +213,7 @@ export class ChecklistEditorComponent implements OnInit {
     let n = this.sections().length + 1;
     let name = `Sección ${n}`;
     while (existing.has(name)) name = `Sección ${++n}`;
-    const newSection: SectionGroup = { name, items: [] };
+    const newSection: SectionGroup = { id: crypto.randomUUID(), name, items: [] };
     this.sections.update((s) => [...s, newSection]);
     // Auto-add first item to the new section
     setTimeout(() => this.addItemToSection(this.sections().length - 1), 0);
@@ -235,15 +232,22 @@ export class ChecklistEditorComponent implements OnInit {
     if (!c) return;
     const title = this.editTitle().trim();
     if (!title) { this.toast.show('El título no puede estar vacío.', 'error'); return; }
-    let order = 1;
-    const items = this.sections()
-      .flatMap((s) => s.items.map((item) => ({ ...item, order: order++ }))) as unknown as ChecklistItemDto[];
+    const sections = this.sections().map((s, si) => ({
+      title: s.name,
+      position: si + 1,
+      items: s.items.map((item, ii) => ({
+        text: item.text,
+        is_checked: item.is_checked,
+        notes: item.notes,
+        position: ii + 1,
+      })),
+    }));
     this.saving.set(true);
-    this.http.patchChecklist(c.id, { title, items }).pipe(take(1)).subscribe({
+    this.http.patchChecklist(c.id, { title, sections }).pipe(take(1)).subscribe({
       next: (updated) => {
         this.checklist.set(updated);
         this.editTitle.set(updated.title);
-        this.sections.set(this._buildSections([...updated.items].sort((a, b) => a.order - b.order)));
+        this.sections.set(this._buildSections(updated.sections));
         this.saving.set(false);
         this.toast.show('Checklist guardada.', 'success');
       },

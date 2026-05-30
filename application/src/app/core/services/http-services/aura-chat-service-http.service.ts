@@ -495,8 +495,9 @@ export class AuraChatServiceHttp {
 
   // ── Assistants ──────────────────────────────────────────────────────────────
 
-  listAssistants(query: { page?: number; page_size?: number } = {}): Observable<PageNumberResult<AssistantDto>> {
-    const p = this.paramsForPaging(query);
+  listAssistants(query: { page?: number; page_size?: number; search?: string } = {}): Observable<PageNumberResult<AssistantDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.search) p = p.set('search', query.search);
     return this.http.get<PageNumberResult<AssistantDto>>(`${this.base}/assistants/`, { params: p });
   }
 
@@ -521,8 +522,8 @@ export class AuraChatServiceHttp {
     return this.http.delete<void>(`${this.base}/assistants/${assistantId}/`);
   }
 
-  startAssistantChat(assistantId: number): Observable<StartChatResponseDto> {
-    return this.http.post<StartChatResponseDto>(`${this.base}/assistants/${assistantId}/start-chat/`, {});
+  startAssistantChat(assistantId: number, body: { resume?: boolean } = {}): Observable<StartChatResponseDto> {
+    return this.http.post<StartChatResponseDto>(`${this.base}/assistants/${assistantId}/start-chat/`, body);
   }
 
   listPublicShareMessages(

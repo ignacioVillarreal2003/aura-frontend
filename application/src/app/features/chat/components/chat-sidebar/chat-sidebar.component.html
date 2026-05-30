@@ -40,6 +40,15 @@
         <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Chats</span>
       </button>
 
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId === 'assistants'"
+        [routerLink]="['/main-container', 'assistants']">
+        <i class="pi pi-android" aria-hidden="true"></i>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Asistentes</span>
+      </button>
+
     </nav>
 
     @if (sortedChats().length > 0) {

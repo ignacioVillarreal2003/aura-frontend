@@ -449,19 +449,24 @@ export type ChecklistMode = 'direct' | 'rag';
 
 export interface ChecklistItemDto {
   readonly id: string;
-  readonly section: string;
-  readonly order: number;
   readonly text: string;
   readonly is_checked: boolean;
   readonly notes: string;
+  readonly position: number;
+}
+
+export interface ChecklistSectionDto {
+  readonly id: string;
+  readonly title: string;
+  readonly position: number;
+  readonly items: readonly ChecklistItemDto[];
 }
 
 export interface ChecklistDto {
   readonly id: number;
   readonly title: string;
-  readonly items: readonly ChecklistItemDto[];
+  readonly sections: readonly ChecklistSectionDto[];
   readonly mode: ChecklistMode;
-  readonly metadata: Record<string, unknown>;
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
@@ -492,9 +497,22 @@ export interface ChecklistGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
+export interface UpdateChecklistItemBody {
+  readonly text: string;
+  readonly is_checked: boolean;
+  readonly notes: string;
+  readonly position: number;
+}
+
+export interface UpdateChecklistSectionBody {
+  readonly title: string;
+  readonly position: number;
+  readonly items: readonly UpdateChecklistItemBody[];
+}
+
 export interface UpdateChecklistBody {
   readonly title?: string;
-  readonly items?: readonly ChecklistItemDto[];
+  readonly sections?: readonly UpdateChecklistSectionBody[];
 }
 
 // ── Assistants ─────────────────────────────────────────────────────────────────
@@ -534,6 +552,7 @@ export interface UpdateAssistantBody {
 export interface StartChatResponseDto {
   readonly chat_id: number;
   readonly chat_name: string;
+  readonly is_new: boolean;
 }
 
 export type AuraChatWsClientMessage =
