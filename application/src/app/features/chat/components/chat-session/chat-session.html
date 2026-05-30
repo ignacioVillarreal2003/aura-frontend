@@ -37,10 +37,10 @@
       [contextChat]="{
         id: chat.id,
         name: chat.name,
-        is_pinned: false,
-        archived_at: null,
+        is_pinned: chat.is_pinned,
+        archived_at: chat.archived_at,
         is_locked: chat.is_locked,
-        is_muted: false
+        is_muted: chat.is_muted
       }"
       [attachedDocuments]="sessionDocuments()"
       [uploadDisabled]="documentUploading() || !chat"

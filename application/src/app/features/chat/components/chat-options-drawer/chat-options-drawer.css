@@ -348,6 +348,77 @@
   gap: 8px;
 }
 
+.drawer-member-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 16px;
+}
+
+.drawer-member-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.drawer-member-card__selectors {
+  display: flex;
+  gap: 8px;
+}
+
+.drawer-member-select {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #e8e8ea);
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.drawer-member-select:focus {
+  border-color: rgba(99, 102, 241, 0.6);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.drawer-member-select option {
+  background: #1e1e2e;
+  color: #e8e8ea;
+}
+
+.drawer-member-remove {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #f87171;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.drawer-member-remove:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.drawer-member-card__joined {
+  font-size: 11px;
+  color: var(--text-secondary, #9a9aa3);
+}
+
 .drawer-doc-card__main,
 .drawer-member-card__main {
   display: flex;
@@ -527,6 +598,261 @@
   word-break: break-word;
 }
 
+.drawer-pinned-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drawer-pinned-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 3px solid rgba(99, 102, 241, 0.5);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.drawer-pinned-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-left-color: rgba(99, 102, 241, 0.75);
+}
+
+.drawer-pinned-card__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 13px;
+  color: #818cf8;
+  transform: rotate(45deg);
+}
+
+.drawer-pinned-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-pinned-card__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-primary, #e8e8ea);
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.drawer-pinned-card__date {
+  font-size: 11px;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.drawer-bookmark-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 3px solid rgba(251, 191, 36, 0.45);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.drawer-bookmark-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-left-color: rgba(251, 191, 36, 0.7);
+}
+
+.drawer-bookmark-card__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 13px;
+  color: #fbbf24;
+}
+
+/* ── Pin toggle ────────────────────────────────────────────── */
+.drawer-pin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #e8e8ea);
+  font-family: 'Sora', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.drawer-pin-toggle:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.drawer-pin-toggle--pinned {
+  border-color: rgba(251, 191, 36, 0.28);
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.drawer-pin-toggle--pinned:hover {
+  background: rgba(251, 191, 36, 0.09);
+}
+
+.drawer-pin-toggle__icon-wrap {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 16px;
+  color: var(--text-secondary, #9a9aa3);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.drawer-pin-toggle--pinned .drawer-pin-toggle__icon-wrap {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.drawer-pin-toggle__icon {
+  transition: transform 0.2s ease;
+}
+
+.drawer-pin-toggle--pinned .drawer-pin-toggle__icon {
+  transform: rotate(45deg);
+}
+
+.drawer-pin-toggle__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-pin-toggle__label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.drawer-pin-toggle__hint {
+  font-size: 11px;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.drawer-pin-toggle__badge {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-secondary, #9a9aa3);
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.drawer-pin-toggle__badge--on {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
+}
+
+.drawer-rename-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drawer-rename-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-rename-form__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.drawer-rename-form__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary, #e8e8ea);
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.drawer-rename-form__input:focus {
+  border-color: rgba(99, 102, 241, 0.65);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.drawer-rename-form__input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.drawer-rename-form__cancel {
+  align-self: center;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--text-secondary, #9a9aa3);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.drawer-rename-form__cancel:hover {
+  color: var(--text-primary, #e8e8ea);
+}
+
+.drawer-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.drawer-empty-state__icon {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.drawer-empty-state__text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #9a9aa3);
+}
+
 .drawer-share-token {
   font-family: monospace;
   font-size: 11px;
@@ -546,6 +872,189 @@
 
 .drawer-share-badge--inactive {
   color: #ef4444;
+}
+
+/* ── Share list ───────────────────────────────────────────── */
+.drawer-share-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drawer-share-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: background 0.15s ease;
+}
+
+.drawer-share-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.drawer-share-card__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-share-card__status-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #71717a;
+}
+
+.drawer-share-card__status-dot--active {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+}
+
+.drawer-share-card__token {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-secondary, #9a9aa3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-share-card__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.drawer-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary, #9a9aa3);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.drawer-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary, #e8e8ea);
+}
+
+.drawer-icon-btn--danger {
+  color: #f87171;
+}
+
+.drawer-icon-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.drawer-share-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.drawer-share-card__badge--active {
+  color: #4ade80;
+}
+
+.drawer-share-card__badge--inactive {
+  color: #f87171;
+}
+
+.drawer-share-card--confirming {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.drawer-revoke-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(239, 68, 68, 0.18);
+}
+
+.drawer-revoke-confirm__msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #fca5a5;
+}
+
+.drawer-revoke-confirm__msg .pi {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 12px;
+  color: #f87171;
+}
+
+.drawer-revoke-confirm__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.drawer-revoke-confirm__btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  font-family: 'Sora', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.drawer-revoke-confirm__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.drawer-revoke-confirm__btn--cancel {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.drawer-revoke-confirm__btn--cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.11);
+  color: var(--text-primary, #e8e8ea);
+}
+
+.drawer-revoke-confirm__btn--confirm {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.drawer-revoke-confirm__btn--confirm:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.32);
+  color: #fecaca;
 }
 
 .drawer-member-badge {

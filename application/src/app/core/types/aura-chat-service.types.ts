@@ -95,6 +95,9 @@ export interface ChatDetailDto {
   readonly tags: readonly string[];
   readonly is_ephemeral: boolean;
   readonly is_locked: boolean;
+  readonly is_pinned: boolean;
+  readonly archived_at: IsoDateTimeString | null;
+  readonly is_muted: boolean;
   readonly last_message_at: IsoDateTimeString | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;

@@ -101,9 +101,6 @@
             </nav>
           }
           @case ('documents') {
-            <p class="drawer-panel__intro">
-              Documentos asociados a este chat. Podés subir uno nuevo o refrescar el listado desde el servidor.
-            </p>
             <div class="drawer-toolbar">
               <input
                 #docInput
@@ -166,14 +163,10 @@
             }
           }
           @case ('participants') {
-            <div class="drawer-toolbar drawer-toolbar--split">
-              <button type="button" class="drawer-btn drawer-btn--primary" (click)="addParticipants()">
+            <div class="drawer-toolbar">
+              <button type="button" class="drawer-btn drawer-btn--primary drawer-btn--full" (click)="addParticipants()">
                 <i class="pi pi-user-plus" aria-hidden="true"></i>
                 Añadir participante
-              </button>
-              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadMembers(contextChatId()!)" [disabled]="membersLoading()">
-                <i class="pi pi-refresh" [class.pi-spin]="membersLoading()" aria-hidden="true"></i>
-                Actualizar
               </button>
             </div>
             @if (membersLoading()) {
@@ -184,21 +177,27 @@
               <ul class="drawer-member-list" aria-label="Participantes">
                 @for (m of members(); track m.id) {
                   <li class="drawer-member-card">
-                    <div class="drawer-member-card__main">
+                    <div class="drawer-member-card__header">
                       <span class="drawer-member-card__title">Usuario {{ m.member_id }}</span>
-                      <span class="drawer-member-card__meta">
-                        <span class="drawer-member-badge drawer-member-badge--role">{{ m.role }}</span>
-                        <span class="drawer-member-badge">{{ m.status }}</span>
-                        @if (m.joined_at) {
-                          <span>· Entró {{ m.joined_at | date: 'short' }}</span>
-                        }
-                      </span>
+                      <button type="button" class="drawer-member-remove" title="Quitar participante" (click)="removeMember(m)">
+                        <i class="pi pi-user-minus" aria-hidden="true"></i>
+                      </button>
                     </div>
-                    <div class="drawer-share-actions">
-                      <button type="button" class="drawer-linkish" title="Cicla entre owner, editor, reader" (click)="changeRole(m)">Rol</button>
-                      <button type="button" class="drawer-linkish" title="Cicla entre active, inactive, pending" (click)="changeStatus(m)">Estado</button>
-                      <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="removeMember(m)">Quitar</button>
+                    <div class="drawer-member-card__selectors">
+                      <select class="drawer-member-select" [value]="m.role" (change)="changeRoleTo(m, $any($event.target).value)">
+                        <option value="owner">Owner</option>
+                        <option value="editor">Editor</option>
+                        <option value="reader">Reader</option>
+                      </select>
+                      <select class="drawer-member-select" [value]="m.status" (change)="changeStatusTo(m, $any($event.target).value)">
+                        <option value="active">Activo</option>
+                        <option value="inactive">Inactivo</option>
+                        <option value="pending">Pendiente</option>
+                      </select>
                     </div>
+                    @if (m.joined_at) {
+                      <span class="drawer-member-card__joined">Entró {{ m.joined_at | date: 'short' }}</span>
+                    }
                   </li>
                 }
               </ul>
@@ -210,17 +209,25 @@
           }
           @case ('chat') {
             <nav class="drawer-action-list" aria-label="Gestión del chat">
+              <button type="button" class="drawer-action-item" (click)="openSub('rename')">
+                <i class="pi pi-pencil drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Cambiar el nombre</span>
+              </button>
               <button type="button" class="drawer-action-item" (click)="openSub('share')">
                 <i class="pi pi-share-alt drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Compartir</span>
               </button>
-              <button type="button" class="drawer-action-item" (click)="togglePin()">
-                <i [ngClass]="['pi', 'drawer-action-item__icon', isChatPinned() ? 'pi-ban' : 'pi-thumbtack']" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">{{ isChatPinned() ? 'Desfijar' : 'Fijar' }}</span>
-              </button>
-              <button type="button" class="drawer-action-item" (click)="renameChat()">
-                <i class="pi pi-pencil drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">Cambiar el nombre</span>
+              <button type="button" class="drawer-pin-toggle" [class.drawer-pin-toggle--pinned]="isChatPinned()" (click)="togglePin()">
+                <div class="drawer-pin-toggle__icon-wrap">
+                  <i class="pi pi-thumbtack drawer-pin-toggle__icon" aria-hidden="true"></i>
+                </div>
+                <div class="drawer-pin-toggle__content">
+                  <span class="drawer-pin-toggle__label">{{ isChatPinned() ? 'Desfijar chat' : 'Fijar chat' }}</span>
+                  <span class="drawer-pin-toggle__hint">{{ isChatPinned() ? 'Este chat está fijado en tu lista' : 'Fijalo para acceso rápido' }}</span>
+                </div>
+                <span class="drawer-pin-toggle__badge" [class.drawer-pin-toggle__badge--on]="isChatPinned()">
+                  {{ isChatPinned() ? 'Fijado' : 'No fijado' }}
+                </span>
               </button>
               <button type="button" class="drawer-action-item" (click)="archiveChat()">
                 <i class="pi pi-inbox drawer-action-item__icon" aria-hidden="true"></i>
@@ -245,10 +252,6 @@
                 <i class="pi pi-download drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Exportar</span>
               </button>
-              <button type="button" class="drawer-action-item" (click)="openSub('webhooks')">
-                <i class="pi pi-link drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">Webhooks</span>
-              </button>
               <button type="button" class="drawer-action-item drawer-action-item--danger" (click)="clearChatHistory()">
                 <i class="pi pi-eraser drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Limpiar historial</span>
@@ -259,43 +262,95 @@
               </button>
             </nav>
           }
+          @case ('rename') {
+            <form class="drawer-rename-form" (submit)="$event.preventDefault(); submitRename()">
+              <div class="drawer-rename-form__field">
+                <label class="drawer-rename-form__label" for="rename-input">Nombre del chat</label>
+                <input
+                  id="rename-input"
+                  type="text"
+                  class="drawer-rename-form__input"
+                  [value]="renameValue()"
+                  (input)="renameValue.set($any($event.target).value)"
+                  placeholder="Nombre del chat"
+                  maxlength="255"
+                  autocomplete="off"
+                  autofocus
+                />
+              </div>
+              <button
+                type="submit"
+                class="drawer-btn drawer-btn--primary drawer-btn--full"
+                [disabled]="renameSubmitting() || !renameValue().trim() || renameValue().trim() === contextChatTitle().trim()">
+                @if (renameSubmitting()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-check" aria-hidden="true"></i>
+                }
+                Guardar
+              </button>
+              <button type="button" class="drawer-rename-form__cancel" (click)="openSub('chat')">
+                Cancelar
+              </button>
+            </form>
+          }
           @case ('share') {
             <div class="drawer-toolbar">
-              <button type="button" class="drawer-btn drawer-btn--primary" (click)="createShareLink()">
+              <button type="button" class="drawer-btn drawer-btn--primary drawer-btn--full" (click)="createShareLink()">
                 <i class="pi pi-plus" aria-hidden="true"></i>
                 Crear enlace
-              </button>
-              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadShareLinks()" [disabled]="shareLinksLoading()">
-                <i class="pi pi-refresh" [class.pi-spin]="shareLinksLoading()" aria-hidden="true"></i>
-                Actualizar
               </button>
             </div>
             @if (shareLinksLoading() && shareLinks().length === 0) {
               <p class="drawer-muted">Cargando enlaces…</p>
             } @else if (shareLinks().length === 0) {
-              <p class="drawer-muted">No hay enlaces de compartir activos.</p>
+              <div class="drawer-empty-state">
+                <i class="pi pi-link drawer-empty-state__icon" aria-hidden="true"></i>
+                <p class="drawer-empty-state__text">No hay enlaces de compartir activos.</p>
+              </div>
             } @else {
-              <ul class="drawer-doc-list" aria-label="Enlaces compartidos">
+              <ul class="drawer-share-list" aria-label="Enlaces compartidos">
                 @for (link of shareLinks(); track link.id) {
-                  <li class="drawer-doc-card">
-                    <div class="drawer-doc-card__main">
-                      <span class="drawer-doc-card__name drawer-share-token">{{ link.token }}</span>
-                      <span class="drawer-doc-card__meta">
-                        <span>Creado {{ link.created_at | date: 'short' }}</span>
-                        @if (link.expires_at) {
-                          <span>· Expira {{ link.expires_at | date: 'short' }}</span>
+                  <li class="drawer-share-card" [class.drawer-share-card--confirming]="revokeConfirmId() === link.id">
+                    <div class="drawer-share-card__top">
+                      <span class="drawer-share-card__status-dot drawer-share-card__status-dot--active" aria-hidden="true"></span>
+                      <code class="drawer-share-card__token">{{ link.token }}</code>
+                      <div class="drawer-share-card__actions">
+                        <button type="button" class="drawer-icon-btn" title="Copiar enlace" (click)="copyShareLink(link.token)">
+                          <i class="pi pi-copy" aria-hidden="true"></i>
+                        </button>
+                        @if (revokeConfirmId() !== link.id) {
+                          <button type="button" class="drawer-icon-btn drawer-icon-btn--danger" title="Revocar enlace" (click)="requestRevoke(link.id)">
+                            <i class="pi pi-ban" aria-hidden="true"></i>
+                          </button>
                         }
-                        <span [class]="link.is_active ? 'drawer-share-badge--active' : 'drawer-share-badge--inactive'">
-                          {{ link.is_active ? '· Activo' : '· Inactivo' }}
-                        </span>
-                      </span>
+                      </div>
                     </div>
-                    <div class="drawer-share-actions">
-                      <button type="button" class="drawer-linkish" (click)="copyShareLink(link.token)">Copiar</button>
-                      @if (link.is_active) {
-                        <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="revokeShareLink(link.id)">Revocar</button>
+                    <div class="drawer-share-card__meta">
+                      <span>Creado {{ link.created_at | date: 'short' }}</span>
+                      @if (link.expires_at) {
+                        <span>· Expira {{ link.expires_at | date: 'short' }}</span>
                       }
                     </div>
+                    @if (revokeConfirmId() === link.id) {
+                      <div class="drawer-revoke-confirm">
+                        <p class="drawer-revoke-confirm__msg">
+                          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                          ¿Revocar este enlace? Dejará de funcionar de inmediato.
+                        </p>
+                        <div class="drawer-revoke-confirm__actions">
+                          <button type="button" class="drawer-revoke-confirm__btn drawer-revoke-confirm__btn--cancel" (click)="cancelRevoke()" [disabled]="revoking()">
+                            Cancelar
+                          </button>
+                          <button type="button" class="drawer-revoke-confirm__btn drawer-revoke-confirm__btn--confirm" (click)="confirmRevoke(link.id)" [disabled]="revoking()">
+                            @if (revoking()) {
+                              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                            }
+                            Revocar
+                          </button>
+                        </div>
+                      </div>
+                    }
                   </li>
                 }
               </ul>
@@ -395,25 +450,21 @@
             }
           }
           @case ('pinned') {
-            <div class="drawer-toolbar">
-              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadPinnedMessages()" [disabled]="pinnedLoading()">
-                <i class="pi pi-refresh" [class.pi-spin]="pinnedLoading()" aria-hidden="true"></i>
-                Actualizar
-              </button>
-            </div>
             @if (pinnedLoading() && pinnedMessages().length === 0) {
               <p class="drawer-muted">Cargando mensajes fijados…</p>
             } @else if (pinnedMessages().length === 0) {
-              <p class="drawer-muted">No hay mensajes fijados en este chat.</p>
+              <div class="drawer-empty-state">
+                <i class="pi pi-thumbtack drawer-empty-state__icon" aria-hidden="true"></i>
+                <p class="drawer-empty-state__text">No hay mensajes fijados en este chat.</p>
+              </div>
             } @else {
-              <ul class="drawer-doc-list" aria-label="Mensajes fijados">
+              <ul class="drawer-pinned-list" aria-label="Mensajes fijados">
                 @for (pm of pinnedMessages(); track pm.id) {
-                  <li class="drawer-doc-card">
-                    <div class="drawer-doc-card__main">
-                      <span class="drawer-pinned-text">{{ pm.message.message }}</span>
-                      <span class="drawer-doc-card__meta">
-                        Fijado {{ pm.pinned_at | date: 'short' }}
-                      </span>
+                  <li class="drawer-pinned-card">
+                    <i class="pi pi-thumbtack drawer-pinned-card__icon" aria-hidden="true"></i>
+                    <div class="drawer-pinned-card__body">
+                      <p class="drawer-pinned-card__text">{{ pm.message.message }}</p>
+                      <span class="drawer-pinned-card__date">{{ pm.pinned_at | date: 'short' }}</span>
                     </div>
                   </li>
                 }
@@ -421,23 +472,21 @@
             }
           }
           @case ('bookmarks') {
-            <div class="drawer-toolbar">
-              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadBookmarkedMessages()" [disabled]="bookmarkedLoading()">
-                <i class="pi pi-refresh" [class.pi-spin]="bookmarkedLoading()" aria-hidden="true"></i>
-                Actualizar
-              </button>
-            </div>
             @if (bookmarkedLoading() && bookmarkedMessages().length === 0) {
               <p class="drawer-muted">Cargando guardados…</p>
             } @else if (bookmarkedMessages().length === 0) {
-              <p class="drawer-muted">No hay mensajes guardados en este chat.</p>
+              <div class="drawer-empty-state">
+                <i class="pi pi-bookmark drawer-empty-state__icon" aria-hidden="true"></i>
+                <p class="drawer-empty-state__text">No hay mensajes guardados en este chat.</p>
+              </div>
             } @else {
-              <ul class="drawer-doc-list" aria-label="Guardados">
+              <ul class="drawer-pinned-list" aria-label="Guardados">
                 @for (msg of bookmarkedMessages(); track msg.id) {
-                  <li class="drawer-doc-card">
-                    <div class="drawer-doc-card__main">
-                      <span class="drawer-pinned-text">{{ msg.message }}</span>
-                      <span class="drawer-doc-card__meta">{{ msg.created_at | date: 'short' }}</span>
+                  <li class="drawer-bookmark-card">
+                    <i class="pi pi-bookmark-fill drawer-bookmark-card__icon" aria-hidden="true"></i>
+                    <div class="drawer-pinned-card__body">
+                      <p class="drawer-pinned-card__text">{{ msg.message }}</p>
+                      <span class="drawer-pinned-card__date">{{ msg.created_at | date: 'short' }}</span>
                     </div>
                   </li>
                 }

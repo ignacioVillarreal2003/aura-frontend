@@ -437,6 +437,14 @@ export class ChatSessionComponent implements OnDestroy {
       this.chat = { ...this.chat, is_locked: false };
       return;
     }
+    if (e.action === 'pin') {
+      if (this.chat) this.chat = { ...this.chat, is_pinned: true };
+      return;
+    }
+    if (e.action === 'unpin') {
+      if (this.chat) this.chat = { ...this.chat, is_pinned: false };
+      return;
+    }
   }
 
   onChatMetaUpdated(e: { chatId: number; name: string }): void {

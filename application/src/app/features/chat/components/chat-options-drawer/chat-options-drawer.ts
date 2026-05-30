@@ -51,7 +51,7 @@ export interface DocumentItem {
   readonly created_at: string;
 }
 
-type PanelView = 'root' | 'documents' | 'participants' | 'chat' | 'share' | 'mute' | 'webhooks' | 'pinned' | 'bookmarks' | 'export' | 'reports' | 'checklists';
+type PanelView = 'root' | 'documents' | 'participants' | 'chat' | 'share' | 'mute' | 'webhooks' | 'pinned' | 'bookmarks' | 'export' | 'reports' | 'checklists' | 'rename';
 
 @Component({
   selector: 'app-chat-options-drawer',
@@ -132,6 +132,8 @@ export class ChatOptionsDrawer {
   readonly checklistEditTitle = signal('');
   readonly checklistEditItems = signal<ChecklistItemDto[]>([]);
   readonly checklistSaving = signal(false);
+  readonly renameValue = signal('');
+  readonly renameSubmitting = signal(false);
 
   readonly headerTitle = computed(() => {
     switch (this.panelView()) {
@@ -146,13 +148,18 @@ export class ChatOptionsDrawer {
       case 'export': return 'Exportar chat';
       case 'reports': return 'Informes';
       case 'checklists': return 'Checklists';
+      case 'rename': return 'Cambiar nombre';
       default: return this.panelTitle();
     }
   });
 
   readonly contextChatId = computed(() => this.contextChat()?.id ?? null);
   readonly contextChatTitle = computed(() => this.contextChat()?.name ?? '');
-  readonly isChatPinned = computed(() => this.contextChat()?.is_pinned ?? false);
+
+  private readonly _pinned = signal(false);
+  private _pinnedInitForId: number | null = null;
+  readonly isChatPinned = computed(() => this._pinned());
+
   readonly isChatArchived = computed(() => this.contextChat()?.archived_at != null);
   readonly isChatLocked = computed(() => this.contextChat()?.is_locked ?? false);
   readonly isChatMuted = computed(() => this.contextChat()?.is_muted ?? false);
@@ -167,6 +174,14 @@ export class ChatOptionsDrawer {
   });
 
   constructor() {
+    effect(() => {
+      const chat = this.contextChat();
+      const chatId = chat?.id ?? null;
+      if (chatId !== this._pinnedInitForId) {
+        this._pinnedInitForId = chatId;
+        untracked(() => this._pinned.set(chat?.is_pinned ?? false));
+      }
+    });
     effect(() => {
       if (!this.isOpen()) {
         untracked(() => this.panelView.set('root'));
@@ -197,6 +212,10 @@ export class ChatOptionsDrawer {
     if (view === 'webhooks') {
       this.reloadWebhooks();
       this.cancelWebhookForm();
+    }
+    if (view === 'rename') {
+      this.renameValue.set(this.contextChatTitle()?.trim() ?? '');
+      this.renameSubmitting.set(false);
     }
     if (view === 'pinned') {
       this.reloadPinnedMessages();
@@ -291,18 +310,23 @@ export class ChatOptionsDrawer {
     });
   }
 
-  renameChat(): void {
+  submitRename(): void {
     const cid = this.contextChatId();
-    if (cid == null) return;
+    const next = this.renameValue().trim();
     const current = this.contextChatTitle()?.trim() || '';
-    const next = window.prompt('Nuevo nombre del chat', current)?.trim();
-    if (!next || next === current) return;
+    if (cid == null || !next || next === current) return;
+    this.renameSubmitting.set(true);
     this.chatHttp.patchChat(cid, { name: next }).subscribe({
       next: () => {
         this.toastService.show('Nombre actualizado.', 'success');
         this.chatMetaUpdated.emit({ chatId: cid, name: next });
+        this.renameSubmitting.set(false);
+        this.openSub('chat');
       },
-      error: () => this.toastService.show('No se pudo actualizar el nombre.', 'error'),
+      error: () => {
+        this.toastService.show('No se pudo actualizar el nombre.', 'error');
+        this.renameSubmitting.set(false);
+      },
     });
   }
 
@@ -327,9 +351,10 @@ export class ChatOptionsDrawer {
   togglePin(): void {
     const cid = this.contextChatId();
     if (cid == null) return;
-    if (this.isChatPinned()) {
+    if (this._pinned()) {
       this.chatHttp.unpinChat(cid).subscribe({
         next: () => {
+          this._pinned.set(false);
           this.toastService.show('Chat desfijado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'unpin' });
           this.close();
@@ -339,6 +364,7 @@ export class ChatOptionsDrawer {
     } else {
       this.chatHttp.pinChat(cid).subscribe({
         next: () => {
+          this._pinned.set(true);
           this.toastService.show('Chat fijado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'pin' });
           this.close();
@@ -457,10 +483,21 @@ export class ChatOptionsDrawer {
       });
   }
 
-  revokeShareLink(linkId: number): void {
+  readonly revokeConfirmId = signal<number | null>(null);
+  readonly revoking = signal(false);
+
+  requestRevoke(linkId: number): void {
+    this.revokeConfirmId.set(linkId);
+  }
+
+  cancelRevoke(): void {
+    this.revokeConfirmId.set(null);
+  }
+
+  confirmRevoke(linkId: number): void {
     const cid = this.contextChatId();
     if (cid == null) return;
-    if (!window.confirm('¿Revocar este enlace de compartir?')) return;
+    this.revoking.set(true);
     this.chatHttp
       .revokeShareLink(cid, linkId)
       .pipe(take(1))
@@ -468,8 +505,13 @@ export class ChatOptionsDrawer {
         next: () => {
           this.shareLinks.update((links) => links.filter((l) => l.id !== linkId));
           this.toastService.show('Enlace revocado.', 'success');
+          this.revokeConfirmId.set(null);
+          this.revoking.set(false);
         },
-        error: () => this.toastService.show('No se pudo revocar el enlace.', 'error'),
+        error: () => {
+          this.toastService.show('No se pudo revocar el enlace.', 'error');
+          this.revoking.set(false);
+        },
       });
   }
 
@@ -517,13 +559,10 @@ export class ChatOptionsDrawer {
     });
   }
 
-  changeRole(member: MembershipDto): void {
+  changeRoleTo(member: MembershipDto, role: MembershipRole): void {
     const cid = this.contextChatId();
-    if (cid == null) return;
-    const roles: MembershipRole[] = ['owner', 'editor', 'reader'];
-    const next = roles[(roles.indexOf(member.role) + 1) % roles.length];
-    if (!window.confirm(`¿Cambiar rol de usuario ${member.member_id} a "${next}"?`)) return;
-    this.chatHttp.patchMemberRole(cid, member.id, { role: next }).subscribe({
+    if (cid == null || member.role === role) return;
+    this.chatHttp.patchMemberRole(cid, member.id, { role }).subscribe({
       next: (updated) => {
         this.toastService.show('Rol actualizado.', 'success');
         this.members.update((list) => list.map((m) => (m.id === updated.id ? updated : m)));
@@ -532,13 +571,10 @@ export class ChatOptionsDrawer {
     });
   }
 
-  changeStatus(member: MembershipDto): void {
+  changeStatusTo(member: MembershipDto, status: MembershipStatus): void {
     const cid = this.contextChatId();
-    if (cid == null) return;
-    const statuses: MembershipStatus[] = ['active', 'inactive', 'pending'];
-    const next = statuses[(statuses.indexOf(member.status) + 1) % statuses.length];
-    if (!window.confirm(`¿Cambiar estado de usuario ${member.member_id} a "${next}"?`)) return;
-    this.chatHttp.patchMember(cid, member.id, { status: next }).subscribe({
+    if (cid == null || member.status === status) return;
+    this.chatHttp.patchMember(cid, member.id, { status }).subscribe({
       next: (updated) => {
         this.toastService.show('Estado actualizado.', 'success');
         this.members.update((list) => list.map((m) => (m.id === updated.id ? updated : m)));
