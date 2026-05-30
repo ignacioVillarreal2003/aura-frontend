@@ -29,7 +29,7 @@ export class ChatSearchComponent implements OnInit {
   }>({ hoy: [], ayer: [], semana: [] });
 
   ngOnInit(): void {
-    this.api.listMyChats({ page_size: 100 }).subscribe({
+    this.api.listChats({ page_size: 100 }).subscribe({
       next: (page) => {
         this.allChats.set([...page.results]);
         this.rebuildGrouped();

@@ -204,6 +204,7 @@ export interface MembershipDto {
   readonly id: number;
   readonly member_id: number;
   readonly chat_id: number;
+  readonly chat_name: string;
   readonly status: MembershipStatus;
   readonly role: MembershipRole;
   readonly joined_at: IsoDateTimeString | null;

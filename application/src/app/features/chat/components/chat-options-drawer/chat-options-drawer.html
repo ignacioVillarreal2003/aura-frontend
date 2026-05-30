@@ -164,7 +164,7 @@
           }
           @case ('participants') {
             <div class="drawer-toolbar">
-              <button type="button" class="drawer-btn drawer-btn--primary drawer-btn--full" (click)="addParticipants()">
+              <button type="button" class="drawer-btn drawer-btn--primary drawer-btn--full" (click)="openSub('add-participants')">
                 <i class="pi pi-user-plus" aria-hidden="true"></i>
                 Añadir participante
               </button>
@@ -184,16 +184,22 @@
                       </button>
                     </div>
                     <div class="drawer-member-card__selectors">
-                      <select class="drawer-member-select" [value]="m.role" (change)="changeRoleTo(m, $any($event.target).value)">
-                        <option value="owner">Owner</option>
-                        <option value="editor">Editor</option>
-                        <option value="reader">Reader</option>
-                      </select>
-                      <select class="drawer-member-select" [value]="m.status" (change)="changeStatusTo(m, $any($event.target).value)">
-                        <option value="active">Activo</option>
-                        <option value="inactive">Inactivo</option>
-                        <option value="pending">Pendiente</option>
-                      </select>
+                      <label class="drawer-member-select-label">
+                        <span class="drawer-member-select-label__text">Rol</span>
+                        <select
+                          class="drawer-member-select"
+                          [value]="m.role"
+                          [disabled]="roleUpdatingId() === m.id"
+                          (change)="changeRoleTo(m, $any($event.target).value)"
+                        >
+                          <option value="owner">Owner</option>
+                          <option value="editor">Editor</option>
+                          <option value="reader">Reader</option>
+                        </select>
+                      </label>
+                      <span class="drawer-member-status drawer-member-status--{{ m.status }}">
+                        {{ statusLabel(m.status) }}
+                      </span>
                     </div>
                     @if (m.joined_at) {
                       <span class="drawer-member-card__joined">Entró {{ m.joined_at | date: 'short' }}</span>
@@ -206,6 +212,59 @@
               <i class="pi pi-sign-out drawer-action-item__icon" aria-hidden="true"></i>
               <span class="drawer-action-item__label">Abandonar chat</span>
             </button>
+          }
+          @case ('add-participants') {
+            <div class="drawer-invite-form">
+              <p class="drawer-invite-form__hint">Ingresá el ID del usuario para invitarlo al chat. Podés agregar varios antes de enviar.</p>
+
+              <div class="drawer-invite-form__row">
+                <input
+                  type="number"
+                  class="drawer-invite-form__input"
+                  placeholder="ID de usuario"
+                  [value]="inviteInput()"
+                  (input)="inviteInput.set($any($event.target).value)"
+                  (keydown.enter)="addInviteId()"
+                  min="1"
+                  aria-label="ID de usuario a invitar"
+                />
+                <button type="button" class="drawer-invite-form__add-btn" (click)="addInviteId()" [disabled]="!inviteInput().trim()">
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              @if (inviteIds().length > 0) {
+                <div class="drawer-invite-tags">
+                  @for (id of inviteIds(); track id) {
+                    <span class="drawer-invite-tag">
+                      <i class="pi pi-user" aria-hidden="true"></i>
+                      {{ id }}
+                      <button type="button" class="drawer-invite-tag__remove" (click)="removeInviteId(id)" aria-label="Quitar">
+                        <i class="pi pi-times" aria-hidden="true"></i>
+                      </button>
+                    </span>
+                  }
+                </div>
+              }
+
+              <button
+                type="button"
+                class="drawer-btn drawer-btn--primary drawer-btn--full"
+                [disabled]="inviteIds().length === 0 || inviting()"
+                (click)="submitInvite()"
+              >
+                @if (inviting()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-send" aria-hidden="true"></i>
+                }
+                Invitar {{ inviteIds().length > 0 ? '(' + inviteIds().length + ')' : '' }}
+              </button>
+
+              <button type="button" class="drawer-rename-form__cancel" (click)="openSub('participants')">
+                Cancelar
+              </button>
+            </div>
           }
           @case ('chat') {
             <nav class="drawer-action-list" aria-label="Gestión del chat">
@@ -515,156 +574,175 @@
             </nav>
           }
           @case ('reports') {
-            @if (selectedReport(); as report) {
-              <div class="drawer-toolbar">
-                <button type="button" class="drawer-btn drawer-btn--secondary" (click)="closeReport()">
-                  <i class="pi pi-arrow-left" aria-hidden="true"></i>
-                  Volver a la lista
-                </button>
-              </div>
-              <div class="drawer-editor">
-                <label class="drawer-webhook-label" for="report-title">Título</label>
-                <input
-                  id="report-title"
-                  type="text"
-                  class="drawer-webhook-input"
-                  [value]="reportEditTitle()"
-                  (input)="onReportTitleInput($event)"
-                />
-                <label class="drawer-webhook-label" for="report-content">Contenido</label>
-                <textarea
-                  id="report-content"
-                  class="drawer-editor-textarea"
-                  rows="14"
-                  [value]="reportEditContent()"
-                  (input)="onReportContentInput($event)"
-                ></textarea>
-                <div class="drawer-webhook-form-actions">
-                  <button type="button" class="drawer-btn drawer-btn--primary" [disabled]="reportSaving()" (click)="saveReport()">
-                    <i [ngClass]="['pi', reportSaving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-                    Guardar
-                  </button>
-                  <button type="button" class="drawer-btn drawer-btn--secondary" [disabled]="exportingItemId() !== null" (click)="exportReport(report.id, 'pdf', report.title)">
-                    <i class="pi pi-file-pdf" aria-hidden="true"></i> PDF
-                  </button>
-                  <button type="button" class="drawer-btn drawer-btn--secondary" [disabled]="exportingItemId() !== null" (click)="exportReport(report.id, 'markdown', report.title)">
-                    <i class="pi pi-file" aria-hidden="true"></i> Markdown
-                  </button>
-                </div>
+            @if (reportsLoading() && reports().length === 0) {
+              <p class="drawer-muted">Cargando informes…</p>
+            } @else if (reports().length === 0) {
+              <div class="drawer-empty-state">
+                <i class="pi pi-file-edit drawer-empty-state__icon" aria-hidden="true"></i>
+                <p class="drawer-empty-state__text">No hay informes generados en este chat.</p>
               </div>
             } @else {
-              <div class="drawer-toolbar">
-                <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadReports()" [disabled]="reportsLoading()">
-                  <i class="pi pi-refresh" [class.pi-spin]="reportsLoading()" aria-hidden="true"></i>
-                  Actualizar
-                </button>
-              </div>
-              @if (reportsLoading() && reports().length === 0) {
-                <p class="drawer-muted">Cargando informes…</p>
-              } @else if (reports().length === 0) {
-                <p class="drawer-muted">No hay informes generados en este chat.</p>
-              } @else {
-                <ul class="drawer-doc-list" aria-label="Informes">
-                  @for (r of reports(); track r.id) {
-                    <li class="drawer-doc-card">
-                      <div class="drawer-doc-card__main">
-                        <span class="drawer-doc-card__name">
-                          <span class="drawer-tag">{{ r.type }}</span>
-                          {{ r.title }}
-                        </span>
-                        <span class="drawer-doc-card__meta">{{ r.created_at | date: 'short' }}</span>
+              <ul class="drawer-report-list" aria-label="Informes">
+                @for (r of reports(); track r.id) {
+                  <li class="drawer-report-card">
+                    <div class="drawer-report-card__head">
+                      <span class="drawer-tag">{{ r.type }}</span>
+                      <span class="drawer-report-card__title" [title]="r.title">{{ r.title }}</span>
+                    </div>
+                    <div class="drawer-report-card__foot">
+                      <span class="drawer-report-card__meta">
+                        <i class="pi pi-calendar" aria-hidden="true"></i>
+                        {{ r.created_at | date: 'shortDate' }}
+                      </span>
+                      <span class="drawer-report-card__meta">{{ r.mode === 'rag' ? 'RAG' : 'Directo' }}</span>
+                      <div class="drawer-report-card__actions">
+                        <button type="button" class="drawer-icon-btn" title="Ver / Editar" (click)="openReport(r.id)">
+                          <i class="pi pi-external-link" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="drawer-icon-btn"
+                          title="Exportar PDF"
+                          [disabled]="exportingItemId() !== null"
+                          (click)="exportReport(r.id, 'pdf', r.title)"
+                        >
+                          <i [ngClass]="['pi', exportingItemId() === r.id ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="drawer-icon-btn"
+                          title="Exportar Markdown"
+                          [disabled]="exportingItemId() !== null"
+                          (click)="exportReport(r.id, 'markdown', r.title)"
+                        >
+                          <i class="pi pi-file" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="drawer-icon-btn drawer-icon-btn--danger"
+                          title="Eliminar informe"
+                          (click)="deleteReport(r.id)"
+                        >
+                          <i class="pi pi-trash" aria-hidden="true"></i>
+                        </button>
                       </div>
-                      <div class="drawer-share-actions">
-                        <button type="button" class="drawer-linkish" (click)="openReport(r.id)">Ver / Editar</button>
-                        <button type="button" class="drawer-linkish" [disabled]="exportingItemId() !== null" (click)="exportReport(r.id, 'pdf', r.title)">PDF</button>
-                        <button type="button" class="drawer-linkish" [disabled]="exportingItemId() !== null" (click)="exportReport(r.id, 'markdown', r.title)">MD</button>
-                        <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="deleteReport(r.id)">Borrar</button>
-                      </div>
-                    </li>
-                  }
-                </ul>
+                    </div>
+                  </li>
+                }
+              </ul>
+              @if (reportsHasNext() || reportsHasPrev()) {
+                <div class="drawer-pagination">
+                  <button
+                    type="button"
+                    class="drawer-pagination__btn"
+                    [disabled]="!reportsHasPrev() || reportsLoading()"
+                    (click)="reportsPrevPage()"
+                    aria-label="Página anterior"
+                  >
+                    <i class="pi pi-chevron-left" aria-hidden="true"></i>
+                  </button>
+                  <span class="drawer-pagination__info">Pág. {{ reportsPage() }} · {{ reportsTotalCount() }} total</span>
+                  <button
+                    type="button"
+                    class="drawer-pagination__btn"
+                    [disabled]="!reportsHasNext() || reportsLoading()"
+                    (click)="reportsNextPage()"
+                    aria-label="Página siguiente"
+                  >
+                    <i class="pi pi-chevron-right" aria-hidden="true"></i>
+                  </button>
+                </div>
               }
             }
           }
           @case ('checklists') {
-            @if (selectedChecklist(); as checklist) {
-              <div class="drawer-toolbar">
-                <button type="button" class="drawer-btn drawer-btn--secondary" (click)="closeChecklist()">
-                  <i class="pi pi-arrow-left" aria-hidden="true"></i>
-                  Volver a la lista
-                </button>
-              </div>
-              <div class="drawer-editor">
-                <label class="drawer-webhook-label" for="checklist-title">Título</label>
-                <input
-                  id="checklist-title"
-                  type="text"
-                  class="drawer-webhook-input"
-                  [value]="checklistEditTitle()"
-                  (input)="onChecklistTitleInput($event)"
-                />
-                <p class="drawer-webhook-label">Ítems</p>
-                <ul class="drawer-checklist-edit">
-                  @for (item of checklistEditItems(); track item.id) {
-                    <li class="drawer-checklist-edit__item">
-                      <input
-                        type="checkbox"
-                        class="drawer-webhook-checkbox"
-                        [checked]="item.is_checked"
-                        (change)="toggleChecklistItem(item.id)"
-                      />
-                      <input
-                        type="text"
-                        class="drawer-checklist-edit__text"
-                        [value]="item.text"
-                        (input)="onChecklistItemTextInput(item.id, $event)"
-                      />
-                    </li>
-                  }
-                </ul>
-                <div class="drawer-webhook-form-actions">
-                  <button type="button" class="drawer-btn drawer-btn--primary" [disabled]="checklistSaving()" (click)="saveChecklist()">
-                    <i [ngClass]="['pi', checklistSaving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-                    Guardar
-                  </button>
-                  <button type="button" class="drawer-btn drawer-btn--secondary" [disabled]="exportingItemId() !== null" (click)="exportChecklist(checklist.id, 'pdf', checklist.title)">
-                    <i class="pi pi-file-pdf" aria-hidden="true"></i> PDF
-                  </button>
-                  <button type="button" class="drawer-btn drawer-btn--secondary" [disabled]="exportingItemId() !== null" (click)="exportChecklist(checklist.id, 'markdown', checklist.title)">
-                    <i class="pi pi-file" aria-hidden="true"></i> Markdown
-                  </button>
-                </div>
+            @if (checklistsLoading() && checklists().length === 0) {
+              <p class="drawer-muted">Cargando checklists…</p>
+            } @else if (checklists().length === 0) {
+              <div class="drawer-empty-state">
+                <i class="pi pi-list-check drawer-empty-state__icon" aria-hidden="true"></i>
+                <p class="drawer-empty-state__text">No hay checklists generadas en este chat.</p>
               </div>
             } @else {
-              <div class="drawer-toolbar">
-                <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadChecklists()" [disabled]="checklistsLoading()">
-                  <i class="pi pi-refresh" [class.pi-spin]="checklistsLoading()" aria-hidden="true"></i>
-                  Actualizar
-                </button>
-              </div>
-              @if (checklistsLoading() && checklists().length === 0) {
-                <p class="drawer-muted">Cargando checklists…</p>
-              } @else if (checklists().length === 0) {
-                <p class="drawer-muted">No hay checklists generadas en este chat.</p>
-              } @else {
-                <ul class="drawer-doc-list" aria-label="Checklists">
-                  @for (c of checklists(); track c.id) {
-                    <li class="drawer-doc-card">
-                      <div class="drawer-doc-card__main">
-                        <span class="drawer-doc-card__name">{{ c.title }}</span>
-                        <span class="drawer-doc-card__meta">
-                          {{ c.checked_count }}/{{ c.item_count }} ítems · {{ c.created_at | date: 'short' }}
-                        </span>
+              <ul class="drawer-report-list" aria-label="Checklists">
+                @for (c of checklists(); track c.id) {
+                  <li class="drawer-report-card">
+                    <div class="drawer-report-card__head">
+                      <span class="drawer-tag drawer-tag--checklist">
+                        <i class="pi pi-list-check" aria-hidden="true"></i>
+                      </span>
+                      <span class="drawer-report-card__title" [title]="c.title">{{ c.title }}</span>
+                    </div>
+                    <div class="drawer-report-card__foot">
+                      <span class="drawer-report-card__meta">
+                        <i class="pi pi-calendar" aria-hidden="true"></i>
+                        {{ c.created_at | date: 'shortDate' }}
+                      </span>
+                      <span class="drawer-report-card__meta">{{ c.mode === 'rag' ? 'RAG' : 'Directo' }}</span>
+                      <span class="drawer-checklist-progress">
+                        <span
+                          class="drawer-checklist-progress__bar"
+                          [style.width.%]="c.item_count > 0 ? (c.checked_count / c.item_count) * 100 : 0"
+                        ></span>
+                      </span>
+                      <span class="drawer-report-card__meta">{{ c.checked_count }}/{{ c.item_count }}</span>
+                      <div class="drawer-report-card__actions">
+                        <button type="button" class="drawer-icon-btn" title="Ver / Editar" (click)="openChecklist(c.id)">
+                          <i class="pi pi-external-link" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="drawer-icon-btn"
+                          title="Exportar PDF"
+                          [disabled]="exportingItemId() !== null"
+                          (click)="exportChecklist(c.id, 'pdf', c.title)"
+                        >
+                          <i [ngClass]="['pi', exportingItemId() === c.id ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="drawer-icon-btn"
+                          title="Exportar Markdown"
+                          [disabled]="exportingItemId() !== null"
+                          (click)="exportChecklist(c.id, 'markdown', c.title)"
+                        >
+                          <i class="pi pi-file" aria-hidden="true"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="drawer-icon-btn drawer-icon-btn--danger"
+                          title="Eliminar checklist"
+                          (click)="deleteChecklist(c.id)"
+                        >
+                          <i class="pi pi-trash" aria-hidden="true"></i>
+                        </button>
                       </div>
-                      <div class="drawer-share-actions">
-                        <button type="button" class="drawer-linkish" (click)="openChecklist(c.id)">Ver / Editar</button>
-                        <button type="button" class="drawer-linkish" [disabled]="exportingItemId() !== null" (click)="exportChecklist(c.id, 'pdf', c.title)">PDF</button>
-                        <button type="button" class="drawer-linkish" [disabled]="exportingItemId() !== null" (click)="exportChecklist(c.id, 'markdown', c.title)">MD</button>
-                        <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="deleteChecklist(c.id)">Borrar</button>
-                      </div>
-                    </li>
-                  }
-                </ul>
+                    </div>
+                  </li>
+                }
+              </ul>
+              @if (checklistsHasNext() || checklistsHasPrev()) {
+                <div class="drawer-pagination">
+                  <button
+                    type="button"
+                    class="drawer-pagination__btn"
+                    [disabled]="!checklistsHasPrev() || checklistsLoading()"
+                    (click)="checklistsPrevPage()"
+                    aria-label="Página anterior"
+                  >
+                    <i class="pi pi-chevron-left" aria-hidden="true"></i>
+                  </button>
+                  <span class="drawer-pagination__info">Pág. {{ checklistsPage() }} · {{ checklistsTotalCount() }} total</span>
+                  <button
+                    type="button"
+                    class="drawer-pagination__btn"
+                    [disabled]="!checklistsHasNext() || checklistsLoading()"
+                    (click)="checklistsNextPage()"
+                    aria-label="Página siguiente"
+                  >
+                    <i class="pi pi-chevron-right" aria-hidden="true"></i>
+                  </button>
+                </div>
               }
             }
           }

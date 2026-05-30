@@ -1,0 +1,88 @@
+<div class="re-root">
+  @if (loading()) {
+    <div class="re-loading">
+      <i class="pi pi-spin pi-spinner re-loading__spinner" aria-hidden="true"></i>
+      <p class="re-loading__text">Cargando informe…</p>
+    </div>
+  } @else if (report(); as r) {
+    <header class="re-bar">
+      <button type="button" class="re-back" (click)="goBack()">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        Volver
+      </button>
+
+      <div class="re-bar__identity">
+        <span class="re-type-badge">{{ r.type }}</span>
+        <input
+          class="re-title"
+          type="text"
+          [value]="editTitle()"
+          (input)="editTitle.set($any($event.target).value)"
+          placeholder="Título del informe"
+          maxlength="255"
+          aria-label="Título del informe"
+        />
+      </div>
+
+      <div class="re-bar__actions">
+        <button
+          type="button"
+          class="re-action-btn"
+          title="Exportar como PDF"
+          [disabled]="exportingAs() !== null"
+          (click)="export('pdf')"
+        >
+          <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
+          <span>PDF</span>
+        </button>
+        <button
+          type="button"
+          class="re-action-btn"
+          title="Exportar como Markdown"
+          [disabled]="exportingAs() !== null"
+          (click)="export('markdown')"
+        >
+          <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
+          <span>MD</span>
+        </button>
+        <button
+          type="button"
+          class="re-action-btn re-action-btn--primary"
+          [disabled]="saving() || !hasChanges()"
+          (click)="save()"
+        >
+          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
+          Guardar
+        </button>
+      </div>
+    </header>
+
+    <div class="re-meta">
+      <span class="re-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ r.created_at | date: 'mediumDate' }}
+      </span>
+      <span class="re-meta__chip">
+        <i class="pi pi-bolt" aria-hidden="true"></i>
+        {{ r.mode === 'rag' ? 'RAG' : 'Directo' }}
+      </span>
+      @if (hasChanges()) {
+        <span class="re-meta__chip re-meta__chip--unsaved">
+          <i class="pi pi-circle-fill" aria-hidden="true"></i>
+          Sin guardar
+        </span>
+      }
+    </div>
+
+    <div class="re-editor">
+      <textarea
+        class="re-textarea"
+        aria-label="Contenido del informe"
+        [value]="editContent()"
+        (input)="editContent.set($any($event.target).value)"
+        placeholder="Escribe el contenido del informe aquí…"
+        spellcheck="false"
+      ></textarea>
+    </div>
+  }
+</div>

@@ -411,6 +411,12 @@ export class AuraChatServiceHttp {
     return this.http.post<void>(`${this.membersRoot(chatId)}leave/`, {});
   }
 
+  listMyMemberships(query: { status?: string; page?: number; page_size?: number } = {}): Observable<PageNumberResult<MembershipDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.status) p = p.set('status', query.status);
+    return this.http.get<PageNumberResult<MembershipDto>>(`${this.base}/memberships/me/`, { params: p });
+  }
+
   patchMemberRole(
     chatId: number,
     memberId: number,

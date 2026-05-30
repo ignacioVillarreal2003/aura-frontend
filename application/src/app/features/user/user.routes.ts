@@ -18,6 +18,13 @@ export const USER_ROUTES: Routes = [
           import('./components/user-profile/user-profile.component').then((m) => m.UserProfileComponent),
       },
       {
+        path: 'invitations',
+        loadComponent: () =>
+          import('./components/user-invitations/user-invitations.component').then(
+            (m) => m.UserInvitationsComponent,
+          ),
+      },
+      {
         path: 'notifications',
         loadComponent: () =>
           import('./components/user-notifications/user-notifications.component').then(

@@ -1,0 +1,211 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-primary, #0f0f11);
+  color: var(--text-primary, #fafaf9);
+}
+
+.re-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Loading */
+.re-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 14px;
+  color: var(--text-secondary, #9a9aa3);
+}
+
+.re-loading__spinner {
+  font-size: 28px;
+  color: #6366f1;
+}
+
+.re-loading__text {
+  font-size: 14px;
+}
+
+/* Top bar */
+.re-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.re-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--text-secondary, #9a9aa3);
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.re-back:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-primary, #fafaf9);
+}
+
+.re-bar__identity {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.re-type-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.re-title {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #fafaf9);
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 2px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.re-title:focus {
+  border-bottom-color: rgba(99, 102, 241, 0.6);
+}
+
+.re-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.re-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary, #9a9aa3);
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.re-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #fafaf9);
+}
+
+.re-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.re-action-btn--primary {
+  background: rgba(99, 102, 241, 0.85);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #fff;
+}
+
+.re-action-btn--primary:hover:not(:disabled) {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+/* Meta strip */
+.re-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 7px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.re-meta__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.re-meta__chip .pi-circle-fill {
+  font-size: 7px;
+}
+
+.re-meta__chip--unsaved {
+  color: #fbbf24;
+}
+
+/* Editor */
+.re-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px 24px;
+}
+
+.re-textarea {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary, #fafaf9);
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+  font-size: 13.5px;
+  line-height: 1.75;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.re-textarea:focus {
+  border-color: rgba(99, 102, 241, 0.4);
+}

@@ -1,0 +1,104 @@
+<div class="inv-root">
+  <div class="inv-header">
+    <div class="inv-header__left">
+      <h1 class="inv-title">Invitaciones a chats</h1>
+      <p class="inv-subtitle">Chats a los que fuiste invitado</p>
+    </div>
+    <div class="inv-tabs">
+      <button
+        type="button"
+        class="inv-tab"
+        [class.inv-tab--active]="filter() === 'pending'"
+        (click)="setFilter('pending')"
+      >
+        Pendientes
+      </button>
+      <button
+        type="button"
+        class="inv-tab"
+        [class.inv-tab--active]="filter() === 'all'"
+        (click)="setFilter('all')"
+      >
+        Todas
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="inv-loading">
+      <i class="pi pi-spin pi-spinner inv-loading__icon" aria-hidden="true"></i>
+      <span>Cargando…</span>
+    </div>
+  } @else if (memberships().length === 0) {
+    <div class="inv-empty">
+      <i class="pi pi-envelope-open inv-empty__icon" aria-hidden="true"></i>
+      <p class="inv-empty__title">
+        {{ filter() === 'pending' ? 'Sin invitaciones pendientes' : 'Sin membresías' }}
+      </p>
+      <p class="inv-empty__hint">
+        {{ filter() === 'pending' ? 'Cuando alguien te invite a un chat aparecerá aquí.' : 'No tenés membresías activas ni pasadas.' }}
+      </p>
+    </div>
+  } @else {
+    <ul class="inv-list">
+      @for (m of memberships(); track m.id) {
+        <li class="inv-card" [class.inv-card--pending]="m.status === 'pending'">
+          <div class="inv-card__icon-wrap">
+            <i class="pi pi-comments inv-card__icon" aria-hidden="true"></i>
+          </div>
+
+          <div class="inv-card__body">
+            <div class="inv-card__top">
+              <span class="inv-card__chat-name">{{ m.chat_name }}</span>
+              <span class="inv-card__status inv-card__status--{{ m.status }}">
+                {{ statusLabel(m.status) }}
+              </span>
+            </div>
+            <div class="inv-card__meta">
+              <span class="inv-card__meta-chip">
+                <i class="pi pi-user" aria-hidden="true"></i>
+                {{ roleLabel(m.role) }}
+              </span>
+              <span class="inv-card__meta-chip">
+                <i class="pi pi-calendar" aria-hidden="true"></i>
+                {{ m.created_at | date: 'mediumDate' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="inv-card__actions">
+            @if (m.status === 'pending') {
+              <button
+                type="button"
+                class="inv-btn inv-btn--accept"
+                [disabled]="actioningId() === m.id"
+                (click)="accept(m)"
+              >
+                @if (actioningId() === m.id) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-check" aria-hidden="true"></i>
+                }
+                Aceptar
+              </button>
+              <button
+                type="button"
+                class="inv-btn inv-btn--decline"
+                [disabled]="actioningId() === m.id"
+                (click)="decline(m)"
+              >
+                <i class="pi pi-times" aria-hidden="true"></i>
+                Rechazar
+              </button>
+            } @else if (m.status === 'active') {
+              <button type="button" class="inv-btn inv-btn--goto" (click)="goToChat(m.chat_id)">
+                <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                Ir al chat
+              </button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>

@@ -24,6 +24,18 @@ export const chatShellRoutes: Routes = [
         loadComponent: () =>
           import('./components/chat-session/chat-session').then((m) => m.ChatSessionComponent),
       },
+      {
+        path: 'report/:id',
+        loadComponent: () =>
+          import('./components/report-editor/report-editor').then((m) => m.ReportEditorComponent),
+      },
+      {
+        path: 'checklist/:id',
+        loadComponent: () =>
+          import('./components/checklist-editor/checklist-editor').then(
+            (m) => m.ChecklistEditorComponent
+          ),
+      },
     ],
   },
 ];

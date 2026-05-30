@@ -56,7 +56,7 @@ export class ChatSidebarComponent implements OnInit {
   }
 
   reloadChats(): void {
-    this.chatHttp.listMyChats({ page_size: 50 }).subscribe({
+    this.chatHttp.listChats({ page_size: 50 }).subscribe({
       next: (page) => {
         this.chats.set([...page.results]);
       },
