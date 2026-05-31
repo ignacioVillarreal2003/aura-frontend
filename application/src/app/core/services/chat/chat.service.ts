@@ -1,4 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
+import { Subject } from 'rxjs';
 
 export interface ChatShellContext {
   readonly id: number;
@@ -8,6 +9,13 @@ export interface ChatShellContext {
 @Injectable({ providedIn: 'root' })
 export class ChatService {
   private readonly activeChat = signal<ChatShellContext | null>(null);
+
+  private readonly _sidebarReload$ = new Subject<void>();
+  readonly sidebarReload$ = this._sidebarReload$.asObservable();
+
+  triggerSidebarReload(): void {
+    this._sidebarReload$.next();
+  }
 
   readonly sessionViewerDisplayName = signal('');
   readonly sessionViewerMemberId = signal<number | null>(null);

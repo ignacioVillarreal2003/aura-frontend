@@ -101,10 +101,18 @@ export class ChatSessionComponent implements OnDestroy {
   readonly canChecklist = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_CHECKLIST_GENERATE'));
 
   private chatId: number | null = null;
+  private wsSessionId = 0;
   private socket: ChatSocketConnection | null = null;
   private wsMessagesSub: Subscription | undefined;
   private typingOutTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly peerTypingTimers = new Map<number, ReturnType<typeof setTimeout>>();
+
+  // ── Voice recording ──────────────────────────────────────────
+  readonly voiceState = signal<'idle' | 'recording' | 'processing'>('idle');
+  readonly recordingSeconds = signal(0);
+  private _mediaRecorder: MediaRecorder | null = null;
+  private _audioChunks: Blob[] = [];
+  private _recordingTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly streamingAssistantId = signal<number | null>(null);
   readonly pinnedMessageIds = signal<Set<number>>(new Set());
@@ -191,6 +199,7 @@ export class ChatSessionComponent implements OnDestroy {
           this.isTyping.set(false);
 
           this.chatId = id;
+          const sessionId = ++this.wsSessionId;
           this.docDropOverlayVisible.set(false);
           this.sessionDocuments.set([]);
           this.composerMode.set('chat');
@@ -220,9 +229,18 @@ export class ChatSessionComponent implements OnDestroy {
               this.pinnedMessageIds.set(new Set(pinned.results.map((p: PinnedMessageDto) => p.message_id)));
               this.loading = false;
               this.http.markChatAsRead(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-              void this.openWebSocketAfterLoad(id, pending);
+              void this.openWebSocketAfterLoad(id, sessionId, pending);
               setTimeout(() => this.scrollToBottom(), 100);
               queueMicrotask(() => this.autosizeTextarea());
+
+              const gen = this.consumePendingGenerationFromHistory();
+              if (gen) {
+                this.composerMode.set(gen.mode);
+                this.genMode.set(gen.genMode);
+                this.genMessage.set(gen.message);
+                if (gen.type) this.genReportType.set(gen.type);
+                setTimeout(() => this.generateTool(), 100);
+              }
             }),
           );
         }),
@@ -408,17 +426,10 @@ export class ChatSessionComponent implements OnDestroy {
     this.docDropOverlayVisible.set(false);
   }
 
-  onDrawerChatAction(e: { chatId: number; action: string }): void {
+  onDrawerChatAction(e: { chatId: number; action: string; tags?: readonly string[] }): void {
     if (e.action === 'delete') {
-      if (!window.confirm('¿Eliminar esta conversación?')) return;
-      this.http.deleteChat(e.chatId).subscribe({
-        next: () => {
-          this.toast.show('Chat eliminado.', 'success');
-          this.optionsOpen.set(false);
-          void this.router.navigate(['/main-container', 'chat-home']);
-        },
-        error: () => this.toast.show('No se pudo eliminar el chat.', 'error'),
-      });
+      this.optionsOpen.set(false);
+      void this.router.navigate(['/main-container', 'chat-home']);
       return;
     }
     if (e.action === 'leave' || e.action === 'archive') {
@@ -429,20 +440,35 @@ export class ChatSessionComponent implements OnDestroy {
       this.messages.set([]);
       return;
     }
-    if (e.action === 'lock' && this.chat) {
+    if (e.action === 'tags-updated' && this.chat && this.chat.id === e.chatId && e.tags != null) {
+      this.chat = { ...this.chat, tags: e.tags };
+    }
+    const sidebarReloadActions = new Set(['pin', 'unpin', 'lock', 'unlock', 'mute', 'unmute', 'tags-updated']);
+    if (sidebarReloadActions.has(e.action)) {
+      this.chatShell.triggerSidebarReload();
+    }
+    if (e.action === 'lock' && this.chat && this.chat.id === e.chatId) {
       this.chat = { ...this.chat, is_locked: true };
       return;
     }
-    if (e.action === 'unlock' && this.chat) {
+    if (e.action === 'unlock' && this.chat && this.chat.id === e.chatId) {
       this.chat = { ...this.chat, is_locked: false };
       return;
     }
-    if (e.action === 'pin') {
-      if (this.chat) this.chat = { ...this.chat, is_pinned: true };
+    if (e.action === 'pin' && this.chat && this.chat.id === e.chatId) {
+      this.chat = { ...this.chat, is_pinned: true };
       return;
     }
-    if (e.action === 'unpin') {
-      if (this.chat) this.chat = { ...this.chat, is_pinned: false };
+    if (e.action === 'unpin' && this.chat && this.chat.id === e.chatId) {
+      this.chat = { ...this.chat, is_pinned: false };
+      return;
+    }
+    if (e.action === 'mute' && this.chat && this.chat.id === e.chatId) {
+      this.chat = { ...this.chat, is_muted: true };
+      return;
+    }
+    if (e.action === 'unmute' && this.chat && this.chat.id === e.chatId) {
+      this.chat = { ...this.chat, is_muted: false };
       return;
     }
   }
@@ -454,7 +480,138 @@ export class ChatSessionComponent implements OnDestroy {
     }
   }
 
+  // ── Voice recording ──────────────────────────────────────────
+  async startRecording(): Promise<void> {
+    if (this.voiceState() !== 'idle') return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+
+      this._audioChunks = [];
+      this._mediaRecorder = new MediaRecorder(stream, { mimeType });
+      this._mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) this._audioChunks.push(e.data);
+      };
+      this._mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        this._sendAudio(new Blob(this._audioChunks, { type: mimeType }));
+      };
+
+      this._mediaRecorder.start(200);
+      this.voiceState.set('recording');
+      this.recordingSeconds.set(0);
+      this._recordingTimer = setInterval(() => {
+        this.recordingSeconds.update((s) => s + 1);
+        if (this.recordingSeconds() >= 120) this.stopRecording();
+      }, 1000);
+    } catch {
+      this.toast.show('No se pudo acceder al micrófono.', 'error');
+    }
+  }
+
+  stopRecording(): void {
+    if (this.voiceState() !== 'recording') return;
+    if (this._recordingTimer != null) {
+      clearInterval(this._recordingTimer);
+      this._recordingTimer = null;
+    }
+    this._mediaRecorder?.stop();
+    this.voiceState.set('processing');
+  }
+
+  cancelRecording(): void {
+    if (this._recordingTimer != null) {
+      clearInterval(this._recordingTimer);
+      this._recordingTimer = null;
+    }
+    if (this._mediaRecorder && this._mediaRecorder.state !== 'inactive') {
+      this._mediaRecorder.onstop = null;
+      this._mediaRecorder.stop();
+      this._mediaRecorder.stream?.getTracks().forEach((t) => t.stop());
+    }
+    this._mediaRecorder = null;
+    this._audioChunks = [];
+    this.voiceState.set('idle');
+    this.recordingSeconds.set(0);
+  }
+
+  private _sendAudio(blob: Blob): void {
+    const chatId = this.chatId;
+    if (!chatId) { this.voiceState.set('idle'); return; }
+
+    const mode = this.composerMode();
+    const formData = new FormData();
+    formData.append('audio', blob, 'recording.webm');
+
+    const done = () => { this.voiceState.set('idle'); this.recordingSeconds.set(0); };
+
+    if (mode === 'report') {
+      formData.append('type', this.genReportType());
+      formData.append('mode', this.genMode());
+      formData.append('chat_id', String(chatId));
+      this.http.generateReport(formData)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            done();
+            this.genMessage.set('');
+            this.composerMode.set('chat');
+            this.toast.show('Informe generado. Disponible en Opciones del chat → Informes.', 'success');
+          },
+          error: () => { done(); this.toast.show('No se pudo generar el informe.', 'error'); },
+        });
+      return;
+    }
+
+    if (mode === 'checklist') {
+      formData.append('mode', this.genMode());
+      formData.append('chat_id', String(chatId));
+      this.http.generateChecklist(formData)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            done();
+            this.genMessage.set('');
+            this.composerMode.set('chat');
+            this.toast.show('Checklist generada. Disponible en Opciones del chat → Checklists.', 'success');
+          },
+          error: () => { done(); this.toast.show('No se pudo generar la checklist.', 'error'); },
+        });
+      return;
+    }
+
+    // chat mode — transcribe only, then send via WS for full streaming
+    this.http.transcribeAudio(chatId, formData)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          done();
+          const text = res.transcript?.trim();
+          if (!text) {
+            this.toast.show('No se pudo obtener texto del audio.', 'error');
+            return;
+          }
+          if (!this.socket) {
+            this.toast.show('Sin conexión en tiempo real. Reconectá e intentá de nuevo.', 'error');
+            return;
+          }
+          this.socket.sendUserMessage(text);
+        },
+        error: () => { done(); this.toast.show('No se pudo transcribir el audio.', 'error'); },
+      });
+  }
+
+  get recordingLabel(): string {
+    const s = this.recordingSeconds();
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  }
+
   ngOnDestroy(): void {
+    this.cancelRecording();
     this.teardownSocket();
     this.clearDeltaScheduling();
     this.chatShell.clearCurrentChat();
@@ -886,8 +1043,31 @@ export class ChatSessionComponent implements OnDestroy {
     return pending?.trim() || undefined;
   }
 
-  private async openWebSocketAfterLoad(expectedChatId: number, pending?: string): Promise<void> {
-    if (this.chatId !== expectedChatId) return;
+  private consumePendingGenerationFromHistory(): {
+    mode: 'report' | 'checklist';
+    type?: ReportType;
+    genMode: 'direct' | 'rag';
+    message: string;
+  } | undefined {
+    const navState = history.state as Record<string, unknown> | null;
+    const raw = navState?.['pendingGeneration'];
+    if (navState && 'pendingGeneration' in (navState ?? {})) {
+      const { pendingGeneration: _g, ...rest } = navState as Record<string, unknown>;
+      history.replaceState(rest, '');
+    }
+    if (!raw || typeof raw !== 'object') return undefined;
+    const g = raw as Record<string, unknown>;
+    if (g['mode'] !== 'report' && g['mode'] !== 'checklist') return undefined;
+    return {
+      mode: g['mode'] as 'report' | 'checklist',
+      type: g['type'] as ReportType | undefined,
+      genMode: (g['genMode'] === 'rag' ? 'rag' : 'direct'),
+      message: String(g['message'] ?? ''),
+    };
+  }
+
+  private async openWebSocketAfterLoad(expectedChatId: number, sessionId: number, pending?: string): Promise<void> {
+    if (this.chatId !== expectedChatId || this.wsSessionId !== sessionId) return;
     const conn = this.wsFactory.open(expectedChatId, this.auth.getToken());
     if (!conn) {
       if (pending) {
@@ -904,7 +1084,7 @@ export class ChatSessionComponent implements OnDestroy {
     try {
       await conn.whenOpen;
     } catch {
-      if (this.chatId !== expectedChatId) {
+      if (this.chatId !== expectedChatId || this.wsSessionId !== sessionId) {
         return;
       }
       if (pending?.trim()) {
@@ -913,7 +1093,7 @@ export class ChatSessionComponent implements OnDestroy {
       return;
     }
 
-    if (this.chatId !== expectedChatId) {
+    if (this.chatId !== expectedChatId || this.wsSessionId !== sessionId) {
       conn.close();
       return;
     }
@@ -1063,6 +1243,18 @@ export class ChatSessionComponent implements OnDestroy {
         this.cdr.markForCheck();
         break;
       }
+      case 'chat_ai_lock':
+        if (msg.locked) {
+          this.isTyping.set(true);
+        } else {
+          // Lock released without an ai_complete — clear processing indicators.
+          if (this.streamingAssistantId() === null) {
+            this.isTyping.set(false);
+            this.aiProgressStep.set(null);
+          }
+        }
+        this.cdr.markForCheck();
+        break;
       case 'chat_locked_changed':
         if (this.chat) {
           this.chat = { ...this.chat, is_locked: msg.is_locked };

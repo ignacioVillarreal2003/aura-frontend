@@ -49,10 +49,6 @@ import type {
   UpdateMemberRoleBody,
   UpdateMemberStatusBody,
   UpdateReportBody,
-  WebhookCreateBody,
-  WebhookCreatedDto,
-  WebhookDto,
-  WebhookPatchBody,
 } from '@aura-types/aura-chat-service.types';
 
 interface PageFollowQuery {
@@ -194,38 +190,6 @@ export class AuraChatServiceHttp {
     return this.http.delete<void>(`${this.chatDetail(chatId)}share-links/${linkId}/`);
   }
 
-  listWebhooks(
-    chatId: number,
-    query: PageFollowQuery = {},
-  ): Observable<PageNumberResult<WebhookDto>> {
-    if (query.url) {
-      return this.http.get<PageNumberResult<WebhookDto>>(query.url);
-    }
-    return this.http.get<PageNumberResult<WebhookDto>>(
-      `${this.chatDetail(chatId)}webhooks/`,
-      { params: this.paramsForPaging(query) },
-    );
-  }
-
-  createWebhook(chatId: number, body: WebhookCreateBody): Observable<WebhookCreatedDto> {
-    return this.http.post<WebhookCreatedDto>(`${this.chatDetail(chatId)}webhooks/`, body);
-  }
-
-  patchWebhook(
-    chatId: number,
-    webhookId: number,
-    body: WebhookPatchBody,
-  ): Observable<WebhookDto> {
-    return this.http.patch<WebhookDto>(
-      `${this.chatDetail(chatId)}webhooks/${webhookId}/`,
-      body,
-    );
-  }
-
-  deleteWebhook(chatId: number, webhookId: number): Observable<void> {
-    return this.http.delete<void>(`${this.chatDetail(chatId)}webhooks/${webhookId}/`);
-  }
-
   listMessages(
     chatId: number,
     query: CursorFollowQuery = {},
@@ -247,6 +211,10 @@ export class AuraChatServiceHttp {
 
   sendMessageMultipart(chatId: number, formData: FormData): Observable<SendMessageResponseDto> {
     return this.http.post<SendMessageResponseDto>(this.messagesRoot(chatId), formData);
+  }
+
+  transcribeAudio(chatId: number, formData: FormData): Observable<{ transcript: string }> {
+    return this.http.post<{ transcript: string }>(`${this.messagesRoot(chatId)}transcribe/`, formData);
   }
 
   clearChatHistory(chatId: number): Observable<void> {
@@ -437,7 +405,7 @@ export class AuraChatServiceHttp {
     return this.http.get<PageNumberResult<ReportListItemDto>>(`${this.base}/reports/`, { params: p });
   }
 
-  generateReport(body: GenerateReportBody): Observable<ReportGenerateResponseDto> {
+  generateReport(body: GenerateReportBody | FormData): Observable<ReportGenerateResponseDto> {
     return this.http.post<ReportGenerateResponseDto>(`${this.base}/reports/generate/`, body);
   }
 
@@ -469,7 +437,7 @@ export class AuraChatServiceHttp {
     return this.http.get<PageNumberResult<ChecklistListItemDto>>(`${this.base}/checklists/`, { params: p });
   }
 
-  generateChecklist(body: GenerateChecklistBody): Observable<ChecklistGenerateResponseDto> {
+  generateChecklist(body: GenerateChecklistBody | FormData): Observable<ChecklistGenerateResponseDto> {
     return this.http.post<ChecklistGenerateResponseDto>(`${this.base}/checklists/generate/`, body);
   }
 

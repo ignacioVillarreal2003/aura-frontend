@@ -73,16 +73,6 @@ export type MembershipRole = 'owner' | 'editor' | 'reader';
 
 export type FeedbackValue = 1 | -1;
 
-export const AURA_CHAT_WEBHOOK_EVENTS = [
-  'message.created',
-  'member.joined',
-  'member.left',
-  'chat.locked',
-  'chat.unlocked',
-] as const;
-
-export type WebhookEvent = (typeof AURA_CHAT_WEBHOOK_EVENTS)[number];
-
 export type HealthStatus = 'ok' | 'degraded';
 
 export type HealthCheckEntry = Record<string, 'ok' | 'error'>;
@@ -223,20 +213,6 @@ export interface ShareLinkDto {
   readonly is_active: boolean;
 }
 
-export interface WebhookDto {
-  readonly id: number;
-  readonly chat_id: number;
-  readonly url: string;
-  readonly events: readonly WebhookEvent[];
-  readonly is_active: boolean;
-  readonly created_by: number;
-  readonly created_at: IsoDateTimeString;
-}
-
-export interface WebhookCreatedDto extends WebhookDto {
-  readonly secret: string;
-}
-
 export interface HealthResponseDto {
   readonly status: HealthStatus;
   readonly checks: HealthCheckEntry;
@@ -276,17 +252,6 @@ export interface BulkChatIdsBody {
 
 export interface ShareLinkCreateBody {
   readonly expires_at?: IsoDateTimeString | null;
-}
-
-export interface WebhookCreateBody {
-  readonly url: string;
-  readonly events: readonly WebhookEvent[];
-}
-
-export interface WebhookPatchBody {
-  readonly url?: string;
-  readonly events?: readonly WebhookEvent[];
-  readonly is_active?: boolean;
 }
 
 export interface SendThreadReplyBody {

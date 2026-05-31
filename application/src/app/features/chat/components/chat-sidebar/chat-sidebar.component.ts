@@ -1,5 +1,6 @@
 import {
   Component,
+  DestroyRef,
   EventEmitter,
   Input,
   OnInit,
@@ -8,6 +9,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ChatOptionsDrawer } from '../chat-options-drawer/chat-options-drawer';
@@ -16,6 +18,7 @@ import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-serv
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { ToastService } from '@core/components/toast-service';
 import { NotificationState } from '@core/state/notification.state';
+import { ChatService } from '@core/services/chat/chat.service';
 import type { ChatListItemDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
@@ -30,6 +33,8 @@ export class ChatSidebarComponent implements OnInit {
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
+  private readonly chatService = inject(ChatService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly notifState = inject(NotificationState);
 
   @Input() collapsed = false;
@@ -53,6 +58,9 @@ export class ChatSidebarComponent implements OnInit {
 
   ngOnInit(): void {
     this.reloadChats();
+    this.chatService.sidebarReload$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.reloadChats());
   }
 
   reloadChats(): void {
@@ -95,6 +103,7 @@ export class ChatSidebarComponent implements OnInit {
       archived_at: row.archived_at,
       is_locked: row.is_locked,
       is_muted: row.is_muted,
+      tags: row.tags ?? [],
     });
     this.chatActionsDrawerOpen.set(true);
   }
@@ -110,12 +119,28 @@ export class ChatSidebarComponent implements OnInit {
     this.reloadChats();
   }
 
-  onDrawerChatAction(data: { chatId: number; action: string }): void {
+  onDrawerChatAction(data: { chatId: number; action: string; tags?: readonly string[] }): void {
     const id = data.chatId;
     if (!Number.isFinite(id)) return;
 
+    this.drawerContextChat.update((c) => {
+      if (!c || c.id !== data.chatId) return c;
+      switch (data.action) {
+        case 'mute':      return { ...c, is_muted: true };
+        case 'unmute':    return { ...c, is_muted: false };
+        case 'pin':       return { ...c, is_pinned: true };
+        case 'unpin':     return { ...c, is_pinned: false };
+        case 'lock':      return { ...c, is_locked: true };
+        case 'unlock':    return { ...c, is_locked: false };
+        case 'archive':      return { ...c, archived_at: new Date().toISOString() };
+        case 'unarchive':    return { ...c, archived_at: null };
+        case 'tags-updated': return { ...c, tags: data.tags ?? c.tags };
+        default:             return c;
+      }
+    });
+
     const navigateAwayActions = new Set(['leave', 'archive']);
-    const reloadActions = new Set(['leave', 'archive', 'unarchive', 'pin', 'unpin', 'lock', 'unlock', 'mute', 'unmute']);
+    const reloadActions = new Set(['leave', 'archive', 'unarchive', 'pin', 'unpin', 'lock', 'unlock', 'mute', 'unmute', 'tags-updated']);
 
     if (reloadActions.has(data.action)) {
       this.reloadChats();

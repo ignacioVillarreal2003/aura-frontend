@@ -72,9 +72,6 @@
                         [routerLink]="['/main-container', 'chat', c.id]">
                         <i [ngClass]="['pi', c.is_pinned ? 'pi-thumbtack' : 'pi-comments']" aria-hidden="true"></i>
                         <span class="sidebar-link__text">{{ c.name }}</span>
-                        @if (c.is_muted) {
-                          <i class="pi pi-volume-off sidebar-chat-badge" title="Silenciado" aria-label="Silenciado" aria-hidden="true"></i>
-                        }
                         @if (c.is_locked) {
                           <i class="pi pi-lock sidebar-chat-badge" title="Bloqueado" aria-label="Bloqueado" aria-hidden="true"></i>
                         }

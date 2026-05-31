@@ -18,7 +18,6 @@ import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/
 import { ToastService } from '@core/components/toast-service';
 import { UserState } from '@core/state/user.state';
 import {
-  AURA_CHAT_WEBHOOK_EVENTS,
   type ChatExportBackupDto,
   type ChecklistListItemDto,
   type MembershipDto,
@@ -28,8 +27,6 @@ import {
   type PinnedMessageDto,
   type ReportListItemDto,
   type ShareLinkDto,
-  type WebhookDto,
-  type WebhookEvent,
 } from '@aura-types/aura-chat-service.types';
 
 export interface ChatRef {
@@ -39,6 +36,13 @@ export interface ChatRef {
   readonly archived_at: string | null;
   readonly is_locked: boolean;
   readonly is_muted: boolean;
+  readonly tags: readonly string[];
+}
+
+interface ConfirmOpts {
+  readonly title: string;
+  readonly description?: string;
+  readonly onConfirm: () => void;
 }
 
 export interface DocumentItem {
@@ -48,7 +52,7 @@ export interface DocumentItem {
   readonly created_at: string;
 }
 
-type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'mute' | 'webhooks' | 'pinned' | 'bookmarks' | 'export' | 'reports' | 'checklists' | 'rename';
+type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'mute' | 'pinned' | 'bookmarks' | 'export' | 'reports' | 'checklists' | 'rename' | 'tags';
 
 @Component({
   selector: 'app-chat-options-drawer',
@@ -91,7 +95,7 @@ export class ChatOptionsDrawer {
   readonly uploadDisabled = input(false);
 
   readonly documentSelected = output<File>();
-  readonly chatAction = output<{ chatId: number; action: string }>();
+  readonly chatAction = output<{ chatId: number; action: string; tags?: readonly string[] }>();
   readonly chatMetaUpdated = output<{ chatId: number; name: string }>();
 
   readonly panelView = signal<PanelView>('root');
@@ -104,12 +108,6 @@ export class ChatOptionsDrawer {
   readonly deletingDocId = signal<number | null>(null);
   readonly shareLinks = signal<ShareLinkDto[]>([]);
   readonly shareLinksLoading = signal(false);
-  readonly webhooks = signal<WebhookDto[]>([]);
-  readonly webhooksLoading = signal(false);
-  readonly showWebhookForm = signal(false);
-  readonly newWebhookUrl = signal('');
-  readonly newWebhookEvents = signal<WebhookEvent[]>([]);
-  readonly webhookEventOptions = AURA_CHAT_WEBHOOK_EVENTS as readonly WebhookEvent[];
   readonly pinnedMessages = signal<PinnedMessageDto[]>([]);
   readonly pinnedLoading = signal(false);
   readonly bookmarkedMessages = signal<MessageDto[]>([]);
@@ -125,6 +123,8 @@ export class ChatOptionsDrawer {
   private readonly reportsPageSize = 8;
   readonly exportingItemId = signal<number | null>(null);
 
+  readonly pendingConfirm = signal<ConfirmOpts | null>(null);
+
   readonly checklists = signal<ChecklistListItemDto[]>([]);
   readonly checklistsLoading = signal(false);
   readonly checklistsPage = signal(1);
@@ -134,6 +134,9 @@ export class ChatOptionsDrawer {
   private readonly checklistsPageSize = 8;
   readonly renameValue = signal('');
   readonly renameSubmitting = signal(false);
+  readonly tagsInput = signal('');
+  readonly tagsDraft = signal<string[]>([]);
+  readonly tagsSubmitting = signal(false);
   readonly inviteInput = signal('');
   readonly inviteIds = signal<number[]>([]);
   readonly inviting = signal(false);
@@ -146,13 +149,13 @@ export class ChatOptionsDrawer {
       case 'documents': return 'Documentos';
       case 'share': return 'Compartir';
       case 'mute': return 'Silenciar chat';
-      case 'webhooks': return 'Webhooks';
       case 'pinned': return 'Mensajes fijados';
       case 'bookmarks': return 'Guardados';
       case 'export': return 'Exportar chat';
       case 'reports': return 'Informes';
       case 'checklists': return 'Checklists';
       case 'rename': return 'Cambiar nombre';
+      case 'tags': return 'Etiquetas';
       default: return this.panelTitle();
     }
   });
@@ -188,13 +191,31 @@ export class ChatOptionsDrawer {
     });
     effect(() => {
       if (!this.isOpen()) {
-        untracked(() => this.panelView.set('root'));
+        untracked(() => {
+          this.panelView.set('root');
+          this.pendingConfirm.set(null);
+        });
       }
     });
   }
 
   close(): void {
     this.isOpenChange.emit(false);
+  }
+
+  requestConfirm(opts: ConfirmOpts): void {
+    this.pendingConfirm.set(opts);
+  }
+
+  cancelConfirm(): void {
+    this.pendingConfirm.set(null);
+  }
+
+  runConfirm(): void {
+    const opts = this.pendingConfirm();
+    if (!opts) return;
+    this.pendingConfirm.set(null);
+    opts.onConfirm();
   }
 
   goRoot(): void {
@@ -213,10 +234,6 @@ export class ChatOptionsDrawer {
     if (view === 'share') {
       this.reloadShareLinks();
     }
-    if (view === 'webhooks') {
-      this.reloadWebhooks();
-      this.cancelWebhookForm();
-    }
     if (view === 'rename') {
       this.renameValue.set(this.contextChatTitle()?.trim() ?? '');
       this.renameSubmitting.set(false);
@@ -225,6 +242,11 @@ export class ChatOptionsDrawer {
       this.inviteInput.set('');
       this.inviteIds.set([]);
       this.inviting.set(false);
+    }
+    if (view === 'tags') {
+      this.tagsDraft.set([...(this.contextChat()?.tags ?? [])]);
+      this.tagsInput.set('');
+      this.tagsSubmitting.set(false);
     }
     if (view === 'pinned') {
       this.reloadPinnedMessages();
@@ -303,18 +325,55 @@ export class ChatOptionsDrawer {
   }
 
   deleteDocument(doc: DocumentItem): void {
-    if (!window.confirm(`¿Eliminar el documento "${doc.name}"?`)) return;
-    if (this.deletingDocId() !== null) return;
-    this.deletingDocId.set(doc.id);
-    this.docHttp.deleteDocument(doc.id).pipe(take(1)).subscribe({
+    this.requestConfirm({
+      title: `¿Eliminar "${doc.name}"?`,
+      onConfirm: () => {
+        if (this.deletingDocId() !== null) return;
+        this.deletingDocId.set(doc.id);
+        this.docHttp.deleteDocument(doc.id).pipe(take(1)).subscribe({
+          next: () => {
+            this.deletingDocId.set(null);
+            this.fetchedDocuments.update((docs) => docs.filter((d) => d.id !== doc.id));
+            this.toastService.show('Documento eliminado.', 'success');
+          },
+          error: () => {
+            this.deletingDocId.set(null);
+            this.toastService.show('No se pudo eliminar el documento.', 'error');
+          },
+        });
+      },
+    });
+  }
+
+  addTag(): void {
+    const raw = this.tagsInput().trim().toLowerCase();
+    if (!raw) return;
+    if (this.tagsDraft().includes(raw)) {
+      this.toastService.show('Esa etiqueta ya existe.', 'error');
+      return;
+    }
+    this.tagsDraft.update(tags => [...tags, raw]);
+    this.tagsInput.set('');
+  }
+
+  removeTag(tag: string): void {
+    this.tagsDraft.update(tags => tags.filter(t => t !== tag));
+  }
+
+  submitTags(): void {
+    const cid = this.contextChatId();
+    if (cid == null) return;
+    this.tagsSubmitting.set(true);
+    this.chatHttp.patchChat(cid, { tags: this.tagsDraft() }).subscribe({
       next: () => {
-        this.deletingDocId.set(null);
-        this.fetchedDocuments.update((docs) => docs.filter((d) => d.id !== doc.id));
-        this.toastService.show('Documento eliminado.', 'success');
+        this.toastService.show('Etiquetas actualizadas.', 'success');
+        this.chatAction.emit({ chatId: cid, action: 'tags-updated', tags: this.tagsDraft() });
+        this.tagsSubmitting.set(false);
+        this.openSub('chat');
       },
       error: () => {
-        this.deletingDocId.set(null);
-        this.toastService.show('No se pudo eliminar el documento.', 'error');
+        this.toastService.show('No se pudieron guardar las etiquetas.', 'error');
+        this.tagsSubmitting.set(false);
       },
     });
   }
@@ -342,18 +401,23 @@ export class ChatOptionsDrawer {
   deleteChatClick(): void {
     const cid = this.contextChatId();
     if (cid == null) return;
-    if (!window.confirm('¿Eliminar esta conversación?')) return;
-    this.chatHttp.deleteChat(cid).subscribe({
-      next: () => {
-        this.toastService.show('Chat eliminado.', 'success');
-        this.chatAction.emit({ chatId: cid, action: 'delete' });
-        const url = this.router.url.split('?')[0];
-        if (url.includes(`/main-container/chat/${cid}`)) {
-          void this.router.navigate(['/main-container', 'chat-home']);
-        }
-        this.close();
+    this.requestConfirm({
+      title: '¿Eliminar esta conversación?',
+      description: 'Esta acción no se puede deshacer.',
+      onConfirm: () => {
+        this.chatHttp.deleteChat(cid).subscribe({
+          next: () => {
+            this.toastService.show('Chat eliminado.', 'success');
+            this.chatAction.emit({ chatId: cid, action: 'delete' });
+            const url = this.router.url.split('?')[0];
+            if (url.includes(`/main-container/chat/${cid}`)) {
+              void this.router.navigate(['/main-container', 'chat-home']);
+            }
+            this.close();
+          },
+          error: () => this.toastService.show('No se pudo eliminar el chat.', 'error'),
+        });
       },
-      error: () => this.toastService.show('No se pudo eliminar el chat.', 'error'),
     });
   }
 
@@ -363,9 +427,10 @@ export class ChatOptionsDrawer {
     if (this._pinned()) {
       this.chatHttp.unpinChat(cid).subscribe({
         next: () => {
-          this._pinned.set(false);
           this.toastService.show('Chat desfijado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'unpin' });
+          if (this.contextChatId() !== cid) return;
+          this._pinned.set(false);
           this.close();
         },
         error: () => this.toastService.show('No se pudo desfijar el chat.', 'error'),
@@ -373,9 +438,10 @@ export class ChatOptionsDrawer {
     } else {
       this.chatHttp.pinChat(cid).subscribe({
         next: () => {
-          this._pinned.set(true);
           this.toastService.show('Chat fijado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'pin' });
+          if (this.contextChatId() !== cid) return;
+          this._pinned.set(true);
           this.close();
         },
         error: () => this.toastService.show('No se pudo fijar el chat.', 'error'),
@@ -391,6 +457,7 @@ export class ChatOptionsDrawer {
         next: () => {
           this.toastService.show('Chat desarchivado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'unarchive' });
+          if (this.contextChatId() !== cid) return;
           this.close();
         },
         error: () => this.toastService.show('No se pudo desarchivar el chat.', 'error'),
@@ -400,6 +467,7 @@ export class ChatOptionsDrawer {
         next: () => {
           this.toastService.show('Chat archivado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'archive' });
+          if (this.contextChatId() !== cid) return;
           this.close();
         },
         error: () => this.toastService.show('No se pudo archivar el chat.', 'error'),
@@ -415,6 +483,7 @@ export class ChatOptionsDrawer {
         next: () => {
           this.toastService.show('Chat desbloqueado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'unlock' });
+          if (this.contextChatId() !== cid) return;
           this.close();
         },
         error: () => this.toastService.show('No se pudo desbloquear el chat.', 'error'),
@@ -424,6 +493,7 @@ export class ChatOptionsDrawer {
         next: () => {
           this.toastService.show('Chat bloqueado.', 'success');
           this.chatAction.emit({ chatId: cid, action: 'lock' });
+          if (this.contextChatId() !== cid) return;
           this.close();
         },
         error: () => this.toastService.show('No se pudo bloquear el chat.', 'error'),
@@ -439,6 +509,7 @@ export class ChatOptionsDrawer {
       next: () => {
         this.toastService.show('Chat silenciado.', 'success');
         this.chatAction.emit({ chatId: cid, action: 'mute' });
+        if (this.contextChatId() !== cid) return;
         this.close();
       },
       error: () => this.toastService.show('No se pudo silenciar el chat.', 'error'),
@@ -452,6 +523,7 @@ export class ChatOptionsDrawer {
       next: () => {
         this.toastService.show('Sonido activado.', 'success');
         this.chatAction.emit({ chatId: cid, action: 'unmute' });
+        if (this.contextChatId() !== cid) return;
         this.close();
       },
       error: () => this.toastService.show('No se pudo activar el sonido.', 'error'),
@@ -535,14 +607,18 @@ export class ChatOptionsDrawer {
   leaveChat(): void {
     const cid = this.contextChatId();
     if (cid == null) return;
-    if (!window.confirm('¿Salir de este chat?')) return;
-    this.chatHttp.leaveChat(cid).subscribe({
-      next: () => {
-        this.toastService.show('Saliste del chat.', 'success');
-        this.chatAction.emit({ chatId: cid, action: 'leave' });
-        this.close();
+    this.requestConfirm({
+      title: '¿Salir de este chat?',
+      onConfirm: () => {
+        this.chatHttp.leaveChat(cid).subscribe({
+          next: () => {
+            this.toastService.show('Saliste del chat.', 'success');
+            this.chatAction.emit({ chatId: cid, action: 'leave' });
+            this.close();
+          },
+          error: () => this.toastService.show('No se pudo abandonar el chat.', 'error'),
+        });
       },
-      error: () => this.toastService.show('No se pudo abandonar el chat.', 'error'),
     });
   }
 
@@ -615,13 +691,17 @@ export class ChatOptionsDrawer {
   removeMember(row: MembershipDto): void {
     const cid = this.contextChatId();
     if (cid == null) return;
-    if (!window.confirm('¿Quitar a este participante del chat?')) return;
-    this.chatHttp.removeMember(cid, row.id).subscribe({
-      next: () => {
-        this.toastService.show('Participante eliminado.', 'success');
-        this.reloadMembers(cid);
+    this.requestConfirm({
+      title: '¿Quitar a este participante?',
+      onConfirm: () => {
+        this.chatHttp.removeMember(cid, row.id).subscribe({
+          next: () => {
+            this.toastService.show('Participante eliminado.', 'success');
+            this.reloadMembers(cid);
+          },
+          error: () => this.toastService.show('No se pudo quitar al participante.', 'error'),
+        });
       },
-      error: () => this.toastService.show('No se pudo quitar al participante.', 'error'),
     });
   }
 
@@ -629,111 +709,20 @@ export class ChatOptionsDrawer {
   clearChatHistory(): void {
     const cid = this.contextChatId();
     if (cid == null) return;
-    if (!window.confirm('¿Limpiar todo el historial de mensajes? Esta acción no se puede deshacer.')) return;
-    this.chatHttp.clearChatHistory(cid).subscribe({
-      next: () => {
-        this.toastService.show('Historial eliminado.', 'success');
-        this.chatAction.emit({ chatId: cid, action: 'clear-history' });
-        this.close();
+    this.requestConfirm({
+      title: '¿Limpiar el historial de mensajes?',
+      description: 'Esta acción no se puede deshacer.',
+      onConfirm: () => {
+        this.chatHttp.clearChatHistory(cid).subscribe({
+          next: () => {
+            this.toastService.show('Historial eliminado.', 'success');
+            this.chatAction.emit({ chatId: cid, action: 'clear-history' });
+            this.close();
+          },
+          error: () => this.toastService.show('No se pudo limpiar el historial.', 'error'),
+        });
       },
-      error: () => this.toastService.show('No se pudo limpiar el historial.', 'error'),
     });
-  }
-
-  reloadWebhooks(): void {
-    const cid = this.contextChatId();
-    if (cid == null) return;
-    this.webhooksLoading.set(true);
-    this.chatHttp
-      .listWebhooks(cid, { page_size: 20 })
-      .pipe(take(1))
-      .subscribe({
-        next: (page) => {
-          this.webhooks.set([...page.results]);
-          this.webhooksLoading.set(false);
-        },
-        error: () => {
-          this.webhooksLoading.set(false);
-          this.toastService.show('No se pudieron cargar los webhooks.', 'error');
-        },
-      });
-  }
-
-  isWebhookEventSelected(event: WebhookEvent): boolean {
-    return this.newWebhookEvents().includes(event);
-  }
-
-  toggleWebhookEvent(event: WebhookEvent): void {
-    const current = this.newWebhookEvents();
-    this.newWebhookEvents.set(
-      current.includes(event) ? current.filter((e) => e !== event) : [...current, event]
-    );
-  }
-
-  onWebhookUrlInput(domEvent: Event): void {
-    this.newWebhookUrl.set((domEvent.target as HTMLInputElement).value);
-  }
-
-  cancelWebhookForm(): void {
-    this.showWebhookForm.set(false);
-    this.newWebhookUrl.set('');
-    this.newWebhookEvents.set([]);
-  }
-
-  submitCreateWebhook(): void {
-    const cid = this.contextChatId();
-    if (cid == null) return;
-    const url = this.newWebhookUrl().trim();
-    const events = this.newWebhookEvents();
-    if (!url) {
-      this.toastService.show('La URL del webhook es requerida.', 'error');
-      return;
-    }
-    if (events.length === 0) {
-      this.toastService.show('Seleccioná al menos un evento.', 'error');
-      return;
-    }
-    this.chatHttp
-      .createWebhook(cid, { url, events })
-      .pipe(take(1))
-      .subscribe({
-        next: (created) => {
-          this.webhooks.update((list) => [created, ...list]);
-          this.toastService.show('Webhook creado.', 'success');
-          this.cancelWebhookForm();
-        },
-        error: () => this.toastService.show('No se pudo crear el webhook.', 'error'),
-      });
-  }
-
-  toggleWebhookActive(webhook: WebhookDto): void {
-    const cid = this.contextChatId();
-    if (cid == null) return;
-    this.chatHttp
-      .patchWebhook(cid, webhook.id, { is_active: !webhook.is_active })
-      .pipe(take(1))
-      .subscribe({
-        next: (updated) => {
-          this.webhooks.update((list) => list.map((w) => (w.id === updated.id ? updated : w)));
-        },
-        error: () => this.toastService.show('No se pudo actualizar el webhook.', 'error'),
-      });
-  }
-
-  deleteWebhookClick(webhookId: number): void {
-    const cid = this.contextChatId();
-    if (cid == null) return;
-    if (!window.confirm('¿Eliminar este webhook?')) return;
-    this.chatHttp
-      .deleteWebhook(cid, webhookId)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.webhooks.update((list) => list.filter((w) => w.id !== webhookId));
-          this.toastService.show('Webhook eliminado.', 'success');
-        },
-        error: () => this.toastService.show('No se pudo eliminar el webhook.', 'error'),
-      });
   }
 
   reloadPinnedMessages(): void {
@@ -877,23 +866,27 @@ export class ChatOptionsDrawer {
   }
 
   deleteReport(reportId: number): void {
-    if (!window.confirm('¿Eliminar este informe?')) return;
-    this.chatHttp
-      .deleteReport(reportId)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.reports.update((list) => list.filter((r) => r.id !== reportId));
-          this.toastService.show('Informe eliminado.', 'success');
-          if (this.reports().length === 0 && this.reportsPage() > 1) {
-            this.reportsPage.update((p) => p - 1);
-            this.reloadReports();
-          } else {
-            this.reportsTotalCount.update((c) => c - 1);
-          }
-        },
-        error: () => this.toastService.show('No se pudo eliminar el informe.', 'error'),
-      });
+    this.requestConfirm({
+      title: '¿Eliminar este informe?',
+      onConfirm: () => {
+        this.chatHttp
+          .deleteReport(reportId)
+          .pipe(take(1))
+          .subscribe({
+            next: () => {
+              this.reports.update((list) => list.filter((r) => r.id !== reportId));
+              this.toastService.show('Informe eliminado.', 'success');
+              if (this.reports().length === 0 && this.reportsPage() > 1) {
+                this.reportsPage.update((p) => p - 1);
+                this.reloadReports();
+              } else {
+                this.reportsTotalCount.update((c) => c - 1);
+              }
+            },
+            error: () => this.toastService.show('No se pudo eliminar el informe.', 'error'),
+          });
+      },
+    });
   }
 
   exportReport(reportId: number, format: 'pdf' | 'markdown', title: string): void {
@@ -955,23 +948,27 @@ export class ChatOptionsDrawer {
   }
 
   deleteChecklist(checklistId: number): void {
-    if (!window.confirm('¿Eliminar esta checklist?')) return;
-    this.chatHttp
-      .deleteChecklist(checklistId)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.checklists.update((list) => list.filter((c) => c.id !== checklistId));
-          this.toastService.show('Checklist eliminada.', 'success');
-          if (this.checklists().length === 0 && this.checklistsPage() > 1) {
-            this.checklistsPage.update((p) => p - 1);
-            this.reloadChecklists();
-          } else {
-            this.checklistsTotalCount.update((c) => c - 1);
-          }
-        },
-        error: () => this.toastService.show('No se pudo eliminar la checklist.', 'error'),
-      });
+    this.requestConfirm({
+      title: '¿Eliminar esta checklist?',
+      onConfirm: () => {
+        this.chatHttp
+          .deleteChecklist(checklistId)
+          .pipe(take(1))
+          .subscribe({
+            next: () => {
+              this.checklists.update((list) => list.filter((c) => c.id !== checklistId));
+              this.toastService.show('Checklist eliminada.', 'success');
+              if (this.checklists().length === 0 && this.checklistsPage() > 1) {
+                this.checklistsPage.update((p) => p - 1);
+                this.reloadChecklists();
+              } else {
+                this.checklistsTotalCount.update((c) => c - 1);
+              }
+            },
+            error: () => this.toastService.show('No se pudo eliminar la checklist.', 'error'),
+          });
+      },
+    });
   }
 
   exportChecklist(checklistId: number, format: 'pdf' | 'markdown', title: string): void {

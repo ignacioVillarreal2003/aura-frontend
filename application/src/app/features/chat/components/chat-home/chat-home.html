@@ -3,22 +3,98 @@
     <div class="chat-home-center">
       <div class="welcome-section">
         <h1 class="welcome-title">¿En qué estás trabajando?</h1>
-        <p class="welcome-subtitle">Escribe una pregunta o sube un documento para empezar.</p>
+        <p class="welcome-subtitle">
+          @if (composerMode() === 'chat') { Escribe una pregunta o sube un documento para empezar. }
+          @else if (composerMode() === 'report') { Describí el contexto y el tipo de informe a generar. }
+          @else { Describí el procedimiento o SOP a convertir en checklist. }
+        </p>
       </div>
 
       <div class="chat-home-composer">
         <div class="chat-home-composer-surface">
-          <textarea
-            #messageBox
-            id="chat-home-input"
-            name="chatHomeMessage"
-            class="chat-home-textarea"
-            rows="1"
-            placeholder="¿Cómo puedo ayudarte hoy?"
-            [ngModel]="message()"
-            (ngModelChange)="onMessageInput($event)"
-            (keydown)="onEnterKey($event)"
-          ></textarea>
+
+          @if (composerMode() !== 'chat') {
+            <div class="chat-home-gen-controls">
+              @if (composerMode() === 'report') {
+                <select
+                  class="chat-home-gen-type-select"
+                  [value]="genReportType()"
+                  [disabled]="submitting()"
+                  (change)="onGenTypeChange($any($event.target).value)"
+                  aria-label="Tipo de informe">
+                  @for (opt of reportTypes; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              }
+              <div class="chat-home-gen-mode-pills">
+                <button
+                  type="button"
+                  class="chat-home-gen-mode-pill"
+                  [class.chat-home-gen-mode-pill--active]="genMode() === 'direct'"
+                  [disabled]="submitting()"
+                  (click)="genMode.set('direct')"
+                  title="Usa solo lo que ingresás">
+                  <i class="pi pi-pencil" aria-hidden="true"></i>
+                  Directo
+                </button>
+                <button
+                  type="button"
+                  class="chat-home-gen-mode-pill"
+                  [class.chat-home-gen-mode-pill--active]="genMode() === 'rag'"
+                  [disabled]="submitting()"
+                  (click)="genMode.set('rag')"
+                  title="Recupera información de documentos del chat">
+                  <i class="pi pi-database" aria-hidden="true"></i>
+                  Con docs
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (composerMode() === 'chat') {
+            <textarea
+              #messageBox
+              id="chat-home-input"
+              name="chatHomeMessage"
+              class="chat-home-textarea"
+              rows="1"
+              placeholder="¿Cómo puedo ayudarte hoy?"
+              [ngModel]="message()"
+              (ngModelChange)="onMessageInput($event)"
+              (keydown)="onEnterKey($event)"
+              [disabled]="submitting()"
+            ></textarea>
+          } @else {
+            <textarea
+              class="chat-home-textarea chat-home-textarea--gen"
+              rows="4"
+              [placeholder]="genPlaceholder()"
+              [value]="genMessage()"
+              [disabled]="submitting()"
+              (input)="genMessage.set($any($event.target).value)"
+              (keydown.enter)="onGenEnterKey($event)"
+            ></textarea>
+          }
+
+          @if (pendingFiles().length > 0) {
+            <div class="chat-home-files">
+              @for (file of pendingFiles(); track file.name) {
+                <span class="chat-home-file-chip">
+                  <i class="pi pi-file-pdf chat-home-file-chip__icon" aria-hidden="true"></i>
+                  <span class="chat-home-file-chip__name" [title]="file.name">{{ file.name }}</span>
+                  <button
+                    type="button"
+                    class="chat-home-file-chip__remove"
+                    (click)="removeFile(file)"
+                    [disabled]="submitting()"
+                    [attr.aria-label]="'Quitar ' + file.name">
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </span>
+              }
+            </div>
+          }
 
           <div class="chat-home-composer-footer">
             <input
@@ -34,18 +110,80 @@
             <button
               type="button"
               class="chat-home-attach"
+              [class.chat-home-attach--has-files]="pendingFiles().length > 0"
               aria-label="Adjuntar documento"
+              [disabled]="submitting()"
               (click)="onAttachClick(fileInput)">
-              <i class="pi pi-plus" aria-hidden="true"></i>
+              <i class="pi pi-paperclip" aria-hidden="true"></i>
+              @if (pendingFiles().length > 0) {
+                <span class="chat-home-attach-badge">{{ pendingFiles().length }}</span>
+              }
             </button>
+
+            @if (canUseTools()) {
+              <div class="chat-home-mode-selector">
+                @if (modeDropdownOpen()) {
+                  <div class="chat-home-mode-backdrop" (click)="modeDropdownOpen.set(false)"></div>
+                }
+                <button
+                  type="button"
+                  class="chat-home-mode-trigger"
+                  [class.chat-home-mode-trigger--active]="composerMode() !== 'chat'"
+                  [disabled]="submitting()"
+                  (click)="toggleModeDropdown()"
+                  [attr.aria-expanded]="modeDropdownOpen()"
+                  aria-label="Cambiar modo">
+                  <i [ngClass]="['pi', composerModeLabel().icon]" aria-hidden="true"></i>
+                  <span>{{ composerModeLabel().label }}</span>
+                  <i class="pi pi-chevron-up chat-home-mode-chevron"
+                     [class.chat-home-mode-chevron--open]="modeDropdownOpen()"
+                     aria-hidden="true"></i>
+                </button>
+                @if (modeDropdownOpen()) {
+                  <div class="chat-home-mode-menu">
+                    <button
+                      type="button"
+                      class="chat-home-mode-item"
+                      [class.chat-home-mode-item--active]="composerMode() === 'chat'"
+                      (click)="setComposerMode('chat')">
+                      <i class="pi pi-comments" aria-hidden="true"></i>
+                      Chat
+                    </button>
+                    @if (canReport()) {
+                      <button
+                        type="button"
+                        class="chat-home-mode-item"
+                        [class.chat-home-mode-item--active]="composerMode() === 'report'"
+                        (click)="setComposerMode('report')">
+                        <i class="pi pi-file-edit" aria-hidden="true"></i>
+                        Informe
+                      </button>
+                    }
+                    @if (canChecklist()) {
+                      <button
+                        type="button"
+                        class="chat-home-mode-item"
+                        [class.chat-home-mode-item--active]="composerMode() === 'checklist'"
+                        (click)="setComposerMode('checklist')">
+                        <i class="pi pi-check-square" aria-hidden="true"></i>
+                        Checklist
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
             <span class="chat-home-composer-spacer" aria-hidden="true"></span>
+
             <button
               type="button"
               class="chat-home-send"
-              aria-label="Enviar mensaje"
-              [disabled]="!message().trim() || submitting()"
+              [class.chat-home-send--gen]="composerMode() !== 'chat'"
+              [attr.aria-label]="sendLabel()"
+              [disabled]="!canSend()"
               (click)="onSend()">
-              <i class="pi pi-send" aria-hidden="true"></i>
+              <i class="pi" [ngClass]="sendIcon()" aria-hidden="true"></i>
             </button>
           </div>
         </div>

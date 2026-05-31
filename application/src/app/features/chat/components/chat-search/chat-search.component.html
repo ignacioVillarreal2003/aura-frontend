@@ -8,13 +8,48 @@
       <i class="pi pi-search search-icon"></i>
       <input
         type="text"
-        placeholder="Buscar chats..."
+        placeholder="Buscar por nombre o etiqueta…"
         [(ngModel)]="searchQuery"
         (ngModelChange)="onSearchChange()"
         class="search-field"
+        aria-label="Buscar chats"
       />
+      @if (searchQuery || activeTagFiltersArray().length > 0) {
+        <button class="search-clear-btn" (click)="clearAllFilters()" aria-label="Limpiar búsqueda">
+          <i class="pi pi-times"></i>
+        </button>
+      }
     </div>
   </div>
+
+  @if (allTags().length > 0) {
+    <div class="tag-filter-bar" aria-label="Filtrar por etiqueta">
+      @for (tag of allTags(); track tag) {
+        <button
+          type="button"
+          class="tag-filter-pill"
+          [class.tag-filter-pill--active]="isTagActive(tag)"
+          (click)="toggleTagFilter(tag)"
+          [attr.aria-pressed]="isTagActive(tag)">
+          <i class="pi pi-hashtag tag-filter-pill__hash" aria-hidden="true"></i>{{ tag }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (activeTagFiltersArray().length > 0) {
+    <div class="active-filters-bar">
+      <span class="active-filters-label">Filtros:</span>
+      @for (tag of activeTagFiltersArray(); track tag) {
+        <span class="active-filter-chip">
+          #{{ tag }}
+          <button type="button" class="active-filter-chip__remove" (click)="toggleTagFilter(tag)" [attr.aria-label]="'Quitar filtro ' + tag">
+            <i class="pi pi-times" aria-hidden="true"></i>
+          </button>
+        </span>
+      }
+    </div>
+  }
 
   <a class="chat-home-nav-button" [routerLink]="['/main-container', 'chat-home']">
     <i class="pi pi-pencil"></i>
@@ -22,14 +57,36 @@
   </a>
 
   <div class="chat-history">
+    @if (grouped().hoy.length === 0 && grouped().ayer.length === 0 && grouped().semana.length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-search empty-state__icon" aria-hidden="true"></i>
+        <p class="empty-state__text">No se encontraron chats.</p>
+      </div>
+    }
+
     @if (grouped().hoy.length > 0) {
       <div class="chat-section">
         <h3 class="section-title">Hoy</h3>
         <div class="chat-list">
           @for (chat of grouped().hoy; track chat.id) {
             <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
-              <i class="pi pi-comments chat-icon"></i>
-              <span class="chat-title">{{ chat.title }}</span>
+              <i class="pi pi-comments chat-icon" aria-hidden="true"></i>
+              <div class="chat-item-body">
+                <span class="chat-title">{{ chat.title }}</span>
+                @if (chat.tags.length > 0) {
+                  <div class="chat-item-tags">
+                    @for (tag of chat.tags; track tag) {
+                      <span
+                        class="chat-item-tag"
+                        [class.chat-item-tag--active]="isTagActive(tag)"
+                        (click)="$event.preventDefault(); $event.stopPropagation(); toggleTagFilter(tag)"
+                        [attr.aria-label]="'Filtrar por ' + tag">
+                        #{{ tag }}
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
             </a>
           }
         </div>
@@ -42,8 +99,23 @@
         <div class="chat-list">
           @for (chat of grouped().ayer; track chat.id) {
             <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
-              <i class="pi pi-comments chat-icon"></i>
-              <span class="chat-title">{{ chat.title }}</span>
+              <i class="pi pi-comments chat-icon" aria-hidden="true"></i>
+              <div class="chat-item-body">
+                <span class="chat-title">{{ chat.title }}</span>
+                @if (chat.tags.length > 0) {
+                  <div class="chat-item-tags">
+                    @for (tag of chat.tags; track tag) {
+                      <span
+                        class="chat-item-tag"
+                        [class.chat-item-tag--active]="isTagActive(tag)"
+                        (click)="$event.preventDefault(); $event.stopPropagation(); toggleTagFilter(tag)"
+                        [attr.aria-label]="'Filtrar por ' + tag">
+                        #{{ tag }}
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
             </a>
           }
         </div>
@@ -56,8 +128,23 @@
         <div class="chat-list">
           @for (chat of grouped().semana; track chat.id) {
             <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
-              <i class="pi pi-comments chat-icon"></i>
-              <span class="chat-title">{{ chat.title }}</span>
+              <i class="pi pi-comments chat-icon" aria-hidden="true"></i>
+              <div class="chat-item-body">
+                <span class="chat-title">{{ chat.title }}</span>
+                @if (chat.tags.length > 0) {
+                  <div class="chat-item-tags">
+                    @for (tag of chat.tags; track tag) {
+                      <span
+                        class="chat-item-tag"
+                        [class.chat-item-tag--active]="isTagActive(tag)"
+                        (click)="$event.preventDefault(); $event.stopPropagation(); toggleTagFilter(tag)"
+                        [attr.aria-label]="'Filtrar por ' + tag">
+                        #{{ tag }}
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
             </a>
           }
         </div>

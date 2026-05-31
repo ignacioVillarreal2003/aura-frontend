@@ -40,7 +40,8 @@
         is_pinned: chat.is_pinned,
         archived_at: chat.archived_at,
         is_locked: chat.is_locked,
-        is_muted: chat.is_muted
+        is_muted: chat.is_muted,
+        tags: chat.tags
       }"
       [attachedDocuments]="sessionDocuments()"
       [uploadDisabled]="documentUploading() || !chat"
@@ -400,13 +401,45 @@
               (click)="onAttachClick(sessionFileInput)">
               <i class="pi pi-plus" aria-hidden="true"></i>
             </button>
-            <span class="session-composer-spacer" aria-hidden="true"></span>
+            @if (voiceState() !== 'idle') {
+              <div class="voice-recording-bar">
+                @if (voiceState() === 'recording') {
+                  <span class="voice-recording-dot" aria-hidden="true"></span>
+                  <span class="voice-recording-time">{{ recordingLabel }}</span>
+                  <button type="button" class="voice-cancel-btn" (click)="cancelRecording()" aria-label="Cancelar grabación">
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                  <button type="button" class="voice-stop-btn" (click)="stopRecording()" aria-label="Detener y enviar">
+                    <i class="pi pi-stop-circle" aria-hidden="true"></i>
+                  </button>
+                } @else {
+                  <i class="pi pi-spin pi-spinner voice-processing-icon" aria-hidden="true"></i>
+                  <span class="voice-processing-label">
+                    {{ composerMode() === 'chat' ? 'Transcribiendo…' : 'Generando…' }}
+                  </span>
+                }
+              </div>
+            } @else {
+              <span class="session-composer-spacer" aria-hidden="true"></span>
+            }
+
+            @if (voiceState() === 'idle') {
+              <button
+                type="button"
+                class="voice-btn"
+                [class.voice-btn--gen]="composerMode() !== 'chat'"
+                [attr.aria-label]="composerMode() === 'chat' ? 'Grabar audio' : 'Grabar contenido por voz'"
+                [disabled]="sendBlocked() || (composerMode() !== 'chat' && genLoading())"
+                (click)="startRecording()">
+                <i class="pi pi-microphone" aria-hidden="true"></i>
+              </button>
+            }
             @if (composerMode() === 'chat') {
               <button
                 type="button"
                 class="send-button"
                 aria-label="Enviar mensaje"
-                [disabled]="!newMessage.trim() || sendBlocked()"
+                [disabled]="!newMessage.trim() || sendBlocked() || voiceState() !== 'idle'"
                 (click)="sendMessage()">
                 <i class="pi pi-send" aria-hidden="true"></i>
               </button>

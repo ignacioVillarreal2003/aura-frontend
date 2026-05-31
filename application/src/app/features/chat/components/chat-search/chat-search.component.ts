@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,7 +6,7 @@ import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-serv
 import { ToastService } from '@core/components/toast-service';
 import type { ChatListItemDto } from '@aura-types/aura-chat-service.types';
 
-type ChatListItem = { id: string; title: string; sortKey: number };
+type ChatListItem = { id: string; title: string; sortKey: number; tags: readonly string[] };
 
 @Component({
   selector: 'app-chat-search',
@@ -21,6 +21,17 @@ export class ChatSearchComponent implements OnInit {
 
   searchQuery = '';
   private readonly allChats = signal<ChatListItemDto[]>([]);
+  private readonly activeTagFilters = signal<Set<string>>(new Set());
+
+  readonly activeTagFiltersArray = computed(() => [...this.activeTagFilters()]);
+
+  readonly allTags = computed(() => {
+    const tags = new Set<string>();
+    for (const c of this.allChats()) {
+      for (const t of c.tags ?? []) tags.add(t);
+    }
+    return [...tags].sort();
+  });
 
   readonly grouped = signal<{
     hoy: ChatListItem[];
@@ -42,9 +53,39 @@ export class ChatSearchComponent implements OnInit {
     this.rebuildGrouped();
   }
 
+  toggleTagFilter(tag: string): void {
+    this.activeTagFilters.update((s) => {
+      const next = new Set(s);
+      if (next.has(tag)) { next.delete(tag); } else { next.add(tag); }
+      return next;
+    });
+    this.rebuildGrouped();
+  }
+
+  clearAllFilters(): void {
+    this.activeTagFilters.set(new Set());
+    this.searchQuery = '';
+    this.rebuildGrouped();
+  }
+
+  isTagActive(tag: string): boolean {
+    return this.activeTagFilters().has(tag);
+  }
+
   private rebuildGrouped(): void {
     const q = this.searchQuery.trim().toLowerCase();
-    const filtered = this.allChats().filter((c) => !q || c.name.toLowerCase().includes(q));
+    const activeTags = this.activeTagFilters();
+
+    const filtered = this.allChats().filter((c) => {
+      const tags = c.tags ?? [];
+      const matchesQuery = !q
+        || c.name.toLowerCase().includes(q)
+        || tags.some((t) => t.toLowerCase().includes(q));
+      const matchesTags = activeTags.size === 0
+        || [...activeTags].every((t) => tags.includes(t));
+      return matchesQuery && matchesTags;
+    });
+
     const hoy: ChatListItem[] = [];
     const ayer: ChatListItem[] = [];
     const semana: ChatListItem[] = [];
@@ -63,6 +104,7 @@ export class ChatSearchComponent implements OnInit {
         id: String(c.id),
         title: c.name,
         sortKey: d.getTime(),
+        tags: c.tags ?? [],
       };
       if (d >= startOfToday) {
         hoy.push(item);

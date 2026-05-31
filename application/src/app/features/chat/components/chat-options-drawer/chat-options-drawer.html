@@ -272,6 +272,13 @@
                 <i class="pi pi-pencil drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Cambiar el nombre</span>
               </button>
+              <button type="button" class="drawer-action-item" (click)="openSub('tags')">
+                <i class="pi pi-tag drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Etiquetas</span>
+                @if ((contextChat()?.tags?.length ?? 0) > 0) {
+                  <span class="drawer-action-tags-badge">{{ contextChat()?.tags?.length }}</span>
+                }
+              </button>
               <button type="button" class="drawer-action-item" (click)="openSub('share')">
                 <i class="pi pi-share-alt drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Compartir</span>
@@ -320,6 +327,64 @@
                 <span class="drawer-action-item__label">Borrar chat</span>
               </button>
             </nav>
+          }
+          @case ('tags') {
+            <div class="drawer-tags-form">
+              <p class="drawer-tags-hint">Organizá este chat con etiquetas para encontrarlo y filtrarlo fácilmente.</p>
+
+              <div class="drawer-tags-chips">
+                @for (tag of tagsDraft(); track tag) {
+                  <span class="drawer-chat-tag">
+                    <i class="pi pi-hashtag drawer-chat-tag__hash" aria-hidden="true"></i>
+                    {{ tag }}
+                    <button type="button" class="drawer-chat-tag__remove" (click)="removeTag(tag)" [attr.aria-label]="'Quitar ' + tag">
+                      <i class="pi pi-times" aria-hidden="true"></i>
+                    </button>
+                  </span>
+                }
+                @if (tagsDraft().length === 0) {
+                  <span class="drawer-tags-empty">Sin etiquetas aún</span>
+                }
+              </div>
+
+              <div class="drawer-tags-input-row">
+                <input
+                  type="text"
+                  class="drawer-tags-input"
+                  placeholder="Nueva etiqueta…"
+                  [value]="tagsInput()"
+                  (input)="tagsInput.set($any($event.target).value)"
+                  (keydown.enter)="$event.preventDefault(); addTag()"
+                  maxlength="32"
+                  autocomplete="off"
+                  aria-label="Nueva etiqueta"
+                />
+                <button
+                  type="button"
+                  class="drawer-tags-add-btn"
+                  (click)="addTag()"
+                  [disabled]="!tagsInput().trim()"
+                  aria-label="Agregar etiqueta">
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="drawer-btn drawer-btn--primary drawer-btn--full"
+                [disabled]="tagsSubmitting()"
+                (click)="submitTags()">
+                @if (tagsSubmitting()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-check" aria-hidden="true"></i>
+                }
+                Guardar etiquetas
+              </button>
+              <button type="button" class="drawer-rename-form__cancel" (click)="openSub('chat')">
+                Cancelar
+              </button>
+            </div>
           }
           @case ('rename') {
             <form class="drawer-rename-form" (submit)="$event.preventDefault(); submitRename()">
@@ -417,6 +482,13 @@
           }
           @case ('mute') {
             <p class="drawer-panel__intro">Elige por cuánto tiempo silenciar las notificaciones de este chat.</p>
+            @if (isChatMuted()) {
+              <button type="button" class="drawer-action-item drawer-action-item--unmute" (click)="unmute()">
+                <i class="pi pi-volume-up drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">Desilenciar ahora</span>
+              </button>
+              <div class="drawer-mute-divider">o silenciar por</div>
+            }
             <nav class="drawer-action-list" aria-label="Duración del silencio">
               <button type="button" class="drawer-action-item" (click)="muteFor(1)">
                 <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
@@ -434,79 +506,11 @@
                 <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">1 semana</span>
               </button>
-            </nav>
-          }
-          @case ('webhooks') {
-            <div class="drawer-toolbar">
-              @if (!showWebhookForm()) {
-                <button type="button" class="drawer-btn drawer-btn--primary" (click)="showWebhookForm.set(true)">
-                  <i class="pi pi-plus" aria-hidden="true"></i>
-                  Nuevo webhook
-                </button>
-              }
-              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="reloadWebhooks()" [disabled]="webhooksLoading()">
-                <i class="pi pi-refresh" [class.pi-spin]="webhooksLoading()" aria-hidden="true"></i>
-                Actualizar
+              <button type="button" class="drawer-action-item" (click)="muteFor(8760)">
+                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">1 año</span>
               </button>
-            </div>
-            @if (showWebhookForm()) {
-              <div class="drawer-webhook-form">
-                <label class="drawer-webhook-label" for="webhook-url">URL del endpoint</label>
-                <input
-                  id="webhook-url"
-                  type="url"
-                  class="drawer-webhook-input"
-                  placeholder="https://ejemplo.com/webhook"
-                  [value]="newWebhookUrl()"
-                  (input)="onWebhookUrlInput($event)"
-                />
-                <p class="drawer-webhook-label">Eventos a recibir</p>
-                <div class="drawer-webhook-events">
-                  @for (ev of webhookEventOptions; track ev) {
-                    <label class="drawer-webhook-event">
-                      <input
-                        type="checkbox"
-                        class="drawer-webhook-checkbox"
-                        [checked]="isWebhookEventSelected(ev)"
-                        (change)="toggleWebhookEvent(ev)"
-                      />
-                      <span>{{ ev }}</span>
-                    </label>
-                  }
-                </div>
-                <div class="drawer-webhook-form-actions">
-                  <button type="button" class="drawer-btn drawer-btn--primary" (click)="submitCreateWebhook()">Crear</button>
-                  <button type="button" class="drawer-btn drawer-btn--secondary" (click)="cancelWebhookForm()">Cancelar</button>
-                </div>
-              </div>
-            }
-            @if (webhooksLoading() && webhooks().length === 0) {
-              <p class="drawer-muted">Cargando webhooks…</p>
-            } @else if (!showWebhookForm() && webhooks().length === 0) {
-              <p class="drawer-muted">No hay webhooks configurados para este chat.</p>
-            } @else if (webhooks().length > 0) {
-              <ul class="drawer-doc-list" aria-label="Webhooks">
-                @for (wh of webhooks(); track wh.id) {
-                  <li class="drawer-doc-card">
-                    <div class="drawer-doc-card__main">
-                      <span class="drawer-doc-card__name drawer-webhook-url">{{ wh.url }}</span>
-                      <span class="drawer-doc-card__meta">
-                        <span>Eventos: {{ wh.events.join(', ') }}</span>
-                        <span [class]="wh.is_active ? 'drawer-share-badge--active' : 'drawer-share-badge--inactive'">
-                          · {{ wh.is_active ? 'Activo' : 'Inactivo' }}
-                        </span>
-                      </span>
-                    </div>
-                    <div class="drawer-share-actions">
-                      <button type="button" class="drawer-linkish" (click)="toggleWebhookActive(wh)">
-                        {{ wh.is_active ? 'Desactivar' : 'Activar' }}
-                      </button>
-                      <button type="button" class="drawer-linkish drawer-linkish--danger" (click)="deleteWebhookClick(wh.id)">Eliminar</button>
-                    </div>
-                  </li>
-                }
-              </ul>
-            }
+            </nav>
           }
           @case ('pinned') {
             @if (pinnedLoading() && pinnedMessages().length === 0) {
@@ -749,5 +753,27 @@
         }
       }
     </div>
+
+    @if (pendingConfirm(); as confirm) {
+      <div class="drawer-confirm-overlay" (click)="cancelConfirm()" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="drawer-confirm-card" (click)="$event.stopPropagation()">
+          <div class="drawer-confirm-icon">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+          </div>
+          <p id="confirm-title" class="drawer-confirm-title">{{ confirm.title }}</p>
+          @if (confirm.description) {
+            <p class="drawer-confirm-desc">{{ confirm.description }}</p>
+          }
+          <div class="drawer-confirm-actions">
+            <button type="button" class="drawer-confirm-btn drawer-confirm-btn--cancel" (click)="cancelConfirm()">
+              Cancelar
+            </button>
+            <button type="button" class="drawer-confirm-btn drawer-confirm-btn--danger" (click)="runConfirm()">
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   </aside>
 </div>
