@@ -1,10 +1,17 @@
 <div class="as-page">
 
   <header class="as-header">
-    <h1 class="as-title">Asistentes</h1>
-    <p class="as-subtitle">
-      Seleccioná un asistente para iniciar una sesión de chat especializada.
-    </p>
+    <div class="as-header__text">
+      <h1 class="as-title">Asistentes</h1>
+      <p class="as-subtitle">
+        Seleccioná un asistente para iniciar una sesión de chat especializada.
+      </p>
+    </div>
+    @if (canViewAnalytics()) {
+      <button type="button" class="as-btn as-btn--analytics" (click)="goToAnalytics()">
+        <i class="pi pi-chart-bar"></i> Métricas de feedback
+      </button>
+    }
   </header>
 
   @if (error()) {

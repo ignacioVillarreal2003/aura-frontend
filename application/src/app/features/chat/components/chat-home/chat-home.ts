@@ -7,7 +7,8 @@ import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-serv
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import { UserState } from '@core/state/user.state';
-import type { ReportType } from '@aura-types/aura-chat-service.types';
+import type { AuraChatAiMode, ReportType } from '@aura-types/aura-chat-service.types';
+import { AURA_CHAT_AI_MODE_DEFAULT } from '@aura-types/aura-chat-service.types';
 
 interface PendingGeneration {
   mode: 'report' | 'checklist';
@@ -15,6 +16,21 @@ interface PendingGeneration {
   genMode: 'direct' | 'rag';
   message: string;
 }
+
+interface AiModeOption {
+  readonly value: AuraChatAiMode;
+  readonly label: string;
+  readonly icon: string;
+  readonly hint: string;
+  readonly permission: string | null;
+}
+
+const AI_MODES: readonly AiModeOption[] = [
+  { value: 'document_question', label: 'Documentos', icon: 'pi-database', hint: 'Responde usando tus documentos (RAG).', permission: null },
+  { value: 'general_chat', label: 'General', icon: 'pi-comment', hint: 'Asistente general, sin documentos.', permission: 'LLM_GENERAL_CHAT' },
+  { value: 'rag_agent', label: 'Agente RAG', icon: 'pi-sitemap', hint: 'Pipeline RAG avanzado con razonamiento.', permission: 'LLM_AGENT' },
+  { value: 'agent', label: 'Agente', icon: 'pi-bolt', hint: 'Agente con herramientas sobre documentos.', permission: 'LLM_AGENT' },
+];
 
 
 const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: string }[] = [
@@ -46,6 +62,20 @@ export class ChatHomeComponent {
 
   // ── Composer state ─────────────────────────────────────────────
   readonly composerMode     = signal<'chat' | 'report' | 'checklist'>('chat');
+
+  // ── AI chat mode (document_question / general_chat / rag_agent / agent) ──
+  readonly aiModes          = AI_MODES;
+  readonly aiMode           = signal<AuraChatAiMode>(AURA_CHAT_AI_MODE_DEFAULT);
+  readonly aiModeDropdownOpen = signal(false);
+  readonly availableAiModes = computed(() => {
+    const perms = this.userState.user()?.permissions ?? [];
+    return AI_MODES.filter((m) => m.permission === null || perms.includes(m.permission));
+  });
+  readonly showAiModeSelector = computed(() => this.availableAiModes().length > 1);
+  readonly activeAiMode = computed(
+    () => AI_MODES.find((m) => m.value === this.aiMode()) ?? AI_MODES[0],
+  );
+
   readonly genReportType    = signal<ReportType>('SITREP');
   readonly genMode          = signal<'direct' | 'rag'>('direct');
   readonly genMessage       = signal('');
@@ -101,6 +131,16 @@ export class ChatHomeComponent {
 
   onGenTypeChange(value: string): void {
     this.genReportType.set(value as ReportType);
+  }
+
+  toggleAiModeDropdown(): void {
+    this.aiModeDropdownOpen.update((v) => !v);
+  }
+
+  setAiMode(mode: AuraChatAiMode): void {
+    this.aiMode.set(mode);
+    this.aiModeDropdownOpen.set(false);
+    setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
   }
 
   // ── Message / files ────────────────────────────────────────────
@@ -183,6 +223,9 @@ export class ChatHomeComponent {
 
         if (mode === 'chat' && text) {
           routerState['pendingMessage'] = text;
+          if (this.aiMode() !== AURA_CHAT_AI_MODE_DEFAULT) {
+            routerState['pendingAiMode'] = this.aiMode();
+          }
         } else if (mode === 'report' || mode === 'checklist') {
           const gen: PendingGeneration = {
             mode,

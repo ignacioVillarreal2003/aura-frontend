@@ -1,0 +1,89 @@
+.feedback-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  min-width: min(420px, 90vw);
+}
+
+.feedback-dialog__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.feedback-dialog__reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.feedback-dialog__reason {
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.feedback-dialog__reason:hover {
+  border-color: var(--primary-color, #5b8def);
+}
+
+.feedback-dialog__reason--active {
+  background: var(--primary-color, #5b8def);
+  border-color: var(--primary-color, #5b8def);
+  color: #fff;
+}
+
+.feedback-dialog__label {
+  font-size: 0.82rem;
+  opacity: 0.8;
+}
+
+.feedback-dialog__textarea {
+  width: 100%;
+  resize: vertical;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+  background: var(--surface-color, rgba(0, 0, 0, 0.15));
+  color: inherit;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.feedback-dialog__counter {
+  align-self: flex-end;
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+.feedback-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.feedback-dialog__btn {
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.feedback-dialog__btn--ghost {
+  background: transparent;
+  border-color: var(--border-color, rgba(255, 255, 255, 0.2));
+  color: inherit;
+}
+
+.feedback-dialog__btn--primary {
+  background: var(--primary-color, #5b8def);
+  color: #fff;
+}

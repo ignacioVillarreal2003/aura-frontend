@@ -19,67 +19,36 @@
           Información personal
         </h2>
 
-        <div class="info-grid">
-          <div class="info-item">
-            <label class="info-label">Usuario</label>
-            <span class="info-value">{{ displayName() }}</span>
+        <div class="info-list">
+          <div class="info-row">
+            <span class="info-row__icon"><i class="pi pi-id-card"></i></span>
+            <div class="info-row__text">
+              <span class="info-label">Usuario</span>
+              <span class="info-value">{{ displayName() }}</span>
+            </div>
           </div>
 
-          <div class="info-item">
-            <label class="info-label">Email</label>
-            <span class="info-value">{{ displayEmail() }}</span>
+          <div class="info-row">
+            <span class="info-row__icon"><i class="pi pi-envelope"></i></span>
+            <div class="info-row__text">
+              <span class="info-label">Email</span>
+              <span class="info-value">{{ displayEmail() }}</span>
+            </div>
           </div>
 
           @if (displayRoles().length > 0) {
-            <div class="info-item">
-              <label class="info-label">Roles</label>
-              <span class="info-value">{{ displayRoles().join(', ') }}</span>
+            <div class="info-row">
+              <span class="info-row__icon"><i class="pi pi-shield"></i></span>
+              <div class="info-row__text">
+                <span class="info-label">Roles</span>
+                <div class="info-roles">
+                  @for (role of displayRoles(); track role) {
+                    <span class="info-role-chip">{{ role }}</span>
+                  }
+                </div>
+              </div>
             </div>
           }
-        </div>
-      </div>
-
-      <p class="profile-hint">
-        <i class="pi pi-info-circle"></i>
-        Tema, notificaciones, privacidad y seguridad están en las secciones del menú lateral.
-      </p>
-
-      <div class="profile-section">
-        <h2 class="section-title">
-          <i class="pi pi-chart-bar"></i>
-          Estadísticas
-        </h2>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="pi pi-user"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-number">156</span>
-              <span class="stat-label">Chats individuales</span>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="pi pi-users"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-number">91</span>
-              <span class="stat-label">Chats grupales</span>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="pi pi-file"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-number">324</span>
-              <span class="stat-label">Documentos consultados</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

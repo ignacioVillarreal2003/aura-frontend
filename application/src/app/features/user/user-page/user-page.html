@@ -8,7 +8,7 @@
     <nav class="user-nav__links">
       @for (item of areaNavLinks; track item.path) {
         <a
-          [routerLink]="['/user', item.path]"
+          [routerLink]="'/user/' + item.path"
           routerLinkActive="is-active"
           [routerLinkActiveOptions]="{ exact: true }"
           class="user-nav__link">

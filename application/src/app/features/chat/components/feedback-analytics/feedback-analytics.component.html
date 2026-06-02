@@ -1,0 +1,119 @@
+<section class="fb-analytics">
+  <header class="fb-analytics__header">
+    <div>
+      <h1 class="fb-analytics__title">Feedback de respuestas IA</h1>
+      <p class="fb-analytics__subtitle">
+        Satisfacción de los usuarios sobre las respuestas del asistente.
+      </p>
+    </div>
+    @if (canView()) {
+      <label class="fb-analytics__window">
+        Período
+        <select [ngModel]="days()" (ngModelChange)="onWindowChange($event)">
+          @for (opt of windowOptions; track opt.value) {
+            <option [ngValue]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+    }
+  </header>
+
+  @if (!canView()) {
+    <p class="fb-analytics__empty">No tenés permiso para ver estas métricas.</p>
+  } @else if (loading()) {
+    <p class="fb-analytics__empty">Cargando métricas…</p>
+  } @else if (error()) {
+    <p class="fb-analytics__error">{{ error() }}</p>
+    <button type="button" class="fb-analytics__retry" (click)="load()">Reintentar</button>
+  } @else if (data(); as d) {
+    <!-- Summary cards -->
+    <div class="fb-analytics__cards">
+      <div class="fb-card">
+        <span class="fb-card__value">
+          @if (ratePct(d.summary.satisfaction_rate); as pct) { {{ pct }}% } @else { n/a }
+        </span>
+        <span class="fb-card__label">Satisfacción</span>
+      </div>
+      <div class="fb-card">
+        <span class="fb-card__value">{{ d.summary.total }}</span>
+        <span class="fb-card__label">Total de votos</span>
+      </div>
+      <div class="fb-card fb-card--up">
+        <span class="fb-card__value">{{ d.summary.thumbs_up }}</span>
+        <span class="fb-card__label">👍 Útiles</span>
+      </div>
+      <div class="fb-card fb-card--down">
+        <span class="fb-card__value">{{ d.summary.thumbs_down }}</span>
+        <span class="fb-card__label">👎 No útiles</span>
+      </div>
+    </div>
+
+    <!-- Per-assistant -->
+    <h2 class="fb-analytics__section">Por asistente</h2>
+    @if (d.assistants.length === 0) {
+      <p class="fb-analytics__empty">Sin feedback en este período.</p>
+    } @else {
+      <table class="fb-table">
+        <thead>
+          <tr>
+            <th>Asistente</th>
+            <th>Satisfacción</th>
+            <th>👍</th>
+            <th>👎</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of d.assistants; track row.assistant_id) {
+            <tr>
+              <td>{{ row.assistant_name }}</td>
+              <td>
+                @if (ratePct(row.satisfaction_rate); as pct) { {{ pct }}% } @else { n/a }
+              </td>
+              <td>{{ row.thumbs_up }}</td>
+              <td>{{ row.thumbs_down }}</td>
+              <td>{{ row.total }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    <!-- Reason breakdown -->
+    <h2 class="fb-analytics__section">Motivos de votos negativos</h2>
+    @if (d.reasons.length === 0) {
+      <p class="fb-analytics__empty">Sin votos negativos en este período.</p>
+    } @else {
+      <ul class="fb-reasons">
+        @for (r of d.reasons; track r.reason) {
+          <li class="fb-reasons__item">
+            <span>{{ reasonLabel(r.reason) }}</span>
+            <span class="fb-reasons__count">{{ r.count }}</span>
+          </li>
+        }
+      </ul>
+    }
+
+    <!-- Recent negative comments -->
+    <h2 class="fb-analytics__section">Comentarios negativos recientes</h2>
+    @if (d.recent_negative.length === 0) {
+      <p class="fb-analytics__empty">Sin comentarios recientes.</p>
+    } @else {
+      <ul class="fb-recent">
+        @for (item of d.recent_negative; track item.id) {
+          <li class="fb-recent__item">
+            <div class="fb-recent__meta">
+              <span class="fb-recent__assistant">{{ item.assistant_name }}</span>
+              <span class="fb-recent__reason">{{ reasonLabel(item.reason) }}</span>
+              <span class="fb-recent__date">{{ item.created_at | date: 'short' }}</span>
+            </div>
+            @if (item.comment) {
+              <p class="fb-recent__comment">"{{ item.comment }}"</p>
+            }
+            <p class="fb-recent__excerpt">{{ item.message_excerpt }}</p>
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>

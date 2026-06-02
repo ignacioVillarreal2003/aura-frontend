@@ -378,6 +378,37 @@
   flex-shrink: 0;
 }
 
+/* ── AI chat-mode selector ───────────────────────────────────── */
+.chat-home-ai-mode-menu {
+  min-width: 244px;
+}
+
+.chat-home-ai-mode-item {
+  align-items: flex-start;
+}
+
+.chat-home-ai-mode-item .pi {
+  margin-top: 2px;
+}
+
+.chat-home-ai-mode-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chat-home-ai-mode-item__label {
+  font-weight: 600;
+}
+
+.chat-home-ai-mode-item__hint {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--text-secondary, #9a9aa5);
+  white-space: normal;
+}
+
 /* ── Pending files ───────────────────────────────────────────── */
 .chat-home-files {
   display: flex;

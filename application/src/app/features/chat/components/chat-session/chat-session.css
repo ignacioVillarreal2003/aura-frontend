@@ -1531,6 +1531,39 @@
   background: rgba(99, 102, 241, 0.2);
 }
 
+/* ─── AI chat-mode selector ──────────────────────────────── */
+
+.ai-mode-menu {
+  min-width: 15rem;
+}
+
+.ai-mode-item {
+  align-items: flex-start;
+}
+
+.ai-mode-item i {
+  margin-top: 0.15rem;
+}
+
+.ai-mode-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.ai-mode-item__label {
+  font-weight: 600;
+}
+
+.ai-mode-item__hint {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--text-tertiary, #8b8b96);
+  white-space: normal;
+}
+
 /* ─── Inline gen form ────────────────────────────────────── */
 
 .gen-inline-controls {

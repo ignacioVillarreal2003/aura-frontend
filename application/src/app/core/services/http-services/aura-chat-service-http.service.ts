@@ -7,6 +7,7 @@ import type {
   AddMembersBody,
   AssistantAdminDto,
   AssistantDto,
+  AuraChatAiMode,
   BulkArchiveChatResultDto,
   BulkChatIdsBody,
   BulkUnarchiveChatResultDto,
@@ -21,6 +22,8 @@ import type {
   CreateChatBody,
   CursorPageResult,
   CursorPaginationQueryParams,
+  FeedbackAnalyticsDto,
+  FeedbackAnalyticsQuery,
   GenerateChecklistBody,
   GenerateReportBody,
   HealthResponseDto,
@@ -238,10 +241,13 @@ export class AuraChatServiceHttp {
     );
   }
 
-  regenerateAssistantResponse(chatId: number): Observable<RegenerateResponseDto> {
+  regenerateAssistantResponse(
+    chatId: number,
+    mode?: AuraChatAiMode,
+  ): Observable<RegenerateResponseDto> {
     return this.http.post<RegenerateResponseDto>(
       `${this.messagesRoot(chatId)}regenerate/`,
-      {},
+      mode ? { mode } : {},
     );
   }
 
@@ -333,6 +339,14 @@ export class AuraChatServiceHttp {
 
   deleteMessageFeedback(chatId: number, messageId: number): Observable<void> {
     return this.http.delete<void>(`${this.messagesRoot(chatId)}${messageId}/feedback/`);
+  }
+
+  getFeedbackAnalytics(query: FeedbackAnalyticsQuery = {}): Observable<FeedbackAnalyticsDto> {
+    let params = new HttpParams();
+    if (query.days != null) {
+      params = params.set('days', String(query.days));
+    }
+    return this.http.get<FeedbackAnalyticsDto>(`${this.base}/feedback/analytics/`, { params });
   }
 
   exportMessagePdf(chatId: number, messageId: number): Observable<Blob> {

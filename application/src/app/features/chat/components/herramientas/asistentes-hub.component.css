@@ -24,6 +24,29 @@
 /* ── Header ─────────────────────────────────────────────────── */
 .as-header {
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.as-btn--analytics {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #e7e5e4;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.as-btn--analytics:hover {
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .as-title {

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
 import { AuraChatServiceHttp } from '../../../../core/services/http-services/aura-chat-service-http.service';
+import { UserState } from '@core/state/user.state';
 import type { AssistantDto } from '../../../../core/types/aura-chat-service.types';
 
 @Component({
@@ -15,6 +16,11 @@ import type { AssistantDto } from '../../../../core/types/aura-chat-service.type
 export class AsistentesHubComponent implements OnInit {
   private readonly chatHttp = inject(AuraChatServiceHttp);
   private readonly router = inject(Router);
+  private readonly userState = inject(UserState);
+
+  readonly canViewAnalytics = computed(() =>
+    (this.userState.user()?.permissions ?? []).includes('VIEW_FEEDBACK_ANALYTICS')
+  );
 
   readonly assistants = signal<AssistantDto[]>([]);
   readonly loading = signal(true);
@@ -45,6 +51,10 @@ export class AsistentesHubComponent implements OnInit {
         this.error.set('No se pudieron cargar los asistentes.');
       },
     });
+  }
+
+  goToAnalytics(): void {
+    void this.router.navigate(['/main-container', 'feedback-analytics']);
   }
 
   startChat(assistant: AssistantDto): void {

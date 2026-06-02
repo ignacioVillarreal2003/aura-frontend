@@ -1,15 +1,19 @@
 :host {
-  display: block;
-  height: 100%;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 0;
   background: var(--bg-primary, #0f0f11);
   color: var(--text-primary, #fafaf9);
 }
 
 .inv-root {
+  flex: 1 0 auto;
+  width: 100%;
   max-width: 720px;
   margin: 0 auto;
   padding: 36px 24px 48px;
+  box-sizing: border-box;
 }
 
 /* ── Header ─────────────────────────────────────────────── */

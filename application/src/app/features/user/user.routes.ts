@@ -30,16 +30,15 @@ export const USER_ROUTES: Routes = [
           import('./components/user-notifications/user-notifications.component').then(
             (m) => m.UserNotificationsComponent,
           ),
+        data: { tab: 'inbox' },
       },
       {
-        path: 'general',
-        loadComponent: settingsSectionLoader,
-        data: { section: 'general' },
-      },
-      {
-        path: 'privacy',
-        loadComponent: settingsSectionLoader,
-        data: { section: 'privacy' },
+        path: 'notifications/preferences',
+        loadComponent: () =>
+          import('./components/user-notifications/user-notifications.component').then(
+            (m) => m.UserNotificationsComponent,
+          ),
+        data: { tab: 'preferences' },
       },
       {
         path: 'security',

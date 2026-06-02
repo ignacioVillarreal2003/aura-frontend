@@ -1,4 +1,5 @@
 import { Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuraNotificationServiceHttp } from '@core/services/http-services/aura-notification-service-http.service';
 import { NotificationSseService } from '@core/services/notification/notification-sse.service';
@@ -28,9 +29,13 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
   private readonly notifState = inject(NotificationState);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
 
   // ── Inbox state ────────────────────────────────────────────────────────────
-  readonly activeTab = signal<ActiveTab>('inbox');
+  // Which view is shown is decided by the route (sidebar entries), not in-component tabs.
+  readonly activeTab = signal<ActiveTab>(
+    (this.route.snapshot.data['tab'] as ActiveTab) ?? 'inbox',
+  );
   readonly statusFilter = signal<NotificationStatus | null>(null);
   readonly notifications = signal<NotificationDto[]>([]);
   readonly hasMore = signal(false);
@@ -50,32 +55,25 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
 
   readonly minDatetime = this.toDatetimeLocalValue(new Date().toISOString());
 
-  private prefsLoaded = false;
-
   // ──────────────────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
     this.loadUnreadCount();
-    this.loadNotifications();
     this.sse.connect();
 
     this.sse.events$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(event => this.handleSseEvent(event));
+
+    if (this.activeTab() === 'preferences') {
+      this.loadPreferences();
+    } else {
+      this.loadNotifications();
+    }
   }
 
   ngOnDestroy(): void {
     this.sse.disconnect();
-  }
-
-  // ── Tab switching ──────────────────────────────────────────────────────────
-
-  switchTab(tab: ActiveTab): void {
-    this.activeTab.set(tab);
-    if (tab === 'preferences' && !this.prefsLoaded) {
-      this.prefsLoaded = true;
-      this.loadPreferences();
-    }
   }
 
   // ── Inbox ──────────────────────────────────────────────────────────────────

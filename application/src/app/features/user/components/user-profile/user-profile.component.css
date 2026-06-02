@@ -1,11 +1,15 @@
-/* El scroll lo hace el <main class="user-content"> del user-page; aquí solo flujo natural */
+/* El scroll lo hace el <main class="user-content"> del user-page; el :host llena el alto. */
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
   width: 100%;
   min-width: 0;
+  min-height: 0;
 }
 
 .user-profile-container {
+  flex: 1 0 auto;
   width: 100%;
   max-width: 880px;
   margin: 0 auto;
@@ -121,47 +125,77 @@
   font-size: 1.1rem;
 }
 
-.profile-hint {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0.85rem 1rem;
-  border-radius: 8px;
-  background: var(--accent-surface);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  color: var(--accent-fg);
-  font-size: 0.9rem;
-  line-height: 1.45;
-}
-
-.profile-hint i {
-  flex-shrink: 0;
-  margin-top: 0.1rem;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.info-item {
+.info-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.info-row:hover {
+  border-color: var(--border-strong);
+}
+
+.info-row__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-surface);
+  color: var(--accent-fg);
+  font-size: 1.05rem;
+}
+
+.info-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
 .info-label {
-  font-size: 0.9rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .info-value {
   font-size: 1rem;
   color: var(--text-primary);
-  font-weight: 400;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.info-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+}
+
+.info-role-chip {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--accent-surface);
+  color: var(--accent-fg);
+  border: 1px solid rgba(99, 102, 241, 0.25);
 }
 
 .info-input {
@@ -228,54 +262,3 @@
   background: var(--text-tertiary);
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-
-.stat-card {
-  background: var(--bg-primary);
-  border-radius: 8px;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  border: 1px solid var(--border-color);
-  transition: transform 0.2s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-}
-
-.stat-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-number {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-top: 0.25rem;
-}

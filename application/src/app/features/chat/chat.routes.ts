@@ -43,6 +43,13 @@ export const chatShellRoutes: Routes = [
             (m) => m.AsistentesHubComponent
           ),
       },
+      {
+        path: 'feedback-analytics',
+        loadComponent: () =>
+          import('./components/feedback-analytics/feedback-analytics.component').then(
+            (m) => m.FeedbackAnalyticsComponent
+          ),
+      },
     ],
   },
 ];

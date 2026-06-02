@@ -1,0 +1,39 @@
+<app-modal [title]="'¿Qué estuvo mal?'" (onClose)="onClose()">
+  <div class="feedback-dialog">
+    <p class="feedback-dialog__hint">
+      Tu respuesta nos ayuda a mejorar. Es opcional: podés enviar sin elegir motivo.
+    </p>
+
+    <div class="feedback-dialog__reasons">
+      @for (option of reasons; track option.value) {
+        <button
+          type="button"
+          class="feedback-dialog__reason"
+          [class.feedback-dialog__reason--active]="selectedReason() === option.value"
+          (click)="toggleReason(option.value)">
+          {{ option.label }}
+        </button>
+      }
+    </div>
+
+    <label class="feedback-dialog__label" for="feedback-comment">Comentario (opcional)</label>
+    <textarea
+      id="feedback-comment"
+      class="feedback-dialog__textarea"
+      rows="3"
+      [maxlength]="commentMax"
+      [ngModel]="comment()"
+      (ngModelChange)="onCommentInput($event)"
+      placeholder="Contanos qué esperabas…"></textarea>
+    <div class="feedback-dialog__counter">{{ comment().length }}/{{ commentMax }}</div>
+
+    <div class="feedback-dialog__actions">
+      <button type="button" class="feedback-dialog__btn feedback-dialog__btn--ghost" (click)="onClose()">
+        Cancelar
+      </button>
+      <button type="button" class="feedback-dialog__btn feedback-dialog__btn--primary" (click)="submit()">
+        Enviar feedback
+      </button>
+    </div>
+  </div>
+</app-modal>

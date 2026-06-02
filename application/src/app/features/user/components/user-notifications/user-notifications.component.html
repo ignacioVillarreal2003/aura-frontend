@@ -1,28 +1,5 @@
 <div class="notif-page">
 
-  <!-- ── Tabs ─────────────────────────────────────────────────────────────── -->
-  <div class="tab-bar">
-    <button
-      type="button"
-      class="tab-btn"
-      [class.active]="activeTab() === 'inbox'"
-      (click)="switchTab('inbox')">
-      <i class="pi pi-inbox"></i>
-      Bandeja
-      @if (unreadCount() > 0) {
-        <span class="tab-badge">{{ unreadCount() }}</span>
-      }
-    </button>
-    <button
-      type="button"
-      class="tab-btn"
-      [class.active]="activeTab() === 'preferences'"
-      (click)="switchTab('preferences')">
-      <i class="pi pi-sliders-h"></i>
-      Preferencias
-    </button>
-  </div>
-
   <!-- ════════════════════════════════════════════════════════════════════════
        INBOX TAB
        ════════════════════════════════════════════════════════════════════════ -->

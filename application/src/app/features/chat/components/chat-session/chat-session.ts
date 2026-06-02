@@ -28,11 +28,13 @@ import {
 import type { Observable } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type {
+  AuraChatAiMode,
   AuraChatWsServerMessage,
   ChatDetailDto,
   ChatFragment,
   ChecklistMode,
   CursorPageResult,
+  FeedbackReason,
   FeedbackValue,
   MessageDto,
   MessageSenderType,
@@ -41,6 +43,7 @@ import type {
   ReportType,
   ThreadReplyDto,
 } from '@aura-types/aura-chat-service.types';
+import { AURA_CHAT_AI_MODE_DEFAULT } from '@aura-types/aura-chat-service.types';
 import { ChatService } from '@core/services/chat/chat.service';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
@@ -51,6 +54,10 @@ import { ChatOptionsDrawer, type DocumentItem } from '../chat-options-drawer/cha
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
 import { UserState } from '@core/state/user.state';
+import {
+  FeedbackDialogComponent,
+  type DislikeFeedbackResult,
+} from '../feedback-dialog/feedback-dialog.component';
 
 interface ChatMessage {
   readonly id: number;
@@ -61,6 +68,8 @@ interface ChatMessage {
   readonly created_at: string;
   readonly is_bookmarked: boolean;
   readonly user_feedback: FeedbackValue | null;
+  readonly user_feedback_reason?: FeedbackReason | null;
+  readonly user_feedback_comment?: string | null;
   readonly thread_reply_count: number;
   readonly fragments?: readonly ChatFragment[] | null;
 }
@@ -71,10 +80,25 @@ const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: st
   { value: 'OPORD', label: 'OPORD — Operaciones', placeholder: 'Describí la misión, situación, plan de ejecución…' },
 ];
 
+interface AiModeOption {
+  readonly value: AuraChatAiMode;
+  readonly label: string;
+  readonly icon: string;
+  readonly hint: string;
+  readonly permission: string | null;
+}
+
+const AI_MODES: readonly AiModeOption[] = [
+  { value: 'document_question', label: 'Documentos', icon: 'pi-database', hint: 'Responde usando tus documentos (RAG).', permission: null },
+  { value: 'general_chat', label: 'General', icon: 'pi-comment', hint: 'Asistente general, sin documentos.', permission: 'LLM_GENERAL_CHAT' },
+  { value: 'rag_agent', label: 'Agente RAG', icon: 'pi-sitemap', hint: 'Pipeline RAG avanzado con razonamiento.', permission: 'LLM_AGENT' },
+  { value: 'agent', label: 'Agente', icon: 'pi-bolt', hint: 'Agente con herramientas sobre documentos.', permission: 'LLM_AGENT' },
+];
+
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe],
+  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, FeedbackDialogComponent],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
 })
@@ -120,6 +144,7 @@ export class ChatSessionComponent implements OnDestroy {
   readonly peerTypingIds = signal<Set<number>>(new Set());
   readonly activeThreadMessageId = signal<number | null>(null);
   readonly threadReplies = signal<ThreadReplyDto[]>([]);
+  readonly feedbackDialogMessageId = signal<number | null>(null);
   readonly threadLoading = signal(false);
   readonly threadReplyText = signal('');
   readonly submittingReply = signal(false);
@@ -148,6 +173,20 @@ export class ChatSessionComponent implements OnDestroy {
   isTyping = signal(false);
   optionsOpen = signal(false);
   readonly composerMode = signal<'chat' | 'report' | 'checklist'>('chat');
+
+  // ── AI chat mode (document_question / general_chat / rag_agent / agent) ──
+  readonly aiModes = AI_MODES;
+  readonly aiMode = signal<AuraChatAiMode>(AURA_CHAT_AI_MODE_DEFAULT);
+  readonly aiModeDropdownOpen = signal(false);
+  readonly availableAiModes = computed(() => {
+    const perms = this.userState.user()?.permissions ?? [];
+    return AI_MODES.filter((m) => m.permission === null || perms.includes(m.permission));
+  });
+  readonly showAiModeSelector = computed(() => this.availableAiModes().length > 1);
+  readonly activeAiMode = computed(
+    () => AI_MODES.find((m) => m.value === this.aiMode()) ?? AI_MODES[0],
+  );
+
   readonly genReportType = signal<ReportType>('SITREP');
   readonly genMode = signal<'direct' | 'rag'>('direct');
   readonly genMessage = signal('');
@@ -205,11 +244,17 @@ export class ChatSessionComponent implements OnDestroy {
           this.composerMode.set('chat');
           this.genMessage.set('');
           this.modeDropdownOpen.set(false);
+          this.aiMode.set(AURA_CHAT_AI_MODE_DEFAULT);
+          this.aiModeDropdownOpen.set(false);
           this.loading = true;
           this.chat = null;
           this.messages.set([]);
 
           const pending = this.consumePendingMessageFromHistory();
+          const pendingAiMode = this.consumePendingAiModeFromHistory();
+          if (pendingAiMode) {
+            this.aiMode.set(pendingAiMode);
+          }
 
           return forkJoin({
             detail: this.http.getChat(id),
@@ -284,6 +329,16 @@ export class ChatSessionComponent implements OnDestroy {
 
   onGenTypeChange(value: string): void {
     this.genReportType.set(value as ReportType);
+  }
+
+  toggleAiModeDropdown(): void {
+    this.aiModeDropdownOpen.update((v) => !v);
+  }
+
+  setAiMode(mode: AuraChatAiMode): void {
+    this.aiMode.set(mode);
+    this.aiModeDropdownOpen.set(false);
+    setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
   }
 
   generateTool(): void {
@@ -597,7 +652,7 @@ export class ChatSessionComponent implements OnDestroy {
             this.toast.show('Sin conexión en tiempo real. Reconectá e intentá de nuevo.', 'error');
             return;
           }
-          this.socket.sendUserMessage(text);
+          this.socket.sendUserMessage(text, this.aiMode());
         },
         error: () => { done(); this.toast.show('No se pudo transcribir el audio.', 'error'); },
       });
@@ -632,10 +687,23 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   regenerateResponse(): void {
-    if (!this.chatId || !this.canRegenerate()) return;
+    if (!this.chatId || !this.canRegenerate() || this.regenerating()) return;
+
+    // Streaming path (preferred): same pipeline as a normal send, so the reply
+    // is regenerated under identical conditions (prompt, mode, context) and the
+    // user sees the same progress states. Remove the old answer immediately.
+    if (this.socket) {
+      this.removeLastAiMessage();
+      this.regenerating.set(true);
+      this.isTyping.set(true);
+      this.socket.sendRegenerate(this.aiMode());
+      return;
+    }
+
+    // Fallback (no socket): non-streaming REST regeneration, replace in place.
     this.regenerating.set(true);
     this.http
-      .regenerateAssistantResponse(this.chatId)
+      .regenerateAssistantResponse(this.chatId, this.aiMode())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
@@ -663,6 +731,25 @@ export class ChatSessionComponent implements OnDestroy {
       });
   }
 
+  private removeLastAiMessage(): void {
+    let removedId: number | null = null;
+    this.messages.update((msgs) => {
+      const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'system');
+      if (lastSystemIdx === -1) return msgs;
+      const realIdx = msgs.length - 1 - lastSystemIdx;
+      removedId = msgs[realIdx].id;
+      return msgs.filter((_, i) => i !== realIdx);
+    });
+    if (removedId != null) {
+      this.messageFragments.update((m) => {
+        if (!m.has(removedId!)) return m;
+        const n = new Map(m);
+        n.delete(removedId!);
+        return n;
+      });
+    }
+  }
+
   sendMessage(): void {
     if (!this.newMessage.trim() || !this.chat || this.sendBlocked()) return;
 
@@ -671,7 +758,7 @@ export class ChatSessionComponent implements OnDestroy {
     queueMicrotask(() => this.autosizeTextarea());
 
     if (this.socket) {
-      this.socket.sendUserMessage(text);
+      this.socket.sendUserMessage(text, this.aiMode());
       setTimeout(() => this.scrollToBottom(), 50);
       return;
     }
@@ -679,7 +766,7 @@ export class ChatSessionComponent implements OnDestroy {
     if (!this.chatId) return;
     this.isTyping.set(true);
     this.http
-      .sendMessageJson(this.chatId, { message: text })
+      .sendMessageJson(this.chatId, { message: text, mode: this.aiMode() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
@@ -894,31 +981,84 @@ export class ChatSessionComponent implements OnDestroy {
 
   toggleFeedback(message: ChatMessage, value: FeedbackValue): void {
     if (!this.chatId) return;
-    this.setProcessing(message.id, true);
     const isToggleOff = message.user_feedback === value;
-    const onSuccess = () => {
-      this.messages.update((msgs) =>
-        msgs.map((m) =>
-          m.id === message.id ? { ...m, user_feedback: isToggleOff ? null : value } : m
-        )
-      );
-      this.setProcessing(message.id, false);
-    };
-    const onError = () => {
-      this.toast.show('No se pudo registrar el feedback.', 'error');
-      this.setProcessing(message.id, false);
-    };
+
     if (isToggleOff) {
-      this.http
-        .deleteMessageFeedback(this.chatId, message.id)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: onSuccess, error: onError });
-    } else {
-      this.http
-        .setMessageFeedback(this.chatId, message.id, { value })
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({ next: onSuccess, error: onError });
+      this.removeFeedback(message.id);
+      return;
     }
+
+    // Thumbs down: ask for an optional reason/comment first.
+    if (value === -1) {
+      this.feedbackDialogMessageId.set(message.id);
+      return;
+    }
+
+    this.submitFeedback(message.id, 1, null, null);
+  }
+
+  onFeedbackDialogSubmit(result: DislikeFeedbackResult): void {
+    const messageId = this.feedbackDialogMessageId();
+    this.feedbackDialogMessageId.set(null);
+    if (messageId == null) return;
+    this.submitFeedback(messageId, -1, result.reason, result.comment);
+  }
+
+  onFeedbackDialogCancel(): void {
+    this.feedbackDialogMessageId.set(null);
+  }
+
+  private submitFeedback(
+    messageId: number,
+    value: FeedbackValue,
+    reason: FeedbackReason | null,
+    comment: string | null
+  ): void {
+    if (!this.chatId) return;
+    this.setProcessing(messageId, true);
+    this.http
+      .setMessageFeedback(this.chatId, messageId, { value, reason, comment })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.messages.update((msgs) =>
+            msgs.map((m) =>
+              m.id === messageId
+                ? { ...m, user_feedback: value, user_feedback_reason: reason, user_feedback_comment: comment }
+                : m
+            )
+          );
+          this.setProcessing(messageId, false);
+        },
+        error: () => {
+          this.toast.show('No se pudo registrar el feedback.', 'error');
+          this.setProcessing(messageId, false);
+        },
+      });
+  }
+
+  private removeFeedback(messageId: number): void {
+    if (!this.chatId) return;
+    this.setProcessing(messageId, true);
+    this.http
+      .deleteMessageFeedback(this.chatId, messageId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.messages.update((msgs) =>
+            msgs.map((m) =>
+              m.id === messageId
+                ? { ...m, user_feedback: null, user_feedback_reason: null, user_feedback_comment: null }
+                : m
+            )
+          );
+          this.setProcessing(messageId, false);
+        },
+        error: () => {
+          this.toast.show('No se pudo registrar el feedback.', 'error');
+          this.setProcessing(messageId, false);
+        },
+      });
   }
 
   exportMessageAsPdf(message: ChatMessage): void {
@@ -997,6 +1137,20 @@ export class ChatSessionComponent implements OnDestroy {
       question_processing: 'Procesando pregunta…',
       context_retrieval: 'Buscando contexto relevante…',
       answer_generation: 'Generando respuesta…',
+      // RAG / tool agent pipeline steps
+      analyze: 'Analizando la consulta…',
+      analysis: 'Analizando la consulta…',
+      retrieve: 'Recuperando contexto documental…',
+      retrieval: 'Recuperando contexto documental…',
+      evaluate: 'Evaluando la información…',
+      evaluation: 'Evaluando la información…',
+      reason: 'Razonando sobre la respuesta…',
+      reasoning: 'Razonando sobre la respuesta…',
+      synthesize: 'Sintetizando la respuesta…',
+      synthesis: 'Sintetizando la respuesta…',
+      tool_call: 'Usando herramientas…',
+      tool_execution: 'Ejecutando herramientas…',
+      planning: 'Planificando…',
     };
     return step ? (labels[step] ?? step) : '';
   }
@@ -1041,6 +1195,16 @@ export class ChatSessionComponent implements OnDestroy {
       history.replaceState(rest, '');
     }
     return pending?.trim() || undefined;
+  }
+
+  private consumePendingAiModeFromHistory(): AuraChatAiMode | undefined {
+    const navState = history.state as { pendingAiMode?: unknown } | null;
+    const raw = navState?.pendingAiMode;
+    if (navState && 'pendingAiMode' in navState) {
+      const { pendingAiMode: _m, ...rest } = navState;
+      history.replaceState(rest, '');
+    }
+    return this.aiModes.some((m) => m.value === raw) ? (raw as AuraChatAiMode) : undefined;
   }
 
   private consumePendingGenerationFromHistory(): {
@@ -1099,7 +1263,7 @@ export class ChatSessionComponent implements OnDestroy {
     }
 
     if (pending?.trim()) {
-      conn.sendUserMessage(pending.trim());
+      conn.sendUserMessage(pending.trim(), this.aiMode());
     }
   }
 
@@ -1197,6 +1361,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
+        this.regenerating.set(false);
         if (msg.fragments?.length) {
           const fragId = msg.id ?? sid ?? Date.now();
           this.messageFragments.update((m) => {
@@ -1214,6 +1379,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
+        this.regenerating.set(false);
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
         break;
@@ -1222,6 +1388,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
+        this.regenerating.set(false);
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
         break;

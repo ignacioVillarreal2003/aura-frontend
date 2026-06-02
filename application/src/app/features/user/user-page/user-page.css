@@ -126,6 +126,8 @@ body.theme-light .user-nav__logout:hover {
 }
 
 .user-content {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
@@ -149,10 +151,23 @@ body.theme-light .user-nav__logout:hover {
   border-radius: 4px;
 }
 
-/* El componente del outlet crece en altura natural; el scroll lo hace .user-content */
+/*
+ * El outlet llena el área de contenido para que las secciones (Perfil,
+ * Invitaciones, Notificaciones) ocupen toda la altura. El componente enrutado
+ * es hermano del <router-outlet>; cada uno fija `flex: 1` en su propio :host
+ * (la encapsulación de vistas impide estirarlo con un selector `> *` desde acá).
+ * El scroll lo hace .user-content cuando el contenido excede el viewport.
+ */
 .user-main-outlet {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
   min-height: 0;
+}
+
+/* El router-outlet no pinta; ocultarlo evita que ocupe espacio como flex item. */
+.user-main-outlet > router-outlet {
+  display: none;
 }
 
 @media (max-width: 768px) {

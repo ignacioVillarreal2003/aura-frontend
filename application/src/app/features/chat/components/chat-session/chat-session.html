@@ -356,6 +356,43 @@
               aria-hidden="true"
               tabindex="-1"
             />
+            @if (composerMode() === 'chat' && showAiModeSelector()) {
+              <div class="composer-mode-selector ai-mode-selector">
+                @if (aiModeDropdownOpen()) {
+                  <div class="mode-backdrop" (click)="aiModeDropdownOpen.set(false)"></div>
+                }
+                <button
+                  type="button"
+                  class="composer-mode-trigger ai-mode-trigger"
+                  [class.composer-mode-trigger--active]="aiMode() !== 'document_question'"
+                  (click)="toggleAiModeDropdown()"
+                  [attr.aria-expanded]="aiModeDropdownOpen()"
+                  [attr.title]="activeAiMode().hint"
+                  aria-label="Cambiar modo de IA">
+                  <i [ngClass]="['pi', activeAiMode().icon]" aria-hidden="true"></i>
+                  <span>{{ activeAiMode().label }}</span>
+                  <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="aiModeDropdownOpen()" aria-hidden="true"></i>
+                </button>
+                @if (aiModeDropdownOpen()) {
+                  <div class="mode-dropdown-menu ai-mode-menu">
+                    @for (m of availableAiModes(); track m.value) {
+                      <button
+                        type="button"
+                        class="mode-dropdown-item ai-mode-item"
+                        [class.mode-dropdown-item--active]="aiMode() === m.value"
+                        [attr.title]="m.hint"
+                        (click)="setAiMode(m.value)">
+                        <i [ngClass]="['pi', m.icon]" aria-hidden="true"></i>
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">{{ m.label }}</span>
+                          <span class="ai-mode-item__hint">{{ m.hint }}</span>
+                        </span>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
             @if (canUseTools()) {
               <div class="composer-mode-selector">
                 @if (modeDropdownOpen()) {
@@ -479,5 +516,12 @@
       </div>
     }
     </div>
+  }
+
+  @if (feedbackDialogMessageId() !== null) {
+    <app-feedback-dialog
+      (submitFeedback)="onFeedbackDialogSubmit($event)"
+      (cancel)="onFeedbackDialogCancel()">
+    </app-feedback-dialog>
   }
 </div>

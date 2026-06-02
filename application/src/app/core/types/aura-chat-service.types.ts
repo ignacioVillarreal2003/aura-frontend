@@ -73,6 +73,15 @@ export type MembershipRole = 'owner' | 'editor' | 'reader';
 
 export type FeedbackValue = 1 | -1;
 
+export type FeedbackReason =
+  | 'incorrect'
+  | 'incomplete'
+  | 'off_topic'
+  | 'tone'
+  | 'too_long'
+  | 'hallucination'
+  | 'other';
+
 export type HealthStatus = 'ok' | 'degraded';
 
 export type HealthCheckEntry = Record<string, 'ok' | 'error'>;
@@ -120,6 +129,8 @@ export interface MessageDto {
   readonly created_at: IsoDateTimeString;
   readonly is_bookmarked: boolean;
   readonly user_feedback: FeedbackValue | null;
+  readonly user_feedback_reason: FeedbackReason | null;
+  readonly user_feedback_comment: string | null;
   readonly thread_reply_count: number;
   readonly fragments?: readonly ChatFragment[] | null;
 }
@@ -137,6 +148,8 @@ export interface MessageFeedbackDto {
   readonly message_id: number;
   readonly user_id: number;
   readonly value: FeedbackValue;
+  readonly reason: FeedbackReason | null;
+  readonly comment: string | null;
   readonly created_at: IsoDateTimeString;
   readonly updated_at: IsoDateTimeString | null;
 }
@@ -260,10 +273,60 @@ export interface SendThreadReplyBody {
 
 export interface SetFeedbackBody {
   readonly value: FeedbackValue;
+  readonly reason?: FeedbackReason | null;
+  readonly comment?: string | null;
+}
+
+export interface FeedbackAnalyticsQuery {
+  readonly days?: number;
+}
+
+export interface FeedbackSummaryDto {
+  readonly total: number;
+  readonly thumbs_up: number;
+  readonly thumbs_down: number;
+  readonly satisfaction_rate: number | null;
+}
+
+export interface FeedbackAssistantRowDto {
+  readonly assistant_id: number | null;
+  readonly assistant_name: string;
+  readonly total: number;
+  readonly thumbs_up: number;
+  readonly thumbs_down: number;
+  readonly satisfaction_rate: number | null;
+}
+
+export interface FeedbackReasonRowDto {
+  readonly reason: FeedbackReason | null;
+  readonly count: number;
+}
+
+export interface FeedbackNegativeRowDto {
+  readonly id: number;
+  readonly message_id: number;
+  readonly assistant_id: number | null;
+  readonly assistant_name: string;
+  readonly reason: FeedbackReason | null;
+  readonly comment: string | null;
+  readonly user_id: number;
+  readonly created_at: IsoDateTimeString;
+  readonly message_excerpt: string;
+}
+
+export interface FeedbackAnalyticsDto {
+  readonly window_days: number;
+  readonly start: IsoDateTimeString;
+  readonly end: IsoDateTimeString;
+  readonly summary: FeedbackSummaryDto;
+  readonly assistants: readonly FeedbackAssistantRowDto[];
+  readonly reasons: readonly FeedbackReasonRowDto[];
+  readonly recent_negative: readonly FeedbackNegativeRowDto[];
 }
 
 export interface SendMessageTextJsonBody {
   readonly message: string;
+  readonly mode?: AuraChatAiMode;
 }
 
 export interface AddMembersBody {
@@ -520,8 +583,13 @@ export interface StartChatResponseDto {
   readonly is_new: boolean;
 }
 
+export type AuraChatAiMode = 'document_question' | 'general_chat' | 'rag_agent' | 'agent';
+
+export const AURA_CHAT_AI_MODE_DEFAULT: AuraChatAiMode = 'document_question';
+
 export type AuraChatWsClientMessage =
-  | { readonly type: 'chat.message'; readonly message: string }
+  | { readonly type: 'chat.message'; readonly message: string; readonly mode?: AuraChatAiMode }
+  | { readonly type: 'chat.regenerate'; readonly mode?: AuraChatAiMode }
   | { readonly type: 'chat.typing'; readonly is_typing: boolean };
 
 export type AuraChatWsServerMessage =

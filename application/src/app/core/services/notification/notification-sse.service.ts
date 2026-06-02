@@ -1,10 +1,20 @@
 import { Injectable, NgZone, OnDestroy, inject } from '@angular/core';
-import { Observable, Subject, Subscription, retry, repeat, timer } from 'rxjs';
+import { Observable, Subject, Subscription, firstValueFrom, retry, repeat, timer } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import type { SseEvent, SseEventType } from '@core/types/aura-notification-service.types';
 
+/**
+ * Shared SSE connection to the notification service.
+ *
+ * Singleton, so several consumers (the chat shell, the notifications page) can
+ * subscribe to `events$` at once. Connection lifecycle is **ref-counted** via
+ * `connect()`/`disconnect()`: the underlying stream stays open while at least
+ * one consumer holds it, and only closes when the last one releases. This
+ * prevents one component's `disconnect()` from tearing down the stream another
+ * component still depends on.
+ */
 @Injectable({ providedIn: 'root' })
 export class NotificationSseService implements OnDestroy {
   private readonly auth = inject(AuthenticationService);
@@ -12,23 +22,32 @@ export class NotificationSseService implements OnDestroy {
   private readonly base = environment.notificationApiUrl.replace(/\/$/, '');
 
   private subscription: Subscription | null = null;
+  private refCount = 0;
   private readonly destroy$ = new Subject<void>();
   private readonly _events$ = new Subject<SseEvent>();
 
   readonly events$ = this._events$.asObservable();
 
+  /** Acquire the shared stream. Pair every `connect()` with a `disconnect()`. */
   connect(): void {
+    this.refCount++;
     if (this.subscription) return;
-    this.subscription = this.createStream$().pipe(
-      retry({ delay: (_, retryCount) => timer(Math.min(retryCount * 2000, 30_000)) }),
-      repeat({ delay: 3000 }),
-      takeUntil(this.destroy$),
-    ).subscribe({
-      next: event => this.ngZone.run(() => this._events$.next(event)),
-    });
+
+    this.subscription = this.createStream$()
+      .pipe(
+        retry({ delay: (_, retryCount) => timer(Math.min(retryCount * 2000, 30_000)) }),
+        repeat({ delay: 3000 }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: event => this.ngZone.run(() => this._events$.next(event)),
+      });
   }
 
+  /** Release one hold on the stream; closes it only when no consumers remain. */
   disconnect(): void {
+    if (this.refCount > 0) this.refCount--;
+    if (this.refCount > 0) return;
     this.subscription?.unsubscribe();
     this.subscription = null;
   }
@@ -36,15 +55,31 @@ export class NotificationSseService implements OnDestroy {
   private createStream$(): Observable<SseEvent> {
     return new Observable<SseEvent>(observer => {
       const url = `${this.base}/api/v1/notifications/stream/`;
-      const token = this.auth.getToken();
       const controller = new AbortController();
+      let refreshedOnce = false;
+
+      const fetchStream = (): Promise<Response> => {
+        const token = this.auth.getToken();
+        return fetch(url, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          signal: controller.signal,
+        });
+      };
 
       const run = async (): Promise<void> => {
         try {
-          const response = await fetch(url, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            signal: controller.signal,
-          });
+          let response = await fetchStream();
+
+          // Self-heal an expired access token once before giving up to the retry loop.
+          if (response.status === 401 && !refreshedOnce) {
+            refreshedOnce = true;
+            try {
+              await firstValueFrom(this.auth.refreshSession());
+              response = await fetchStream();
+            } catch {
+              /* refresh failed; fall through to the error path below */
+            }
+          }
 
           if (!response.ok || !response.body) {
             observer.error(new Error(`SSE error: ${response.status}`));
@@ -95,7 +130,9 @@ export class NotificationSseService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.disconnect();
+    this.refCount = 0;
+    this.subscription?.unsubscribe();
+    this.subscription = null;
     this.destroy$.next();
     this.destroy$.complete();
   }

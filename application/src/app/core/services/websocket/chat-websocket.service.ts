@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import type {
+  AuraChatAiMode,
   AuraChatWsClientMessage,
   AuraChatWsServerMessage,
 } from '@aura-types/aura-chat-service.types';
@@ -10,13 +11,36 @@ import { ToastService } from '@core/components/toast-service';
 
 const MAX_OUTBOUND_QUEUE = 50;
 
+interface OutboundMessage {
+  readonly kind: 'message' | 'regenerate';
+  readonly text?: string;
+  readonly mode?: AuraChatAiMode;
+}
+
 export type ChatSocketConnection = {
   readonly messages$: Observable<AuraChatWsServerMessage>;
-  sendUserMessage(text: string): void;
+  sendUserMessage(text: string, mode?: AuraChatAiMode): void;
+  sendRegenerate(mode?: AuraChatAiMode): void;
   sendTyping(isTyping: boolean): void;
   close(): void;
   readonly whenOpen: Promise<void>;
 };
+
+function buildChatMessagePayload(text: string, mode?: AuraChatAiMode): AuraChatWsClientMessage {
+  return mode
+    ? { type: 'chat.message', message: text, mode }
+    : { type: 'chat.message', message: text };
+}
+
+function buildRegeneratePayload(mode?: AuraChatAiMode): AuraChatWsClientMessage {
+  return mode ? { type: 'chat.regenerate', mode } : { type: 'chat.regenerate' };
+}
+
+function buildOutboundPayload(msg: OutboundMessage): AuraChatWsClientMessage {
+  return msg.kind === 'regenerate'
+    ? buildRegeneratePayload(msg.mode)
+    : buildChatMessagePayload(msg.text ?? '', msg.mode);
+}
 
 function buildChatWebSocketUrl(chatApiHttpBase: string, chatId: number, token: string): string {
   const u = new URL(chatApiHttpBase);
@@ -40,7 +64,7 @@ export class ChatWebSocketService {
 
     const toast = this.toast;
     const inbound = new Subject<AuraChatWsServerMessage>();
-    const outboundQueue: string[] = [];
+    const outboundQueue: OutboundMessage[] = [];
     let openResolve: (() => void) | null = null;
     let openReject: ((err: Error) => void) | null = null;
     const whenOpen = new Promise<void>((resolve, reject) => {
@@ -54,25 +78,28 @@ export class ChatWebSocketService {
       while (ws.readyState === WebSocket.OPEN && outboundQueue.length > 0) {
         const next = outboundQueue.shift();
         if (next != null) {
-          const payload: AuraChatWsClientMessage = { type: 'chat.message', message: next };
-          ws.send(JSON.stringify(payload));
+          ws.send(JSON.stringify(buildOutboundPayload(next)));
         }
       }
     };
 
-    const enqueueUserMessage = (raw: string): void => {
+    const enqueueOutbound = (msg: OutboundMessage): void => {
+      if (outboundQueue.length >= MAX_OUTBOUND_QUEUE) {
+        toast.show('Demasiados mensajes en cola. Esperá un momento.', 'error');
+        return;
+      }
+      outboundQueue.push(msg);
+      flushOutbound();
+    };
+
+    const enqueueUserMessage = (raw: string, mode?: AuraChatAiMode): void => {
       const text = raw.trim();
       if (!text) return;
       if (text.length > AURA_CHAT_WS_MESSAGE_MAX_CHAR) {
         toast.show('El mensaje es demasiado largo.', 'error');
         return;
       }
-      if (outboundQueue.length >= MAX_OUTBOUND_QUEUE) {
-        toast.show('Demasiados mensajes en cola. Esperá un momento.', 'error');
-        return;
-      }
-      outboundQueue.push(text);
-      flushOutbound();
+      enqueueOutbound({ kind: 'message', text, mode });
     };
 
     ws.onopen = () => {
@@ -116,7 +143,7 @@ export class ChatWebSocketService {
     return {
       messages$: inbound.asObservable(),
       whenOpen,
-      sendUserMessage(text: string): void {
+      sendUserMessage(text: string, mode?: AuraChatAiMode): void {
         if (ws.readyState === WebSocket.OPEN) {
           const t = text.trim();
           if (!t) return;
@@ -124,12 +151,22 @@ export class ChatWebSocketService {
             toast.show('El mensaje es demasiado largo.', 'error');
             return;
           }
-          const payload: AuraChatWsClientMessage = { type: 'chat.message', message: t };
-          ws.send(JSON.stringify(payload));
+          ws.send(JSON.stringify(buildChatMessagePayload(t, mode)));
           return;
         }
         if (ws.readyState === WebSocket.CONNECTING) {
-          enqueueUserMessage(text);
+          enqueueUserMessage(text, mode);
+          return;
+        }
+        toast.show('Conexión no disponible. Recargá la página.', 'error');
+      },
+      sendRegenerate(mode?: AuraChatAiMode): void {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(buildRegeneratePayload(mode)));
+          return;
+        }
+        if (ws.readyState === WebSocket.CONNECTING) {
+          enqueueOutbound({ kind: 'regenerate', mode });
           return;
         }
         toast.show('Conexión no disponible. Recargá la página.', 'error');
