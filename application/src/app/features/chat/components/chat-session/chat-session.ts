@@ -28,17 +28,20 @@ import {
 import type { Observable } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type {
+  ArtifactMode,
+  ArtifactStatus,
+  ArtifactSummaryDto,
+  ArtifactType,
   AuraChatAiMode,
   AuraChatWsServerMessage,
   ChatDetailDto,
   ChatFragment,
   ChecklistMode,
-  CursorPageResult,
   FeedbackReason,
   FeedbackValue,
-  MessageDto,
   MessageSenderType,
-  PinnedMessageDto,
+  PageNumberResult,
+  PinnedArtifactDto,
   ReportMode,
   ReportType,
   ThreadReplyDto,
@@ -66,12 +69,19 @@ interface ChatMessage {
   readonly sender_type: MessageSenderType;
   readonly created_by: number | null;
   readonly created_at: string;
-  readonly is_bookmarked: boolean;
+  is_bookmarked: boolean;
   readonly user_feedback: FeedbackValue | null;
   readonly user_feedback_reason?: FeedbackReason | null;
   readonly user_feedback_comment?: string | null;
   readonly thread_reply_count: number;
   readonly fragments?: readonly ChatFragment[] | null;
+  readonly artifactType: ArtifactType;
+  readonly artifactTitle?: string;
+  readonly artifactDescription?: string;
+  readonly artifactStatus?: ArtifactStatus;
+  readonly artifactMode?: ArtifactMode;
+  readonly artifactLinkedId?: number | null;
+  readonly messageId?: number;
 }
 
 const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: string }[] = [
@@ -155,7 +165,7 @@ export class ChatSessionComponent implements OnDestroy {
     if (msgs.length === 0) return false;
     const last = msgs[msgs.length - 1];
     return (
-      last.sender_type === 'system' &&
+      last.sender_type === 'assistant' &&
       !this.isTyping() &&
       this.streamingAssistantId() === null &&
       !this.regenerating()
@@ -259,7 +269,7 @@ export class ChatSessionComponent implements OnDestroy {
           return forkJoin({
             detail: this.http.getChat(id),
             messages: this.loadAllMessagesChronological(id),
-            pinned: this.http.listPinnedMessages(id, { page_size: 100 }),
+            pinned: this.http.listPinnedArtifacts(id, { page_size: 100 }),
           }).pipe(
             catchError(() => {
               this.toast.show('No se pudo cargar el chat.', 'error');
@@ -271,7 +281,7 @@ export class ChatSessionComponent implements OnDestroy {
               this.chatShell.setCurrentChat(detail);
               this.messages.set(msgs);
               this._loadFragmentsFromMessages(msgs);
-              this.pinnedMessageIds.set(new Set(pinned.results.map((p: PinnedMessageDto) => p.message_id)));
+              this.pinnedMessageIds.set(new Set(pinned.results.map((p: PinnedArtifactDto) => p.artifact_id)));
               this.loading = false;
               this.http.markChatAsRead(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
               void this.openWebSocketAfterLoad(id, sessionId, pending);
@@ -295,11 +305,13 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   private loadAllMessagesChronological(chatId: number): Observable<ChatMessage[]> {
-    return this.http.listMessages(chatId).pipe(
-      expand((page: CursorPageResult<MessageDto>) =>
-        page.next ? this.http.listMessages(chatId, { url: page.next }) : EMPTY
+    return this.http.listChatArtifacts(chatId, { page_size: 100 }).pipe(
+      expand((page: PageNumberResult<ArtifactSummaryDto>) =>
+        page.next ? this.http.listChatArtifacts(chatId, { url: page.next }) : EMPTY
       ),
-      map((page: CursorPageResult<MessageDto>) => page.results as unknown as ChatMessage[]),
+      map((page: PageNumberResult<ArtifactSummaryDto>) =>
+        page.results.map((a) => this._artifactToMessage(a))
+      ),
       reduce<ChatMessage[], ChatMessage[]>((acc, curr) => [...acc, ...curr], []),
       map((msgs) =>
         [...msgs].sort(
@@ -307,6 +319,41 @@ export class ChatSessionComponent implements OnDestroy {
         )
       ),
     );
+  }
+
+  private _artifactToMessage(artifact: ArtifactSummaryDto): ChatMessage {
+    if (artifact.type === 'MESSAGE' && artifact.message) {
+      return {
+        id: artifact.id,
+        chat_id: artifact.source_chat_id,
+        message: artifact.message.message,
+        sender_type: artifact.message.sender_type,
+        created_by: artifact.created_by,
+        created_at: artifact.message.created_at,
+        is_bookmarked: false,
+        user_feedback: null,
+        thread_reply_count: 0,
+        artifactType: 'MESSAGE',
+        messageId: artifact.message.id,
+      };
+    }
+    return {
+      id: artifact.id,
+      chat_id: artifact.source_chat_id,
+      message: artifact.description || artifact.title,
+      sender_type: 'assistant' as MessageSenderType,
+      created_by: artifact.created_by,
+      created_at: artifact.created_at,
+      is_bookmarked: false,
+      user_feedback: null,
+      thread_reply_count: 0,
+      artifactType: artifact.type,
+      artifactTitle: artifact.title,
+      artifactDescription: artifact.description,
+      artifactStatus: artifact.status,
+      artifactMode: artifact.mode,
+      artifactLinkedId: artifact.linked_id ?? null,
+    };
   }
 
   toggleOptions(): void {
@@ -700,41 +747,13 @@ export class ChatSessionComponent implements OnDestroy {
       return;
     }
 
-    // Fallback (no socket): non-streaming REST regeneration, replace in place.
-    this.regenerating.set(true);
-    this.http
-      .regenerateAssistantResponse(this.chatId, this.aiMode())
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          const text = res.assistant?.answer ?? '';
-          if (text) {
-            this.messages.update((msgs) => {
-              const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'system');
-              if (lastSystemIdx === -1) return msgs;
-              const realIdx = msgs.length - 1 - lastSystemIdx;
-              return msgs.map((m, i) =>
-                i === realIdx ? { ...m, message: text, created_at: new Date().toISOString() } : m
-              );
-            });
-          }
-          if (res.assistant_error) {
-            this.toast.show(res.assistant_error.detail, 'error');
-          }
-          this.regenerating.set(false);
-          setTimeout(() => this.scrollToBottom(), 50);
-        },
-        error: () => {
-          this.toast.show('No se pudo regenerar la respuesta.', 'error');
-          this.regenerating.set(false);
-        },
-      });
+    this.toast.show('Reconectá el chat para regenerar la respuesta.', 'error');
   }
 
   private removeLastAiMessage(): void {
     let removedId: number | null = null;
     this.messages.update((msgs) => {
-      const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'system');
+      const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'assistant');
       if (lastSystemIdx === -1) return msgs;
       const realIdx = msgs.length - 1 - lastSystemIdx;
       removedId = msgs[realIdx].id;
@@ -766,11 +785,23 @@ export class ChatSessionComponent implements OnDestroy {
     if (!this.chatId) return;
     this.isTyping.set(true);
     this.http
-      .sendMessageJson(this.chatId, { message: text, mode: this.aiMode() })
+      .sendMessageJson(this.chatId, { chat_id: this.chatId!, message: text, mode: this.aiMode() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
-          const userRow: ChatMessage = { ...res.message, created_by: res.message.created_by };
+          const userRow: ChatMessage = {
+            id: res.message.artifact_id ?? res.message.id,
+            chat_id: res.message.chat_id,
+            message: res.message.message,
+            sender_type: res.message.sender_type,
+            created_by: res.message.created_by,
+            created_at: res.message.created_at,
+            is_bookmarked: false,
+            user_feedback: null,
+            thread_reply_count: 0,
+            artifactType: 'MESSAGE',
+            messageId: res.message.id,
+          };
           this.messages.update((m) => [...m, userRow]);
           if (res.assistant?.answer) {
             this.messages.update((m) => [
@@ -779,12 +810,13 @@ export class ChatSessionComponent implements OnDestroy {
                 id: Date.now(),
                 chat_id: this.chatId!,
                 message: res.assistant!.answer,
-                sender_type: 'system' as MessageSenderType,
+                sender_type: 'assistant' as MessageSenderType,
                 created_by: null,
                 created_at: new Date().toISOString(),
                 is_bookmarked: false,
                 user_feedback: null,
                 thread_reply_count: 0,
+                artifactType: 'MESSAGE' as ArtifactType,
               },
             ]);
           }
@@ -856,9 +888,9 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   deleteMessage(message: ChatMessage): void {
-    if (!this.chatId || !window.confirm('¿Eliminar este mensaje?')) return;
+    if (!window.confirm('¿Eliminar este artefacto?')) return;
     this.setProcessing(message.id, true);
-    this.http.deleteMessage(this.chatId, message.id)
+    this.http.deleteArtifact(message.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -866,18 +898,17 @@ export class ChatSessionComponent implements OnDestroy {
           this.setProcessing(message.id, false);
         },
         error: () => {
-          this.toast.show('No se pudo eliminar el mensaje.', 'error');
+          this.toast.show('No se pudo eliminar.', 'error');
           this.setProcessing(message.id, false);
         },
       });
   }
 
   toggleBookmark(message: ChatMessage): void {
-    if (!this.chatId) return;
     this.setProcessing(message.id, true);
     const obs$ = message.is_bookmarked
-      ? this.http.unbookmarkMessage(this.chatId, message.id)
-      : this.http.bookmarkMessage(this.chatId, message.id);
+      ? this.http.unbookmarkArtifact(message.id)
+      : this.http.bookmarkArtifact(message.id);
     obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.messages.update((msgs) =>
@@ -893,12 +924,11 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   togglePinMessage(message: ChatMessage): void {
-    if (!this.chatId) return;
     const pinned = this.isPinned(message.id);
     this.setProcessing(message.id, true);
     const obs$ = pinned
-      ? this.http.unpinMessage(this.chatId, message.id)
-      : this.http.pinMessage(this.chatId, message.id);
+      ? this.http.unpinArtifact(message.id)
+      : this.http.pinArtifact(message.id);
     (obs$ as Observable<unknown>).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.pinnedMessageIds.update((s) => {
@@ -909,7 +939,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.setProcessing(message.id, false);
       },
       error: () => {
-        this.toast.show('No se pudo actualizar el mensaje fijado.', 'error');
+        this.toast.show('No se pudo actualizar el fijado.', 'error');
         this.setProcessing(message.id, false);
       },
     });
@@ -929,14 +959,13 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   private loadThreadReplies(messageId: number): void {
-    if (!this.chatId) return;
     this.threadLoading.set(true);
     this.http
-      .listThreadReplies(this.chatId, messageId)
+      .listArtifactThreadReplies(messageId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (replies) => {
-          this.threadReplies.set([...replies]);
+        next: (page) => {
+          this.threadReplies.set([...page.results]);
           this.threadLoading.set(false);
         },
         error: () => {
@@ -947,11 +976,11 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   submitThreadReply(messageId: number): void {
-    if (!this.chatId || !this.threadReplyText().trim() || this.submittingReply()) return;
+    if (!this.threadReplyText().trim() || this.submittingReply()) return;
     const text = this.threadReplyText().trim();
     this.submittingReply.set(true);
     this.http
-      .addThreadReply(this.chatId, messageId, { message: text })
+      .addArtifactThreadReply(messageId, { message: text })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (reply) => {
@@ -1014,10 +1043,9 @@ export class ChatSessionComponent implements OnDestroy {
     reason: FeedbackReason | null,
     comment: string | null
   ): void {
-    if (!this.chatId) return;
     this.setProcessing(messageId, true);
     this.http
-      .setMessageFeedback(this.chatId, messageId, { value, reason, comment })
+      .setArtifactFeedback(messageId, { value, reason, comment })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -1038,10 +1066,9 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   private removeFeedback(messageId: number): void {
-    if (!this.chatId) return;
     this.setProcessing(messageId, true);
     this.http
-      .deleteMessageFeedback(this.chatId, messageId)
+      .deleteArtifactFeedback(messageId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -1062,17 +1089,18 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   exportMessageAsPdf(message: ChatMessage): void {
-    if (!this.chatId || this.exportingMessageId() !== null) return;
+    const exportId = message.messageId ?? message.id;
+    if (this.exportingMessageId() !== null) return;
     this.exportingMessageId.set(message.id);
     this.http
-      .exportMessagePdf(this.chatId, message.id)
+      .exportArtifactMessagePdf(exportId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (blob) => {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `mensaje-${message.id}.pdf`;
+          a.download = `mensaje-${exportId}.pdf`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -1153,6 +1181,53 @@ export class ChatSessionComponent implements OnDestroy {
       planning: 'Planificando…',
     };
     return step ? (labels[step] ?? step) : '';
+  }
+
+  isMessageItem(msg: ChatMessage): boolean {
+    return msg.artifactType === 'MESSAGE';
+  }
+
+  artifactTypeLabel(type: ArtifactType): string {
+    const labels: Record<ArtifactType, string> = {
+      MESSAGE: 'Mensaje',
+      REPORT: 'Informe',
+      CHECKLIST: 'Checklist',
+      QUIZ: 'Quiz',
+      TIMELINE: 'Línea de tiempo',
+      LESSONS_LEARNED: 'Lecciones aprendidas',
+      DECISION_BRIEF: 'Decisión',
+    };
+    return labels[type] ?? type;
+  }
+
+  artifactTypeIcon(type: ArtifactType): string {
+    const icons: Record<ArtifactType, string> = {
+      MESSAGE: 'pi-comment',
+      REPORT: 'pi-file-edit',
+      CHECKLIST: 'pi-check-square',
+      QUIZ: 'pi-question-circle',
+      TIMELINE: 'pi-calendar',
+      LESSONS_LEARNED: 'pi-book',
+      DECISION_BRIEF: 'pi-bolt',
+    };
+    return icons[type] ?? 'pi-file';
+  }
+
+  navigateToLinkedArtifact(message: ChatMessage): void {
+    const id = message.artifactLinkedId;
+    if (id == null) return;
+    const routeMap: Partial<Record<ArtifactType, string>> = {
+      REPORT: 'report',
+      CHECKLIST: 'checklist',
+      QUIZ: 'quiz',
+      TIMELINE: 'timeline',
+      LESSONS_LEARNED: 'lessons-learned',
+      DECISION_BRIEF: 'decision-brief',
+    };
+    const segment = routeMap[message.artifactType];
+    if (segment) {
+      void this.router.navigate(['/main-container', segment, id]);
+    }
   }
 
   hasFragments(id: number): boolean {
@@ -1291,12 +1366,13 @@ export class ChatSessionComponent implements OnDestroy {
           id: msg.id,
           chat_id: cid,
           message: msg.message,
-          sender_type: msg.sender_type,
+          sender_type: msg.sender_type as MessageSenderType,
           created_by: msg.created_by,
           created_at: msg.created_at,
           is_bookmarked: false,
           user_feedback: null,
           thread_reply_count: 0,
+          artifactType: 'MESSAGE',
         };
         this.messages.update((list) => (list.some((m) => m.id === row.id) ? list : [...list, row]));
         setTimeout(() => this.scrollToBottom(), 50);
@@ -1320,6 +1396,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.flushPendingDeltas();
         const text = msg.answer || msg.message || '';
         const sid = this.streamingAssistantId();
+        const aiSenderType: MessageSenderType = (msg.sender_type as MessageSenderType | undefined) ?? 'assistant';
         if (sid != null && msg.id != null) {
           this.messages.update((list) =>
             list.map((m) =>
@@ -1328,12 +1405,13 @@ export class ChatSessionComponent implements OnDestroy {
                     id: msg.id!,
                     chat_id: cid,
                     message: text,
-                    sender_type: (msg.sender_type ?? 'system') as MessageSenderType,
+                    sender_type: aiSenderType,
                     created_by: msg.created_by ?? null,
                     created_at: msg.created_at ?? new Date().toISOString(),
                     is_bookmarked: false,
                     user_feedback: null,
                     thread_reply_count: 0,
+                    artifactType: 'MESSAGE' as ArtifactType,
                   }
                 : m
             )
@@ -1349,12 +1427,13 @@ export class ChatSessionComponent implements OnDestroy {
               id: msg.id ?? Date.now(),
               chat_id: cid,
               message: text,
-              sender_type: (msg.sender_type ?? 'system') as MessageSenderType,
+              sender_type: aiSenderType,
               created_by: msg.created_by ?? null,
               created_at: msg.created_at ?? new Date().toISOString(),
               is_bookmarked: false,
               user_feedback: null,
               thread_reply_count: 0,
+              artifactType: 'MESSAGE' as ArtifactType,
             },
           ]);
         }
@@ -1494,12 +1573,13 @@ export class ChatSessionComponent implements OnDestroy {
           id: tempId,
           chat_id: cid,
           message: chunk,
-          sender_type: 'system' as MessageSenderType,
+          sender_type: 'assistant' as MessageSenderType,
           created_by: null,
           created_at: new Date().toISOString(),
           is_bookmarked: false,
           user_feedback: null,
           thread_reply_count: 0,
+          artifactType: 'MESSAGE' as ArtifactType,
         },
       ]);
     } else {

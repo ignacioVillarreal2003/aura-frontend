@@ -62,8 +62,9 @@
       } @else {
         <div class="messages-list">
           @for (message of messages(); track message.id) {
-            <div class="message" [class.user-message]="message.sender_type === 'user'" [class.assistant-message]="message.sender_type === 'system'">
-              @if (message.sender_type === 'system') {
+            @if (isMessageItem(message)) {
+            <div class="message" [class.user-message]="message.sender_type === 'user'" [class.assistant-message]="message.sender_type === 'assistant'">
+              @if (message.sender_type === 'assistant') {
                 <div class="message-avatar assistant-avatar">
                   <i class="pi pi-sparkles"></i>
                 </div>
@@ -96,7 +97,7 @@
                         <span class="message-action-badge">{{ message.thread_reply_count }}</span>
                       }
                     </button>
-                    @if (message.sender_type === 'system') {
+                    @if (message.sender_type === 'assistant') {
                       <button
                         type="button"
                         class="message-action-btn"
@@ -138,7 +139,7 @@
                       class="message-action-btn"
                       [class.message-action-btn--active]="isPinned(message.id)"
                       [disabled]="isProcessing(message.id)"
-                      [title]="isPinned(message.id) ? 'Desfijar mensaje' : 'Fijar mensaje'"
+                      [title]="isPinned(message.id) ? 'Desfijar' : 'Fijar'"
                       (click)="togglePinMessage(message)">
                       <i class="pi pi-thumbtack" aria-hidden="true"></i>
                     </button>
@@ -146,12 +147,12 @@
                       type="button"
                       class="message-action-btn message-action-btn--danger"
                       [disabled]="isProcessing(message.id)"
-                      title="Eliminar mensaje"
+                      title="Eliminar"
                       (click)="deleteMessage(message)">
                       <i class="pi pi-trash" aria-hidden="true"></i>
                     </button>
                   </div>
-                  @if (message.sender_type === 'system' && hasFragments(message.id)) {
+                  @if (message.sender_type === 'assistant' && hasFragments(message.id)) {
                     <button
                       type="button"
                       class="fragments-toggle"
@@ -176,6 +177,65 @@
                 }
               </div>
             </div>
+            } @else {
+            <div class="message assistant-message artifact-card-message">
+              <div class="message-avatar assistant-avatar">
+                <i [ngClass]="['pi', artifactTypeIcon(message.artifactType)]"></i>
+              </div>
+              <div class="message-content">
+                <div class="artifact-card">
+                  <div class="artifact-card__header">
+                    <span class="artifact-card__type-badge">{{ artifactTypeLabel(message.artifactType) }}</span>
+                    <span class="artifact-card__status" [ngClass]="'artifact-card__status--' + (message.artifactStatus ?? 'draft')">{{ message.artifactStatus ?? '' }}</span>
+                  </div>
+                  <h4 class="artifact-card__title">{{ message.artifactTitle }}</h4>
+                  @if (message.artifactDescription) {
+                    <p class="artifact-card__description">{{ message.artifactDescription.length > 200 ? (message.artifactDescription | slice:0:200) + '…' : message.artifactDescription }}</p>
+                  }
+                  @if (message.artifactType !== 'MESSAGE' && message.artifactLinkedId != null) {
+                    <button
+                      type="button"
+                      class="artifact-card__open-btn"
+                      (click)="navigateToLinkedArtifact(message)">
+                      <i class="pi pi-external-link" aria-hidden="true"></i>
+                      Ver detalles
+                    </button>
+                  }
+                  <div class="artifact-card__footer">
+                    <span class="artifact-card__time">{{ formatTime(message.created_at) }}</span>
+                    <div class="artifact-card__actions">
+                      <button
+                        type="button"
+                        class="message-action-btn"
+                        [class.message-action-btn--active]="isPinned(message.id)"
+                        [disabled]="isProcessing(message.id)"
+                        [title]="isPinned(message.id) ? 'Desfijar' : 'Fijar'"
+                        (click)="togglePinMessage(message)">
+                        <i class="pi pi-thumbtack" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="message-action-btn"
+                        [class.message-action-btn--active]="message.is_bookmarked"
+                        [disabled]="isProcessing(message.id)"
+                        [title]="message.is_bookmarked ? 'Quitar de guardados' : 'Guardar'"
+                        (click)="toggleBookmark(message)">
+                        <i [ngClass]="['pi', message.is_bookmarked ? 'pi-bookmark-fill' : 'pi-bookmark']" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="message-action-btn message-action-btn--danger"
+                        [disabled]="isProcessing(message.id)"
+                        title="Eliminar"
+                        (click)="deleteMessage(message)">
+                        <i class="pi pi-trash" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            }
             @if (activeThreadMessageId() === message.id) {
               <div class="thread-panel">
                 <div class="thread-panel__header">

@@ -37,6 +37,32 @@ export const chatShellRoutes: Routes = [
           ),
       },
       {
+        path: 'quiz/:id',
+        loadComponent: () =>
+          import('./components/quiz-editor/quiz-editor').then((m) => m.QuizEditorComponent),
+      },
+      {
+        path: 'timeline/:id',
+        loadComponent: () =>
+          import('./components/timeline-editor/timeline-editor').then(
+            (m) => m.TimelineEditorComponent
+          ),
+      },
+      {
+        path: 'lessons-learned/:id',
+        loadComponent: () =>
+          import('./components/lessons-learned-editor/lessons-learned-editor').then(
+            (m) => m.LessonsLearnedEditorComponent
+          ),
+      },
+      {
+        path: 'decision-brief/:id',
+        loadComponent: () =>
+          import('./components/decision-brief-editor/decision-brief-editor').then(
+            (m) => m.DecisionBriefEditorComponent
+          ),
+      },
+      {
         path: 'assistants',
         loadComponent: () =>
           import('./components/herramientas/asistentes-hub.component').then(

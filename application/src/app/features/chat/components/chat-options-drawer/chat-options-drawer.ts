@@ -18,13 +18,12 @@ import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/
 import { ToastService } from '@core/components/toast-service';
 import { UserState } from '@core/state/user.state';
 import {
-  type ChatExportBackupDto,
+  type ArtifactSummaryDto,
   type ChecklistListItemDto,
   type MembershipDto,
   type MembershipRole,
   type MembershipStatus,
-  type MessageDto,
-  type PinnedMessageDto,
+  type PinnedArtifactDto,
   type ReportListItemDto,
   type ShareLinkDto,
 } from '@aura-types/aura-chat-service.types';
@@ -108,11 +107,11 @@ export class ChatOptionsDrawer {
   readonly deletingDocId = signal<number | null>(null);
   readonly shareLinks = signal<ShareLinkDto[]>([]);
   readonly shareLinksLoading = signal(false);
-  readonly pinnedMessages = signal<PinnedMessageDto[]>([]);
+  readonly pinnedMessages = signal<PinnedArtifactDto[]>([]);
   readonly pinnedLoading = signal(false);
-  readonly bookmarkedMessages = signal<MessageDto[]>([]);
+  readonly bookmarkedMessages = signal<ArtifactSummaryDto[]>([]);
   readonly bookmarkedLoading = signal(false);
-  readonly exportingAs = signal<'pdf' | 'markdown' | 'json' | 'ai' | null>(null);
+  readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
 
   readonly reports = signal<ReportListItemDto[]>([]);
   readonly reportsLoading = signal(false);
@@ -730,7 +729,7 @@ export class ChatOptionsDrawer {
     if (cid == null) return;
     this.pinnedLoading.set(true);
     this.chatHttp
-      .listPinnedMessages(cid, { page_size: 50 })
+      .listPinnedArtifacts(cid, { page_size: 50 })
       .pipe(take(1))
       .subscribe({
         next: (page) => {
@@ -749,7 +748,7 @@ export class ChatOptionsDrawer {
     if (cid == null) return;
     this.bookmarkedLoading.set(true);
     this.chatHttp
-      .listBookmarkedMessages(cid, { page_size: 50 })
+      .listBookmarkedArtifacts(cid, { page_size: 50 })
       .pipe(take(1))
       .subscribe({
         next: (page) => {
@@ -763,7 +762,7 @@ export class ChatOptionsDrawer {
       });
   }
 
-  exportChat(format: 'pdf' | 'markdown' | 'json' | 'ai'): void {
+  exportChat(format: 'pdf' | 'markdown'): void {
     const cid = this.contextChatId();
     if (cid == null || this.exportingAs() !== null) return;
     this.exportingAs.set(format);
@@ -780,20 +779,6 @@ export class ChatOptionsDrawer {
     } else if (format === 'markdown') {
       this.chatHttp.exportChatMarkdown(cid).pipe(take(1)).subscribe({
         next: (blob) => { this.downloadBlob(blob, `${slug}.md`); this.exportingAs.set(null); },
-        error: onError,
-      });
-    } else if (format === 'ai') {
-      this.chatHttp.exportAiResponsesMarkdown(cid).pipe(take(1)).subscribe({
-        next: (blob) => { this.downloadBlob(blob, `${slug}-ia.md`); this.exportingAs.set(null); },
-        error: onError,
-      });
-    } else if (format === 'json') {
-      this.chatHttp.exportChatJsonBackup(cid).pipe(take(1)).subscribe({
-        next: (data: ChatExportBackupDto) => {
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-          this.downloadBlob(blob, `${slug}-backup.json`);
-          this.exportingAs.set(null);
-        },
         error: onError,
       });
     }

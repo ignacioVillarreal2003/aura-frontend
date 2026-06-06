@@ -526,7 +526,7 @@
                   <li class="drawer-pinned-card">
                     <i class="pi pi-thumbtack drawer-pinned-card__icon" aria-hidden="true"></i>
                     <div class="drawer-pinned-card__body">
-                      <p class="drawer-pinned-card__text">{{ pm.message.message }}</p>
+                      <p class="drawer-pinned-card__text">{{ pm.artifact.message?.message ?? pm.artifact.title }}</p>
                       <span class="drawer-pinned-card__date">{{ pm.pinned_at | date: 'short' }}</span>
                     </div>
                   </li>
@@ -548,7 +548,7 @@
                   <li class="drawer-bookmark-card">
                     <i class="pi pi-bookmark-fill drawer-bookmark-card__icon" aria-hidden="true"></i>
                     <div class="drawer-pinned-card__body">
-                      <p class="drawer-pinned-card__text">{{ msg.message }}</p>
+                      <p class="drawer-pinned-card__text">{{ msg.message?.message ?? msg.title }}</p>
                       <span class="drawer-pinned-card__date">{{ msg.created_at | date: 'short' }}</span>
                     </div>
                   </li>
@@ -566,14 +566,6 @@
               <button type="button" class="drawer-action-item" [disabled]="exportingAs() !== null" (click)="exportChat('markdown')">
                 <i [ngClass]="['pi', 'drawer-action-item__icon', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Markdown completo</span>
-              </button>
-              <button type="button" class="drawer-action-item" [disabled]="exportingAs() !== null" (click)="exportChat('ai')">
-                <i [ngClass]="['pi', 'drawer-action-item__icon', exportingAs() === 'ai' ? 'pi-spin pi-spinner' : 'pi-sparkles']" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">Solo respuestas IA (Markdown)</span>
-              </button>
-              <button type="button" class="drawer-action-item" [disabled]="exportingAs() !== null" (click)="exportChat('json')">
-                <i [ngClass]="['pi', 'drawer-action-item__icon', exportingAs() === 'json' ? 'pi-spin pi-spinner' : 'pi-code']" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">Copia de seguridad (JSON)</span>
               </button>
             </nav>
           }

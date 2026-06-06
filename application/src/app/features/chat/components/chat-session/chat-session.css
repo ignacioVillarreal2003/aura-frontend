@@ -1679,3 +1679,110 @@
   min-height: 5rem;
   max-height: 10rem;
 }
+
+/* ── Artifact card ─────────────────────────────────────────────── */
+.artifact-card-message .message-content {
+  flex: 1 1 auto;
+  align-self: stretch;
+}
+
+.artifact-card {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.artifact-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.artifact-card__type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(129, 140, 248, 0.15);
+  color: #a5b4fc;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.artifact-card__status {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: lowercase;
+}
+
+.artifact-card__status--final { color: #6ee7b7; }
+.artifact-card__status--draft { color: #fbbf24; }
+.artifact-card__status--archived { color: #9ca3af; }
+
+.artifact-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #e8e8ea);
+  line-height: 1.4;
+}
+
+.artifact-card__description {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #9a9aa3);
+  line-height: 1.5;
+}
+
+.artifact-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.artifact-card__time {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.artifact-card__open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  border: 1px solid var(--primary-color, #6366f1);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary-color, #6366f1);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.artifact-card__open-btn:hover {
+  background: var(--primary-color, #6366f1);
+  color: #fff;
+}
+
+.artifact-card__actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.message:hover .artifact-card__actions,
+.message:focus-within .artifact-card__actions {
+  opacity: 1;
+}
+
