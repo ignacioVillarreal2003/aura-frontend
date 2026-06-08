@@ -742,7 +742,7 @@
   display: flex;
   gap: 2px;
   padding: 2px 0 0;
-  opacity: 0;
+  opacity: 0.45;
   transition: opacity 0.15s ease;
 }
 
@@ -1340,7 +1340,7 @@
   overflow-y: hidden;
 }
 
-.thread-input:focus {
+.thread-input:focus-visible {
   border-color: rgba(99, 102, 241, 0.5);
 }
 
@@ -1520,6 +1520,18 @@
   background: rgba(99, 102, 241, 0.2);
 }
 
+/* ─── Composer mode section header ──────────────────────── */
+.mode-dropdown-section-header {
+  padding: 0.5rem 0.65rem 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #8b8b96);
+  border-top: 1px solid var(--overlay-subtle);
+  margin-top: 0.25rem;
+}
+
 /* ─── AI chat-mode selector ──────────────────────────────── */
 
 .ai-mode-menu {
@@ -1590,7 +1602,7 @@
   border-color: rgba(129, 140, 248, 0.35);
 }
 
-.gen-type-select:focus {
+.gen-type-select:focus-visible {
   border-color: rgba(99, 102, 241, 0.55);
   background-color: #26262f;
 }
@@ -1990,6 +2002,7 @@
 /* Empty state icon breathes while waiting */
 .empty-icon {
   animation: float-idle 3.6s ease-in-out infinite;
+  animation-delay: 0.5s;
 }
 
 /* Mode dropdown materialises from its trigger */
@@ -2021,5 +2034,44 @@
   .empty-icon {
     animation: none;
   }
+
+  /* Functional UI animations that must also stop */
+  .typing-indicator .dot,
+  .ai-progress__label,
+  .voice-recording-dot,
+  .voice-recording-bar {
+    animation: none;
+  }
+
+  /* Keep dots visible when animation is off */
+  .typing-indicator .dot {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Focus rings (keyboard navigation) ─────────────────────────── */
+.session-attach:focus-visible,
+.voice-btn:focus-visible,
+.send-button:focus-visible,
+.session-regenerate-btn:focus-visible,
+.message-action-btn:focus-visible,
+.fragments-toggle:focus-visible,
+.composer-mode-trigger:focus-visible,
+.mode-dropdown-item:focus-visible,
+.thread-close-btn:focus-visible,
+.thread-send-btn:focus-visible,
+.voice-cancel-btn:focus-visible,
+.voice-stop-btn:focus-visible,
+.artifact-card__open-btn:focus-visible,
+.session-doc-chip__remove:focus-visible,
+.gen-mode-pill:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.75);
+  outline-offset: 2px;
+}
+
+/* ── Active states ──────────────────────────────────────────────── */
+.session-regenerate-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 

@@ -428,7 +428,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.5);
   flex-shrink: 0;
 }
 
@@ -448,7 +448,7 @@
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.drawer-member-select:focus {
+.drawer-member-select:focus-visible {
   border-color: rgba(99, 102, 241, 0.6);
   background: rgba(255, 255, 255, 0.09);
 }
@@ -577,9 +577,6 @@
   gap: 6px;
 }
 
-.drawer-doc-card__status {
-  text-transform: capitalize;
-}
 
 .drawer-linkish {
   padding: 0;
@@ -641,7 +638,7 @@
   transition: border-color 0.15s ease;
 }
 
-.drawer-webhook-input:focus {
+.drawer-webhook-input:focus-visible {
   border-color: rgba(99, 102, 241, 0.6);
 }
 
@@ -902,7 +899,7 @@
   transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
-.drawer-rename-form__input:focus {
+.drawer-rename-form__input:focus-visible {
   border-color: rgba(99, 102, 241, 0.65);
   background: rgba(255, 255, 255, 0.07);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
@@ -1233,7 +1230,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .drawer-report-card__meta .pi {
@@ -1287,7 +1284,7 @@
   flex: 1;
   text-align: center;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* ── Checklist mini progress ────────────────────────────────── */
@@ -1333,7 +1330,7 @@
 
 .drawer-invite-form__hint {
   font-size: 12.5px;
-  color: rgba(255,255,255,0.38);
+  color: rgba(255,255,255,0.5);
   line-height: 1.5;
   margin: 0;
 }
@@ -1358,7 +1355,7 @@
 }
 .drawer-invite-form__input::-webkit-outer-spin-button,
 .drawer-invite-form__input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.drawer-invite-form__input:focus { border-color: rgba(99,102,241,0.6); }
+.drawer-invite-form__input:focus-visible { border-color: rgba(99,102,241,0.6); }
 .drawer-invite-form__input::placeholder { color: rgba(255,255,255,0.2); }
 
 .drawer-invite-form__add-btn {
@@ -1620,7 +1617,7 @@
   transition: border-color 0.15s, background 0.15s;
 }
 
-.drawer-tags-input:focus {
+.drawer-tags-input:focus-visible {
   border-color: rgba(99, 102, 241, 0.6);
   background: rgba(255, 255, 255, 0.07);
 }
@@ -1852,7 +1849,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.32);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1893,7 +1890,31 @@
   .drawer-doc-card,
   .drawer-share-card,
   .drawer-report-card,
-  .drawer-artifact-card {
+  .drawer-artifact-card,
+  .drawer-confirm-overlay,
+  .drawer-confirm-card {
     animation: none;
   }
+}
+
+/* ── Focus rings (keyboard navigation) ──────────────────────────── */
+.drawer-action-item:focus-visible,
+.drawer-section-tile:focus-visible,
+.drawer-btn:focus-visible,
+.drawer-icon-btn:focus-visible,
+.drawer-doc-action:focus-visible,
+.drawer-confirm-btn:focus-visible,
+.drawer-back-btn:focus-visible,
+.drawer-pagination__btn:focus-visible,
+.drawer-pin-toggle:focus-visible,
+.drawer-revoke-confirm__btn:focus-visible,
+.drawer-member-remove:focus-visible,
+.drawer-rename-form__cancel:focus-visible,
+.drawer-artifact-tab:focus-visible,
+.drawer-invite-form__add-btn:focus-visible,
+.drawer-tags-add-btn:focus-visible,
+.drawer-chat-tag__remove:focus-visible,
+.drawer-invite-tag__remove:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.75);
+  outline-offset: 2px;
 }

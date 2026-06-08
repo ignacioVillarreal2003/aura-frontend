@@ -47,6 +47,7 @@ export interface ChatRef {
 interface ConfirmOpts {
   readonly title: string;
   readonly description?: string;
+  readonly confirmLabel?: string;
   readonly onConfirm: () => void;
 }
 
@@ -380,6 +381,7 @@ export class ChatOptionsDrawer {
   deleteDocument(doc: DocumentItem): void {
     this.requestConfirm({
       title: `¿Eliminar "${doc.name}"?`,
+      confirmLabel: 'Eliminar documento',
       onConfirm: () => {
         if (this.deletingDocId() !== null) return;
         this.deletingDocId.set(doc.id);
@@ -457,6 +459,7 @@ export class ChatOptionsDrawer {
     this.requestConfirm({
       title: '¿Eliminar esta conversación?',
       description: 'Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar conversación',
       onConfirm: () => {
         this.chatHttp.deleteChat(cid).subscribe({
           next: () => {
@@ -662,6 +665,7 @@ export class ChatOptionsDrawer {
     if (cid == null) return;
     this.requestConfirm({
       title: '¿Salir de este chat?',
+      confirmLabel: 'Salir del chat',
       onConfirm: () => {
         this.chatHttp.leaveChat(cid).subscribe({
           next: () => {
@@ -741,11 +745,21 @@ export class ChatOptionsDrawer {
     }
   }
 
+  docStatusLabel(status: string): string {
+    switch (status) {
+      case 'uploaded':   return 'Procesando';
+      case 'processed':  return 'Listo';
+      case 'failed':     return 'Error';
+      default:           return status;
+    }
+  }
+
   removeMember(row: MembershipDto): void {
     const cid = this.contextChatId();
     if (cid == null) return;
     this.requestConfirm({
       title: '¿Quitar a este participante?',
+      confirmLabel: 'Quitar participante',
       onConfirm: () => {
         this.chatHttp.removeMember(cid, row.id).subscribe({
           next: () => {
@@ -765,6 +779,7 @@ export class ChatOptionsDrawer {
     this.requestConfirm({
       title: '¿Limpiar el historial de mensajes?',
       description: 'Esta acción no se puede deshacer.',
+      confirmLabel: 'Limpiar historial',
       onConfirm: () => {
         this.chatHttp.clearChatHistory(cid).subscribe({
           next: () => {
@@ -977,6 +992,7 @@ export class ChatOptionsDrawer {
   deleteReport(reportId: number): void {
     this.requestConfirm({
       title: '¿Eliminar este informe?',
+      confirmLabel: 'Eliminar informe',
       onConfirm: () => {
         this.chatHttp
           .deleteReport(reportId)
@@ -1059,6 +1075,7 @@ export class ChatOptionsDrawer {
   deleteChecklist(checklistId: number): void {
     this.requestConfirm({
       title: '¿Eliminar esta checklist?',
+      confirmLabel: 'Eliminar checklist',
       onConfirm: () => {
         this.chatHttp
           .deleteChecklist(checklistId)

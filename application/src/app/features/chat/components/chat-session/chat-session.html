@@ -56,8 +56,8 @@
           <div class="empty-icon">
             <i class="pi pi-comments"></i>
           </div>
-          <h3>¡Comienza la conversación!</h3>
-          <p>Envía tu primer mensaje</p>
+          <h3>Empezá la conversación</h3>
+          <p>Escribí un mensaje para comenzar.</p>
         </div>
       } @else {
         <div class="messages-list">
@@ -94,7 +94,7 @@
                       class="message-action-btn message-action-btn--thread"
                       [class.message-action-btn--active]="activeThreadMessageId() === message.id"
                       [disabled]="isProcessing(message.id)"
-                      [title]="message.thread_reply_count > 0 ? message.thread_reply_count + ' respuestas' : 'Responder en hilo'"
+                      [title]="message.thread_reply_count > 0 ? (message.thread_reply_count === 1 ? '1 respuesta' : message.thread_reply_count + ' respuestas') : 'Responder en hilo'"
                       (click)="toggleThread(message)">
                       <i class="pi pi-comments" aria-hidden="true"></i>
                       @if (message.thread_reply_count > 0) {
@@ -116,7 +116,7 @@
                         class="message-action-btn"
                         [class.message-action-btn--active]="message.user_feedback === -1"
                         [disabled]="isProcessing(message.id)"
-                        title="No útil"
+                        title="No fue útil"
                         (click)="toggleFeedback(message, -1)">
                         <i class="pi pi-thumbs-down" aria-hidden="true"></i>
                       </button>
@@ -190,7 +190,7 @@
                 <div class="artifact-card">
                   <div class="artifact-card__header">
                     <span class="artifact-card__type-badge">{{ artifactTypeLabel(message.artifactType) }}</span>
-                    <span class="artifact-card__status" [ngClass]="'artifact-card__status--' + (message.artifactStatus ?? 'draft')">{{ message.artifactStatus ?? '' }}</span>
+                    <span class="artifact-card__status" [ngClass]="'artifact-card__status--' + (message.artifactStatus ?? 'draft')">{{ artifactStatusLabel(message.artifactStatus) }}</span>
                   </div>
                   <h4 class="artifact-card__title">{{ message.artifactTitle }}</h4>
                   @if (message.artifactDescription) {
@@ -264,7 +264,7 @@
                     <div class="thread-spinner"></div>
                   </div>
                 } @else if (threadReplies().length === 0) {
-                  <p class="thread-empty">Sin respuestas todavía. Sé el primero en responder.</p>
+                  <p class="thread-empty">Sin respuestas aún. Respondé para iniciar el hilo.</p>
                 } @else {
                   <ul class="thread-reply-list">
                     @for (reply of threadReplies(); track reply.id) {
@@ -279,7 +279,7 @@
                   <textarea
                     class="thread-input"
                     rows="1"
-                    placeholder="Responder en el hilo…"
+                    placeholder="Escribí una respuesta…"
                     [ngModel]="threadReplyText()"
                     (ngModelChange)="threadReplyText.set($event)"
                     (keydown)="onThreadReplyKey($event)"
@@ -411,7 +411,7 @@
                   (click)="genMode.set('rag')"
                   title="Recupera fragmentos del chat">
                   <i class="pi pi-database" aria-hidden="true"></i>
-                  Con docs
+                  Con documentos
                 </button>
               </div>
             </div>
@@ -437,7 +437,7 @@
               @if (sessionDocuments().length === 0) {
                 <span class="gen-doc-hint"><i class="pi pi-info-circle" aria-hidden="true"></i> Adjuntá documentos con el botón +</span>
               } @else if (hasProcessingDocs()) {
-                <span class="gen-doc-hint"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando...</span>
+                <span class="gen-doc-hint"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando…</span>
               } @else {
                 <span class="gen-doc-hint gen-doc-hint--ok"><i class="pi pi-check" aria-hidden="true"></i> {{ sessionDocuments().length }} doc{{ sessionDocuments().length !== 1 ? 's' : '' }}</span>
               }
@@ -454,7 +454,7 @@
               } @else if (hasProcessingDocs()) {
                 <div class="gen-doc-hint">
                   <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-                  <span>Procesando documentos, aguardá un momento...</span>
+                  <span>Procesando documentos, aguardá un momento…</span>
                 </div>
               } @else {
                 <div class="gen-doc-ready">
@@ -473,7 +473,7 @@
               name="chatSessionMessage"
               class="message-input"
               rows="1"
-              placeholder="Escribe un mensaje..."
+              placeholder="Escribí un mensaje…"
               [ngModel]="newMessage"
               (ngModelChange)="onNewMessageChange($event)"
               (keydown)="onEnterKey($event)"
@@ -520,11 +520,12 @@
                   <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="aiModeDropdownOpen()" aria-hidden="true"></i>
                 </button>
                 @if (aiModeDropdownOpen()) {
-                  <div class="mode-dropdown-menu ai-mode-menu">
+                  <div class="mode-dropdown-menu ai-mode-menu" role="menu">
                     @for (m of availableAiModes(); track m.value) {
                       <button
                         type="button"
                         class="mode-dropdown-item ai-mode-item"
+                        role="menuitem"
                         [class.mode-dropdown-item--active]="aiMode() === m.value"
                         [attr.title]="m.hint"
                         (click)="setAiMode(m.value)">
@@ -556,57 +557,87 @@
                   <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="modeDropdownOpen()" aria-hidden="true"></i>
                 </button>
                 @if (modeDropdownOpen()) {
-                  <div class="mode-dropdown-menu">
-                    <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'chat'" (click)="setComposerMode('chat')">
+                  <div class="mode-dropdown-menu" role="menu">
+                    <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'chat'" (click)="setComposerMode('chat')">
                       <i class="pi pi-comments" aria-hidden="true"></i>
-                      Chat
+                      <span class="ai-mode-item__text">
+                        <span class="ai-mode-item__label">Chat</span>
+                        <span class="ai-mode-item__hint">Conversación libre con IA</span>
+                      </span>
                     </button>
+                    @if (canReport() || canChecklist() || canQuiz() || canTimeline() || canLessonsLearned() || canDecisionBrief() || canDocumentSummary() || canDocumentAction()) {
+                      <div class="mode-dropdown-section-header" aria-hidden="true">Herramientas IA</div>
+                    }
                     @if (canReport()) {
-                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'report'" (click)="setComposerMode('report')">
+                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'report'" (click)="setComposerMode('report')">
                         <i class="pi pi-file-edit" aria-hidden="true"></i>
-                        Informe
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">Informe</span>
+                          <span class="ai-mode-item__hint">Generá un informe estructurado</span>
+                        </span>
                       </button>
                     }
                     @if (canChecklist()) {
-                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'checklist'" (click)="setComposerMode('checklist')">
+                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'checklist'" (click)="setComposerMode('checklist')">
                         <i class="pi pi-check-square" aria-hidden="true"></i>
-                        Checklist
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">Checklist</span>
+                          <span class="ai-mode-item__hint">Creá una lista de verificación</span>
+                        </span>
                       </button>
                     }
                     @if (canQuiz()) {
-                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'quiz'" (click)="setComposerMode('quiz')">
+                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'quiz'" (click)="setComposerMode('quiz')">
                         <i class="pi pi-question-circle" aria-hidden="true"></i>
-                        Quiz
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">Quiz</span>
+                          <span class="ai-mode-item__hint">Generá preguntas de evaluación</span>
+                        </span>
                       </button>
                     }
                     @if (canTimeline()) {
-                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'timeline'" (click)="setComposerMode('timeline')">
+                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'timeline'" (click)="setComposerMode('timeline')">
                         <i class="pi pi-calendar" aria-hidden="true"></i>
-                        Línea de tiempo
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">Línea de tiempo</span>
+                          <span class="ai-mode-item__hint">Construí una cronología de eventos</span>
+                        </span>
                       </button>
                     }
                     @if (canLessonsLearned()) {
-                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'lessons-learned'" (click)="setComposerMode('lessons-learned')">
+                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'lessons-learned'" (click)="setComposerMode('lessons-learned')">
                         <i class="pi pi-book" aria-hidden="true"></i>
-                        Lecciones aprendidas
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">Lecciones aprendidas</span>
+                          <span class="ai-mode-item__hint">Registrá aprendizajes del proyecto</span>
+                        </span>
                       </button>
                     }
                     @if (canDecisionBrief()) {
-                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'decision-brief'" (click)="setComposerMode('decision-brief')">
+                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'decision-brief'" (click)="setComposerMode('decision-brief')">
                         <i class="pi pi-bolt" aria-hidden="true"></i>
-                        Brief de decisión
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">Brief de decisión</span>
+                          <span class="ai-mode-item__hint">Analizá opciones y criterios</span>
+                        </span>
                       </button>
                     }
                     @if (canDocumentSummary()) {
-                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'document-summary'" (click)="setComposerMode('document-summary')">
+                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'document-summary'" (click)="setComposerMode('document-summary')">
                         <i class="pi pi-align-left" aria-hidden="true"></i>
-                        Resumen de documentos
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">Resumen de documentos</span>
+                          <span class="ai-mode-item__hint">Resumí los documentos adjuntos</span>
+                        </span>
                       </button>
                     }
                     @if (canDocumentAction()) {
-                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'document-action'" (click)="setComposerMode('document-action')">
+                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'document-action'" (click)="setComposerMode('document-action')">
                         <i class="pi pi-cog" aria-hidden="true"></i>
-                        Acción sobre documentos
+                        <span class="ai-mode-item__text">
+                          <span class="ai-mode-item__label">Acción sobre documentos</span>
+                          <span class="ai-mode-item__hint">Procesá documentos con IA</span>
+                        </span>
                       </button>
                     }
                   </div>

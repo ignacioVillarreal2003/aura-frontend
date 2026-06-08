@@ -121,7 +121,7 @@
                     <div class="drawer-doc-card__main">
                       <span class="drawer-doc-card__name">{{ doc.name }}</span>
                       <span class="drawer-doc-card__meta">
-                        <span class="drawer-doc-card__status">{{ doc.status }}</span>
+                        <span class="drawer-doc-card__status">{{ docStatusLabel(doc.status) }}</span>
                         <span class="drawer-doc-card__date">{{ doc.created_at | date: 'short' }}</span>
                       </span>
                     </div>
@@ -182,9 +182,9 @@
                           [disabled]="roleUpdatingId() === m.id"
                           (change)="changeRoleTo(m, $any($event.target).value)"
                         >
-                          <option value="owner">Owner</option>
+                          <option value="owner">Propietario</option>
                           <option value="editor">Editor</option>
-                          <option value="reader">Reader</option>
+                          <option value="reader">Lector</option>
                         </select>
                       </label>
                       <span class="drawer-member-status drawer-member-status--{{ m.status }}">
@@ -653,7 +653,7 @@
                         <i class="pi pi-calendar" aria-hidden="true"></i>
                         {{ r.created_at | date: 'shortDate' }}
                       </span>
-                      <span class="drawer-report-card__meta">{{ r.mode === 'rag' ? 'RAG' : 'Directo' }}</span>
+                      <span class="drawer-report-card__meta">{{ r.mode === 'rag' ? 'Con documentos' : 'Directo' }}</span>
                       <div class="drawer-report-card__actions">
                         <button type="button" class="drawer-icon-btn" title="Ver / Editar" (click)="openReport(r.id)">
                           <i class="pi pi-external-link" aria-hidden="true"></i>
@@ -737,7 +737,7 @@
                         <i class="pi pi-calendar" aria-hidden="true"></i>
                         {{ c.created_at | date: 'shortDate' }}
                       </span>
-                      <span class="drawer-report-card__meta">{{ c.mode === 'rag' ? 'RAG' : 'Directo' }}</span>
+                      <span class="drawer-report-card__meta">{{ c.mode === 'rag' ? 'Con documentos' : 'Directo' }}</span>
                       <span class="drawer-checklist-progress">
                         <span
                           class="drawer-checklist-progress__bar"
@@ -824,7 +824,7 @@
               Cancelar
             </button>
             <button type="button" class="drawer-confirm-btn drawer-confirm-btn--danger" (click)="runConfirm()">
-              Confirmar
+              {{ pendingConfirm()?.confirmLabel ?? 'Confirmar' }}
             </button>
           </div>
         </div>

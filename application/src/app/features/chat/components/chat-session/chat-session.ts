@@ -1159,9 +1159,11 @@ export class ChatSessionComponent implements OnDestroy {
       : this.http.bookmarkArtifact(message.id);
     obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
+        const nowBookmarked = !message.is_bookmarked;
         this.messages.update((msgs) =>
-          msgs.map((m) => (m.id === message.id ? { ...m, is_bookmarked: !m.is_bookmarked } : m))
+          msgs.map((m) => (m.id === message.id ? { ...m, is_bookmarked: nowBookmarked } : m))
         );
+        this.toast.show(nowBookmarked ? 'Mensaje guardado.' : 'Eliminado de guardados.', 'success');
         this.setProcessing(message.id, false);
       },
       error: () => {
@@ -1184,6 +1186,7 @@ export class ChatSessionComponent implements OnDestroy {
           pinned ? next.delete(message.id) : next.add(message.id);
           return next;
         });
+        this.toast.show(pinned ? 'Mensaje desfijado.' : 'Mensaje fijado.', 'success');
         this.setProcessing(message.id, false);
       },
       error: () => {
@@ -1448,6 +1451,15 @@ export class ChatSessionComponent implements OnDestroy {
       DOCUMENT_ACTION: 'Acción sobre documentos',
     };
     return labels[type] ?? type;
+  }
+
+  artifactStatusLabel(status: string | null | undefined): string {
+    switch (status) {
+      case 'draft':    return 'Borrador';
+      case 'final':    return 'Final';
+      case 'archived': return 'Archivado';
+      default:         return status ?? '';
+    }
   }
 
   artifactTypeIcon(type: ArtifactType): string {
