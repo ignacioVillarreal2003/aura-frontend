@@ -5,7 +5,9 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import type {
   AddMembersBody,
+  ArtifactDetailDto,
   ArtifactSummaryDto,
+  ArtifactVersionDto,
   AssistantAdminDto,
   AssistantDto,
   BulkArchiveChatResultDto,
@@ -24,10 +26,18 @@ import type {
   DecisionBriefDto,
   DecisionBriefGenerateResponseDto,
   DecisionBriefListItemDto,
+  DocumentActionDto,
+  DocumentActionGenerateResponseDto,
+  DocumentActionListItemDto,
+  DocumentSummaryDto,
+  DocumentSummaryGenerateResponseDto,
+  DocumentSummaryListItemDto,
   FeedbackAnalyticsDto,
   FeedbackAnalyticsQuery,
   GenerateChecklistBody,
   GenerateDecisionBriefBody,
+  GenerateDocumentActionBody,
+  GenerateDocumentSummaryBody,
   GenerateLessonsLearnedBody,
   GenerateQuizBody,
   GenerateReportBody,
@@ -63,6 +73,8 @@ import type {
   UpdateAssistantBody,
   UpdateChecklistBody,
   UpdateDecisionBriefBody,
+  UpdateDocumentActionBody,
+  UpdateDocumentSummaryBody,
   UpdateLessonsLearnedBody,
   UpdateMemberRoleBody,
   UpdateMemberStatusBody,
@@ -350,10 +362,38 @@ export class AuraChatServiceHttp {
     return this.http.get<FeedbackAnalyticsDto>(`${this.artifactsBase()}feedback/analytics/`, { params });
   }
 
+  getMessage(messageId: number): Observable<MessageDto> {
+    return this.http.get<MessageDto>(`${this.base}/messages/${messageId}/`);
+  }
+
   exportArtifactMessagePdf(messageId: number): Observable<Blob> {
     return this.http.get(
       `${this.base}/messages/${messageId}/export/pdf/`,
       { responseType: 'blob' },
+    );
+  }
+
+  exportArtifactMessageMarkdown(messageId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.base}/messages/${messageId}/export/markdown/`,
+      { responseType: 'blob' },
+    );
+  }
+
+  getArtifact(artifactId: number): Observable<ArtifactDetailDto> {
+    return this.http.get<ArtifactDetailDto>(`${this.artifactsBase()}${artifactId}/`);
+  }
+
+  listArtifactVersions(
+    artifactId: number,
+    query: PageFollowQuery = {},
+  ): Observable<PageNumberResult<ArtifactVersionDto>> {
+    if (query.url) {
+      return this.http.get<PageNumberResult<ArtifactVersionDto>>(query.url);
+    }
+    return this.http.get<PageNumberResult<ArtifactVersionDto>>(
+      `${this.artifactsBase()}${artifactId}/versions/`,
+      { params: this.paramsForPaging(query) },
     );
   }
 
@@ -373,6 +413,10 @@ export class AuraChatServiceHttp {
     return this.http
       .post<readonly MembershipDto[]>(this.membersRoot(chatId), body)
       .pipe(map((rows) => [...rows]));
+  }
+
+  getMember(chatId: number, memberId: number): Observable<MembershipDto> {
+    return this.http.get<MembershipDto>(`${this.membersRoot(chatId)}${memberId}/`);
   }
 
   patchMember(
@@ -602,6 +646,70 @@ export class AuraChatServiceHttp {
 
   exportDecisionBriefMarkdown(id: number): Observable<Blob> {
     return this.http.get(`${this.base}/decision-briefs/${id}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── DocumentSummary ──────────────────────────────────────────────────────────
+
+  listDocumentSummaries(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<DocumentSummaryListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
+    return this.http.get<PageNumberResult<DocumentSummaryListItemDto>>(`${this.base}/document-summaries/`, { params: p });
+  }
+
+  generateDocumentSummary(body: GenerateDocumentSummaryBody): Observable<DocumentSummaryGenerateResponseDto> {
+    return this.http.post<DocumentSummaryGenerateResponseDto>(`${this.base}/document-summaries/generate/`, body);
+  }
+
+  getDocumentSummary(id: number): Observable<DocumentSummaryDto> {
+    return this.http.get<DocumentSummaryDto>(`${this.base}/document-summaries/${id}/`);
+  }
+
+  patchDocumentSummary(id: number, body: UpdateDocumentSummaryBody): Observable<DocumentSummaryDto> {
+    return this.http.patch<DocumentSummaryDto>(`${this.base}/document-summaries/${id}/`, body);
+  }
+
+  deleteDocumentSummary(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/document-summaries/${id}/`);
+  }
+
+  exportDocumentSummaryPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/document-summaries/${id}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportDocumentSummaryMarkdown(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/document-summaries/${id}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── DocumentAction ───────────────────────────────────────────────────────────
+
+  listDocumentActions(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<DocumentActionListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
+    return this.http.get<PageNumberResult<DocumentActionListItemDto>>(`${this.base}/document-actions/`, { params: p });
+  }
+
+  generateDocumentAction(body: GenerateDocumentActionBody): Observable<DocumentActionGenerateResponseDto> {
+    return this.http.post<DocumentActionGenerateResponseDto>(`${this.base}/document-actions/generate/`, body);
+  }
+
+  getDocumentAction(id: number): Observable<DocumentActionDto> {
+    return this.http.get<DocumentActionDto>(`${this.base}/document-actions/${id}/`);
+  }
+
+  patchDocumentAction(id: number, body: UpdateDocumentActionBody): Observable<DocumentActionDto> {
+    return this.http.patch<DocumentActionDto>(`${this.base}/document-actions/${id}/`, body);
+  }
+
+  deleteDocumentAction(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/document-actions/${id}/`);
+  }
+
+  exportDocumentActionPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/document-actions/${id}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportDocumentActionMarkdown(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/document-actions/${id}/export/markdown/`, { responseType: 'blob' });
   }
 
   // ── Assistants ──────────────────────────────────────────────────────────────

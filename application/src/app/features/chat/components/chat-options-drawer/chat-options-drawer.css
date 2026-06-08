@@ -95,8 +95,10 @@
 .drawer-panel__header .drawer-panel__title {
   margin: 0;
   min-width: 0;
-  font-size: 16px;
+  font-family: var(--font-display, 'Chillax', sans-serif);
+  font-size: 1.0625rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .drawer-panel__body {
@@ -149,21 +151,22 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 14px 16px;
-  border: none;
+  padding: 13px 16px;
+  border: 1px solid transparent;
   border-radius: 10px;
   background: var(--overlay-subtle);
   color: var(--text-primary);
-  font-family: 'Sora', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: var(--text-body-sm, 0.9375rem);
   font-weight: 400;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .drawer-action-item:hover {
   background: var(--overlay-hover);
+  border-color: var(--overlay-active);
 }
 
 .drawer-action-item--danger {
@@ -226,10 +229,14 @@
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.drawer-section-tile:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.12);
-}
+.drawer-section-tile:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); }
+
+.drawer-section-tile:has(.drawer-section-tile__icon--chat):hover        { background: rgba(99,  102, 241, 0.06); border-color: rgba(99,  102, 241, 0.18); }
+.drawer-section-tile:has(.drawer-section-tile__icon--people):hover      { background: rgba(13,  148, 136, 0.06); border-color: rgba(13,  148, 136, 0.18); }
+.drawer-section-tile:has(.drawer-section-tile__icon--docs):hover        { background: rgba(37,  99,  235, 0.06); border-color: rgba(37,  99,  235, 0.18); }
+.drawer-section-tile:has(.drawer-section-tile__icon--pinned):hover      { background: rgba(217, 119, 6,   0.06); border-color: rgba(217, 119, 6,   0.18); }
+.drawer-section-tile:has(.drawer-section-tile__icon--saved):hover       { background: rgba(180, 83,  9,   0.06); border-color: rgba(180, 83,  9,   0.18); }
+.drawer-section-tile:has(.drawer-section-tile__icon--artifacts):hover   { background: rgba(124, 58,  237, 0.06); border-color: rgba(124, 58,  237, 0.18); }
 
 .drawer-section-tile__icon {
   flex-shrink: 0;
@@ -239,9 +246,47 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.15);
   font-size: 18px;
-  color: #a1a1aa;
+  color: #a5b4fc;
+}
+
+/* Semantic color per section — wayfinding */
+.drawer-section-tile__icon--chat {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.18);
+  color: #a5b4fc;
+}
+
+.drawer-section-tile__icon--people {
+  background: rgba(13, 148, 136, 0.1);
+  border-color: rgba(13, 148, 136, 0.2);
+  color: #5eead4;
+}
+
+.drawer-section-tile__icon--docs {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.18);
+  color: #93c5fd;
+}
+
+.drawer-section-tile__icon--pinned {
+  background: rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.2);
+  color: #fcd34d;
+}
+
+.drawer-section-tile__icon--saved {
+  background: rgba(180, 83, 9, 0.1);
+  border-color: rgba(180, 83, 9, 0.2);
+  color: #fbbf24;
+}
+
+.drawer-section-tile__icon--artifacts {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: rgba(124, 58, 237, 0.18);
+  color: #c084fc;
 }
 
 .drawer-section-tile__text {
@@ -253,8 +298,10 @@
 }
 
 .drawer-section-tile__title {
-  font-size: 15px;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: var(--text-body-sm, 0.9375rem);
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .drawer-section-tile__hint {
@@ -266,7 +313,7 @@
 .drawer-section-tile__chev {
   flex-shrink: 0;
   font-size: 12px;
-  color: #71717a;
+  color: var(--text-secondary);
 }
 
 .drawer-toolbar {
@@ -393,7 +440,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary, #e8e8ea);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   cursor: pointer;
   outline: none;
@@ -589,7 +636,7 @@
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary, #e8e8ea);
   font-size: 13px;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   outline: none;
   transition: border-color 0.15s ease;
 }
@@ -662,22 +709,21 @@
   gap: 12px;
   padding: 14px 16px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-left: 3px solid rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.18);
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .drawer-pinned-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-left-color: rgba(99, 102, 241, 0.75);
+  background: rgba(99, 102, 241, 0.09);
+  border-color: rgba(99, 102, 241, 0.3);
 }
 
 .drawer-pinned-card__icon {
   flex-shrink: 0;
   margin-top: 2px;
   font-size: 13px;
-  color: #818cf8;
+  color: #fcd34d;
   transform: rotate(45deg);
 }
 
@@ -712,15 +758,14 @@
   gap: 12px;
   padding: 14px 16px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-left: 3px solid rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.04);
+  border: 1px solid rgba(251, 191, 36, 0.18);
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .drawer-bookmark-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-left-color: rgba(251, 191, 36, 0.7);
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
 .drawer-bookmark-card__icon {
@@ -741,7 +786,7 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary, #e8e8ea);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   text-align: left;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -850,7 +895,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary, #e8e8ea);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 15px;
   font-weight: 500;
   outline: none;
@@ -1074,7 +1119,7 @@
   padding: 8px 12px;
   border-radius: 8px;
   border: none;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -1274,7 +1319,7 @@
 .drawer-checklist-progress__bar {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: #10b981;
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -1305,7 +1350,7 @@
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.05);
   color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s;
@@ -1569,7 +1614,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s, background 0.15s;
@@ -1692,7 +1737,7 @@
   padding: 10px 16px;
   border-radius: 10px;
   border: none;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -1717,4 +1762,138 @@
 .drawer-confirm-btn--danger:hover {
   background: rgba(239, 68, 68, 0.32);
   color: #fecaca;
+}
+
+/* ── Artifacts tab panel ─────────────────────────────────────────────────── */
+.drawer-artifact-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 12px;
+}
+
+.drawer-artifact-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.drawer-artifact-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.drawer-artifact-tab--active {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
+}
+
+.drawer-artifact-tab--active:hover {
+  background: rgba(99, 102, 241, 0.28);
+}
+
+.drawer-artifact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.drawer-artifact-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  transition: background 0.15s;
+}
+
+.drawer-artifact-card:hover {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.drawer-artifact-card__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.drawer-artifact-card__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #e8e8ea);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawer-artifact-card__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOTION SYSTEM
+   Sub-view transitions when navigating drawer sections
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes drawer-view-in {
+  from { opacity: 0; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes drawer-list-item-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Body content fades in when navigating to a sub-section */
+.drawer-panel__body {
+  animation: drawer-view-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* List cards stagger in with CSS custom property index */
+.drawer-pinned-card,
+.drawer-bookmark-card,
+.drawer-doc-card,
+.drawer-share-card,
+.drawer-report-card,
+.drawer-artifact-card {
+  animation: drawer-list-item-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel__body,
+  .drawer-pinned-card,
+  .drawer-bookmark-card,
+  .drawer-doc-card,
+  .drawer-share-card,
+  .drawer-report-card,
+  .drawer-artifact-card {
+    animation: none;
+  }
 }

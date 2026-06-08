@@ -39,7 +39,7 @@
           @case ('root') {
             <nav class="drawer-sections" aria-label="Secciones del chat">
               <button type="button" class="drawer-section-tile" (click)="openSub('chat')">
-                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-cog"></i></span>
+                <span class="drawer-section-tile__icon drawer-section-tile__icon--chat" aria-hidden="true"><i class="pi pi-cog"></i></span>
                 <span class="drawer-section-tile__text">
                   <span class="drawer-section-tile__title">Gestionar chat</span>
                   <span class="drawer-section-tile__hint">Acciones sobre esta conversación</span>
@@ -47,7 +47,7 @@
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
               <button type="button" class="drawer-section-tile" (click)="openSub('participants')">
-                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-users"></i></span>
+                <span class="drawer-section-tile__icon drawer-section-tile__icon--people" aria-hidden="true"><i class="pi pi-users"></i></span>
                 <span class="drawer-section-tile__text">
                   <span class="drawer-section-tile__title">Participantes</span>
                   <span class="drawer-section-tile__hint">Quién está en el chat</span>
@@ -55,7 +55,7 @@
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
               <button type="button" class="drawer-section-tile" (click)="openSub('documents')">
-                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-file"></i></span>
+                <span class="drawer-section-tile__icon drawer-section-tile__icon--docs" aria-hidden="true"><i class="pi pi-file"></i></span>
                 <span class="drawer-section-tile__text">
                   <span class="drawer-section-tile__title">Documentos</span>
                   <span class="drawer-section-tile__hint">Archivos cargados y subida</span>
@@ -63,7 +63,7 @@
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
               <button type="button" class="drawer-section-tile" (click)="openSub('pinned')">
-                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-thumbtack"></i></span>
+                <span class="drawer-section-tile__icon drawer-section-tile__icon--pinned" aria-hidden="true"><i class="pi pi-thumbtack"></i></span>
                 <span class="drawer-section-tile__text">
                   <span class="drawer-section-tile__title">Mensajes fijados</span>
                   <span class="drawer-section-tile__hint">Mensajes anclados en este chat</span>
@@ -71,29 +71,19 @@
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
               <button type="button" class="drawer-section-tile" (click)="openSub('bookmarks')">
-                <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-bookmark"></i></span>
+                <span class="drawer-section-tile__icon drawer-section-tile__icon--saved" aria-hidden="true"><i class="pi pi-bookmark"></i></span>
                 <span class="drawer-section-tile__text">
                   <span class="drawer-section-tile__title">Guardados</span>
                   <span class="drawer-section-tile__hint">Mensajes marcados como favoritos</span>
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
-              @if (canListReports()) {
-                <button type="button" class="drawer-section-tile" (click)="openSub('reports')">
-                  <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-file-edit"></i></span>
+              @if (canSeeArtifacts()) {
+                <button type="button" class="drawer-section-tile" (click)="openSub('artifacts')">
+                  <span class="drawer-section-tile__icon drawer-section-tile__icon--artifacts" aria-hidden="true"><i class="pi pi-objects-column"></i></span>
                   <span class="drawer-section-tile__text">
-                    <span class="drawer-section-tile__title">Informes</span>
-                    <span class="drawer-section-tile__hint">SITREP, INTSUM y OPORD de este chat</span>
-                  </span>
-                  <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
-                </button>
-              }
-              @if (canListChecklists()) {
-                <button type="button" class="drawer-section-tile" (click)="openSub('checklists')">
-                  <span class="drawer-section-tile__icon" aria-hidden="true"><i class="pi pi-list-check"></i></span>
-                  <span class="drawer-section-tile__text">
-                    <span class="drawer-section-tile__title">Checklists</span>
-                    <span class="drawer-section-tile__hint">Checklists generadas en este chat</span>
+                    <span class="drawer-section-tile__title">Artefactos</span>
+                    <span class="drawer-section-tile__hint">Informes, checklists, quizzes y más</span>
                   </span>
                   <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
                 </button>
@@ -126,8 +116,8 @@
               <p class="drawer-muted">Todavía no hay documentos para mostrar.</p>
             } @else {
               <ul class="drawer-doc-list" aria-label="Documentos">
-                @for (doc of mergedDocuments(); track doc.id) {
-                  <li class="drawer-doc-card">
+                @for (doc of mergedDocuments(); track doc.id; let i = $index) {
+                  <li class="drawer-doc-card" [style.--i]="i">
                     <div class="drawer-doc-card__main">
                       <span class="drawer-doc-card__name">{{ doc.name }}</span>
                       <span class="drawer-doc-card__meta">
@@ -434,8 +424,8 @@
               </div>
             } @else {
               <ul class="drawer-share-list" aria-label="Enlaces compartidos">
-                @for (link of shareLinks(); track link.id) {
-                  <li class="drawer-share-card" [class.drawer-share-card--confirming]="revokeConfirmId() === link.id">
+                @for (link of shareLinks(); track link.id; let i = $index) {
+                  <li class="drawer-share-card" [style.--i]="i" [class.drawer-share-card--confirming]="revokeConfirmId() === link.id">
                     <div class="drawer-share-card__top">
                       <span class="drawer-share-card__status-dot drawer-share-card__status-dot--active" aria-hidden="true"></span>
                       <code class="drawer-share-card__token">{{ link.token }}</code>
@@ -522,8 +512,8 @@
               </div>
             } @else {
               <ul class="drawer-pinned-list" aria-label="Mensajes fijados">
-                @for (pm of pinnedMessages(); track pm.id) {
-                  <li class="drawer-pinned-card">
+                @for (pm of pinnedMessages(); track pm.id; let i = $index) {
+                  <li class="drawer-pinned-card" [style.--i]="i">
                     <i class="pi pi-thumbtack drawer-pinned-card__icon" aria-hidden="true"></i>
                     <div class="drawer-pinned-card__body">
                       <p class="drawer-pinned-card__text">{{ pm.artifact.message?.message ?? pm.artifact.title }}</p>
@@ -544,8 +534,8 @@
               </div>
             } @else {
               <ul class="drawer-pinned-list" aria-label="Guardados">
-                @for (msg of bookmarkedMessages(); track msg.id) {
-                  <li class="drawer-bookmark-card">
+                @for (msg of bookmarkedMessages(); track msg.id; let i = $index) {
+                  <li class="drawer-bookmark-card" [style.--i]="i">
                     <i class="pi pi-bookmark-fill drawer-bookmark-card__icon" aria-hidden="true"></i>
                     <div class="drawer-pinned-card__body">
                       <p class="drawer-pinned-card__text">{{ msg.message?.message ?? msg.title }}</p>
@@ -568,6 +558,79 @@
                 <span class="drawer-action-item__label">Markdown completo</span>
               </button>
             </nav>
+          }
+          @case ('artifacts') {
+            <!-- Tab bar -->
+            <div class="drawer-artifact-tabs" role="tablist" aria-label="Tipos de artefactos">
+              @for (tab of availableArtifactTabs(); track tab) {
+                <button
+                  type="button"
+                  class="drawer-artifact-tab"
+                  role="tab"
+                  [class.drawer-artifact-tab--active]="selectedArtifactTab() === tab"
+                  (click)="selectArtifactTab(tab)"
+                  [attr.aria-selected]="selectedArtifactTab() === tab"
+                >
+                  <i [ngClass]="['pi', artifactTabMeta[tab].icon]" aria-hidden="true"></i>
+                  {{ artifactTabMeta[tab].label }}
+                </button>
+              }
+            </div>
+
+            <!-- Items list -->
+            @if (artifactsLoading() && artifactsItems().length === 0) {
+              <p class="drawer-muted">Cargando…</p>
+            } @else if (artifactsItems().length === 0) {
+              <div class="drawer-empty-state">
+                <i [ngClass]="['pi', artifactTabMeta[selectedArtifactTab()].icon, 'drawer-empty-state__icon']" aria-hidden="true"></i>
+                <p class="drawer-empty-state__text">No hay {{ artifactTabMeta[selectedArtifactTab()].label.toLowerCase() }} en este chat.</p>
+              </div>
+            } @else {
+              <ul class="drawer-artifact-list" aria-label="Artefactos">
+                @for (item of artifactsItems(); track item.id; let i = $index) {
+                  <li class="drawer-artifact-card" [style.--i]="i">
+                    <div class="drawer-artifact-card__main">
+                      <span class="drawer-artifact-card__title" [title]="item.title">{{ item.title }}</span>
+                      <span class="drawer-artifact-card__date">
+                        <i class="pi pi-calendar" aria-hidden="true"></i>
+                        {{ item.created_at | date: 'dd/MM/yy HH:mm' }}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      class="drawer-icon-btn"
+                      title="Abrir"
+                      (click)="openArtifact(item)"
+                    >
+                      <i class="pi pi-external-link" aria-hidden="true"></i>
+                    </button>
+                  </li>
+                }
+              </ul>
+              @if (artifactsHasNext() || artifactsHasPrev()) {
+                <div class="drawer-pagination">
+                  <button
+                    type="button"
+                    class="drawer-pagination__btn"
+                    [disabled]="!artifactsHasPrev() || artifactsLoading()"
+                    (click)="artifactsPrevPage()"
+                    aria-label="Página anterior"
+                  >
+                    <i class="pi pi-chevron-left" aria-hidden="true"></i>
+                  </button>
+                  <span class="drawer-pagination__info">Pág. {{ artifactsPage() }} · {{ artifactsTotalCount() }} total</span>
+                  <button
+                    type="button"
+                    class="drawer-pagination__btn"
+                    [disabled]="!artifactsHasNext() || artifactsLoading()"
+                    (click)="artifactsNextPage()"
+                    aria-label="Página siguiente"
+                  >
+                    <i class="pi pi-chevron-right" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
+            }
           }
           @case ('reports') {
             @if (reportsLoading() && reports().length === 0) {

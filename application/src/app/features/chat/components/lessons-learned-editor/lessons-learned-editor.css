@@ -22,7 +22,7 @@
 .ll-back {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.1); background: transparent;
-  color: var(--text-secondary, #9a9aa3); font-family: 'Sora', sans-serif; font-size: 13px;
+  color: var(--text-secondary, #9a9aa3); font-family: var(--font-ui, 'Sora', sans-serif); font-size: 13px;
   cursor: pointer; flex-shrink: 0; white-space: nowrap; transition: background 0.15s, color 0.15s;
 }
 .ll-back:hover { background: rgba(255,255,255,0.07); color: var(--text-primary); }
@@ -30,7 +30,7 @@
 .ll-title {
   flex: 1; min-width: 0; background: transparent; border: none;
   border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600;
+  font-family: var(--font-ui, 'Sora', sans-serif); font-size: 15px; font-weight: 600;
   padding: 4px 2px; outline: none; transition: border-color 0.15s;
 }
 .ll-title:focus { border-bottom-color: rgba(251,191,36,0.6); }
@@ -40,7 +40,7 @@
 .ll-action-btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);
-  color: var(--text-secondary, #9a9aa3); font-family: 'Sora', sans-serif; font-size: 13px;
+  color: var(--text-secondary, #9a9aa3); font-family: var(--font-ui, 'Sora', sans-serif); font-size: 13px;
   font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .ll-action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: var(--text-primary); }
@@ -81,7 +81,7 @@
   width: 100%; box-sizing: border-box; padding: 10px 12px;
   border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03); color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif; font-size: 13px; line-height: 1.6;
+  font-family: var(--font-ui, 'Sora', sans-serif); font-size: 13px; line-height: 1.6;
   resize: vertical; outline: none; transition: border-color 0.2s;
 }
 .ll-textarea:focus { border-color: rgba(251,191,36,0.4); }
@@ -137,7 +137,7 @@
 .ll-cat-pill {
   padding: 3px 9px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.35);
-  font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 500; cursor: pointer;
+  font-family: var(--font-ui, 'Sora', sans-serif); font-size: 11px; font-weight: 500; cursor: pointer;
   transition: all 0.15s;
 }
 .ll-cat-pill:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); }
@@ -165,7 +165,7 @@
 .ll-add-btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px;
   border-radius: 8px; border: 1px dashed; background: transparent;
-  font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: var(--font-ui, 'Sora', sans-serif); font-size: 12px; font-weight: 500; cursor: pointer;
   transition: all 0.15s;
 }
 .ll-add-btn .pi-plus { font-size: 10px; }

@@ -15,7 +15,7 @@
   padding: 2rem 1.75rem 3rem;
   box-sizing: border-box;
   color: var(--text-primary);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;

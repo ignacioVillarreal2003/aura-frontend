@@ -70,7 +70,9 @@ export type ArtifactType =
   | 'QUIZ'
   | 'TIMELINE'
   | 'LESSONS_LEARNED'
-  | 'DECISION_BRIEF';
+  | 'DECISION_BRIEF'
+  | 'DOCUMENT_SUMMARY'
+  | 'DOCUMENT_ACTION';
 
 export type ArtifactStatus = 'draft' | 'final' | 'archived';
 export type ArtifactMode = 'direct' | 'rag';
@@ -96,6 +98,35 @@ export interface ArtifactSummaryDto {
   readonly updated_at: IsoDateTimeString | null;
   readonly message: ArtifactMessagePreviewDto | null;
   readonly linked_id: number | null;
+}
+
+export interface ArtifactDetailDto {
+  readonly id: number;
+  readonly type: ArtifactType;
+  readonly title: string;
+  readonly description: string;
+  readonly status: ArtifactStatus;
+  readonly version: number;
+  readonly mode: ArtifactMode;
+  readonly fragments: readonly unknown[] | null;
+  readonly source_chat_id: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface ArtifactVersionDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly version_number: number;
+  readonly title: string;
+  readonly description: string;
+  readonly status: ArtifactStatus;
+  readonly mode: ArtifactMode;
+  readonly change_summary: string;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
 }
 
 export interface PinnedArtifactDto {
@@ -870,6 +901,102 @@ export interface UpdateDecisionBriefBody {
   readonly options?: readonly UpdateDecisionBriefOptionBody[];
 }
 
+// ── DocumentSummary ────────────────────────────────────────────────────────────
+
+export interface DocumentSummaryDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly summary: string;
+  readonly document_ids: readonly number[];
+  readonly source_chat_id: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface DocumentSummaryListItemDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly source_chat_id: number;
+  readonly document_ids: readonly number[];
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface GenerateDocumentSummaryBody {
+  readonly document_ids: readonly number[];
+  readonly chat_id: number;
+}
+
+export interface DocumentSummaryGenerateResponseDto {
+  readonly document_summary: DocumentSummaryDto;
+  readonly fragments: readonly GenerateFragmentDto[];
+}
+
+export interface UpdateDocumentSummaryBody {
+  readonly title?: string;
+  readonly summary?: string;
+}
+
+// ── DocumentAction ─────────────────────────────────────────────────────────────
+
+export type DocumentActionType =
+  | 'summarize'
+  | 'essay'
+  | 'key_points'
+  | 'compare'
+  | 'analyze'
+  | 'explain'
+  | 'report';
+
+export interface DocumentActionDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly result: string;
+  readonly document_ids: readonly number[];
+  readonly instruction: string;
+  readonly action: DocumentActionType | null;
+  readonly source_chat_id: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface DocumentActionListItemDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly source_chat_id: number;
+  readonly document_ids: readonly number[];
+  readonly instruction: string;
+  readonly action: DocumentActionType | null;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface GenerateDocumentActionBody {
+  readonly document_ids: readonly number[];
+  readonly instruction: string;
+  readonly action?: DocumentActionType | null;
+  readonly chat_id: number;
+}
+
+export interface DocumentActionGenerateResponseDto {
+  readonly document_action: DocumentActionDto;
+  readonly fragments: readonly GenerateFragmentDto[];
+}
+
+export interface UpdateDocumentActionBody {
+  readonly title?: string;
+  readonly result?: string;
+  readonly instruction?: string;
+}
+
 // ── Assistants ─────────────────────────────────────────────────────────────────
 
 export interface AssistantDto {
@@ -915,7 +1042,7 @@ export type AuraChatAiMode = 'document_question' | 'general_chat' | 'rag_agent' 
 export const AURA_CHAT_AI_MODE_DEFAULT: AuraChatAiMode = 'document_question';
 
 export type AuraChatWsClientMessage =
-  | { readonly type: 'chat.message'; readonly message: string; readonly mode?: AuraChatAiMode }
+  | { readonly type: 'chat.message'; readonly message: string; readonly mode?: AuraChatAiMode; readonly document_ids?: readonly number[] }
   | { readonly type: 'chat.regenerate'; readonly mode?: AuraChatAiMode }
   | { readonly type: 'chat.typing'; readonly is_typing: boolean };
 

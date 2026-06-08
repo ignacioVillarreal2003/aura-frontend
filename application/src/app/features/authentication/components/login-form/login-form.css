@@ -57,7 +57,7 @@
   border-radius: 8px;
   background: var(--card, rgba(255, 255, 255, 0.05));
   color: var(--foreground);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 14px;
   outline: none;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;

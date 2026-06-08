@@ -63,7 +63,7 @@
         <div class="messages-list">
           @for (message of messages(); track message.id) {
             @if (isMessageItem(message)) {
-            <div class="message" [class.user-message]="message.sender_type === 'user'" [class.assistant-message]="message.sender_type === 'assistant'">
+            <div class="message" [class.user-message]="message.sender_type === 'user'" [class.assistant-message]="message.sender_type === 'assistant'" [class.is-streaming]="streamingAssistantId() === message.id">
               @if (message.sender_type === 'assistant') {
                 <div class="message-avatar assistant-avatar">
                   <i class="pi pi-sparkles"></i>
@@ -80,7 +80,11 @@
               }
               <div class="message-content">
                 <div class="message-bubble">
-                  <div class="message-text message-text--md" [innerHTML]="message.message | markdown"></div>
+                  <div
+                    class="message-text message-text--md"
+                    [innerHTML]="message.message | markdown"
+                    [tokenMaterialize]="streamingAssistantId() === message.id && message.sender_type === 'assistant'"
+                  ></div>
                   <span class="message-time">{{ formatTime(message.created_at) }}</span>
                 </div>
                 @if (streamingAssistantId() !== message.id) {
@@ -192,13 +196,17 @@
                   @if (message.artifactDescription) {
                     <p class="artifact-card__description">{{ message.artifactDescription.length > 200 ? (message.artifactDescription | slice:0:200) + '…' : message.artifactDescription }}</p>
                   }
-                  @if (message.artifactType !== 'MESSAGE' && message.artifactLinkedId != null) {
+                  @if (message.artifactType !== 'MESSAGE') {
                     <button
                       type="button"
                       class="artifact-card__open-btn"
+                      [disabled]="resolvingLinkedId() === message.id"
                       (click)="navigateToLinkedArtifact(message)">
-                      <i class="pi pi-external-link" aria-hidden="true"></i>
-                      Ver detalles
+                      <i
+                        [ngClass]="['pi', resolvingLinkedId() === message.id ? 'pi-spin pi-spinner' : 'pi-external-link']"
+                        aria-hidden="true"
+                      ></i>
+                      Abrir
                     </button>
                   }
                   <div class="artifact-card__footer">
@@ -342,7 +350,35 @@
     <div class="chat-input-container">
       <div class="session-input-composer">
         <div class="session-composer-surface">
-          @if (composerMode() !== 'chat') {
+          @if (sessionDocuments().length > 0) {
+            <div class="session-doc-chips" role="list" aria-label="Documentos adjuntos">
+              @for (doc of sessionDocuments(); track doc.id) {
+                <div
+                  class="session-doc-chip"
+                  [class.session-doc-chip--processing]="doc.status === 'uploaded'"
+                  [class.session-doc-chip--failed]="doc.status === 'failed'"
+                  role="listitem">
+                  @if (doc.status === 'uploaded') {
+                    <i class="pi pi-spin pi-spinner session-doc-chip__icon" aria-hidden="true"></i>
+                  } @else if (doc.status === 'failed') {
+                    <i class="pi pi-exclamation-circle session-doc-chip__icon session-doc-chip__icon--error" aria-hidden="true"></i>
+                  } @else {
+                    <i class="pi pi-file-check session-doc-chip__icon session-doc-chip__icon--ok" aria-hidden="true"></i>
+                  }
+                  <span class="session-doc-chip__name" [title]="doc.name">{{ doc.name.length > 28 ? (doc.name | slice:0:28) + '…' : doc.name }}</span>
+                  <button
+                    type="button"
+                    class="session-doc-chip__remove"
+                    [attr.aria-label]="'Quitar ' + doc.name"
+                    (click)="removeSessionDocument(doc.id)">
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (composerMode() !== 'chat' && composerMode() !== 'document-summary' && composerMode() !== 'document-action') {
             <div class="gen-inline-controls">
               @if (composerMode() === 'report') {
                 <select
@@ -381,6 +417,54 @@
             </div>
           }
 
+          @if (composerMode() === 'document-action') {
+            <div class="gen-inline-controls">
+              <select
+                class="gen-type-select"
+                [value]="genDocumentActionType()"
+                [disabled]="genLoading()"
+                (change)="genDocumentActionType.set($any($event.target).value)"
+                aria-label="Tipo de acción">
+                <option value="">Acción automática</option>
+                <option value="summarize">Resumir</option>
+                <option value="essay">Ensayo</option>
+                <option value="key_points">Puntos clave</option>
+                <option value="compare">Comparar</option>
+                <option value="analyze">Analizar</option>
+                <option value="explain">Explicar</option>
+                <option value="report">Informe</option>
+              </select>
+              @if (sessionDocuments().length === 0) {
+                <span class="gen-doc-hint"><i class="pi pi-info-circle" aria-hidden="true"></i> Adjuntá documentos con el botón +</span>
+              } @else if (hasProcessingDocs()) {
+                <span class="gen-doc-hint"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando...</span>
+              } @else {
+                <span class="gen-doc-hint gen-doc-hint--ok"><i class="pi pi-check" aria-hidden="true"></i> {{ sessionDocuments().length }} doc{{ sessionDocuments().length !== 1 ? 's' : '' }}</span>
+              }
+            </div>
+          }
+
+          @if (composerMode() === 'document-summary') {
+            <div class="gen-inline-controls">
+              @if (sessionDocuments().length === 0) {
+                <div class="gen-doc-empty">
+                  <i class="pi pi-info-circle" aria-hidden="true"></i>
+                  <span>Adjuntá documentos con el botón <strong>+</strong> para generar un resumen.</span>
+                </div>
+              } @else if (hasProcessingDocs()) {
+                <div class="gen-doc-hint">
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  <span>Procesando documentos, aguardá un momento...</span>
+                </div>
+              } @else {
+                <div class="gen-doc-ready">
+                  <i class="pi pi-check-circle" aria-hidden="true"></i>
+                  <span><strong>{{ sessionDocuments().length }}</strong> documento{{ sessionDocuments().length !== 1 ? 's' : '' }} listos para resumir.</span>
+                </div>
+              }
+            </div>
+          }
+
           @if (composerMode() === 'chat') {
             <label class="chat-session-visually-hidden" for="chat-session-message">Mensaje</label>
             <textarea
@@ -394,6 +478,8 @@
               (ngModelChange)="onNewMessageChange($event)"
               (keydown)="onEnterKey($event)"
             ></textarea>
+          } @else if (composerMode() === 'document-summary') {
+            <!-- no textarea for summary mode; documents drive the generation -->
           } @else {
             <textarea
               class="message-input gen-message-input"
@@ -485,6 +571,42 @@
                       <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'checklist'" (click)="setComposerMode('checklist')">
                         <i class="pi pi-check-square" aria-hidden="true"></i>
                         Checklist
+                      </button>
+                    }
+                    @if (canQuiz()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'quiz'" (click)="setComposerMode('quiz')">
+                        <i class="pi pi-question-circle" aria-hidden="true"></i>
+                        Quiz
+                      </button>
+                    }
+                    @if (canTimeline()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'timeline'" (click)="setComposerMode('timeline')">
+                        <i class="pi pi-calendar" aria-hidden="true"></i>
+                        Línea de tiempo
+                      </button>
+                    }
+                    @if (canLessonsLearned()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'lessons-learned'" (click)="setComposerMode('lessons-learned')">
+                        <i class="pi pi-book" aria-hidden="true"></i>
+                        Lecciones aprendidas
+                      </button>
+                    }
+                    @if (canDecisionBrief()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'decision-brief'" (click)="setComposerMode('decision-brief')">
+                        <i class="pi pi-bolt" aria-hidden="true"></i>
+                        Brief de decisión
+                      </button>
+                    }
+                    @if (canDocumentSummary()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'document-summary'" (click)="setComposerMode('document-summary')">
+                        <i class="pi pi-align-left" aria-hidden="true"></i>
+                        Resumen de documentos
+                      </button>
+                    }
+                    @if (canDocumentAction()) {
+                      <button type="button" class="mode-dropdown-item" [class.mode-dropdown-item--active]="composerMode() === 'document-action'" (click)="setComposerMode('document-action')">
+                        <i class="pi pi-cog" aria-hidden="true"></i>
+                        Acción sobre documentos
                       </button>
                     }
                   </div>

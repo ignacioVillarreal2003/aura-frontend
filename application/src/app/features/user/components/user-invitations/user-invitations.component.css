@@ -55,7 +55,7 @@
   border: none;
   background: transparent;
   color: rgba(255,255,255,0.45);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -200,7 +200,7 @@
   padding: 8px 14px;
   border-radius: 8px;
   border: 1px solid transparent;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;

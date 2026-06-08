@@ -63,6 +63,20 @@ export const chatShellRoutes: Routes = [
           ),
       },
       {
+        path: 'document-summary/:id',
+        loadComponent: () =>
+          import('./components/document-summary-editor/document-summary-editor').then(
+            (m) => m.DocumentSummaryEditorComponent
+          ),
+      },
+      {
+        path: 'document-action/:id',
+        loadComponent: () =>
+          import('./components/document-action-editor/document-action-editor').then(
+            (m) => m.DocumentActionEditorComponent
+          ),
+      },
+      {
         path: 'assistants',
         loadComponent: () =>
           import('./components/herramientas/asistentes-hub.component').then(

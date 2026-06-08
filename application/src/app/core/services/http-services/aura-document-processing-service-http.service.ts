@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import type {
   DocumentProcessingCreateDocumentMultipartInput,
   DocumentProcessingCreateDocumentResponseDto,
+  DocumentQueryChatDocumentDto,
   DocumentQueryListByChatResponseDto,
 } from '@aura-types/aura-document-processing-service.types';
 import {
@@ -17,6 +18,12 @@ import {
 export class AuraDocumentProcessingServiceHttp {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.documentProcessingUrl.replace(/\/$/, '')}/api/v1`;
+
+  getDocument(documentId: number): Observable<DocumentQueryChatDocumentDto> {
+    return this.http.get<DocumentQueryChatDocumentDto>(
+      `${this.base}/document-query/document/${documentId}`,
+    );
+  }
 
   listDocumentsByChat(chatId: number): Observable<DocumentQueryListByChatResponseDto> {
     return this.http.get<DocumentQueryListByChatResponseDto>(

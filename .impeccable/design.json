@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-07T00:00:00.000Z",
+  "title": "Design System: AURA",
+  "extensions": {
+    "colorMeta": {
+      "thought-violet": {
+        "role": "primary",
+        "displayName": "Thought Violet",
+        "canonical": "oklch(60% 0.21 267)",
+        "tonalRamp": ["#0D0D2B", "#151646", "#1E2065", "#3336A3", "#4E52D4", "#6366F1", "#818CF8", "#C7D2FE"]
+      },
+      "thought-violet-deep": {
+        "role": "primary-deep",
+        "displayName": "Thought Violet Deep",
+        "canonical": "oklch(52% 0.26 291)",
+        "tonalRamp": ["#0D0820", "#1A1038", "#27185C", "#3C2185", "#5830B8", "#7C3AED", "#A78BFA", "#DDD6FE"]
+      },
+      "thought-violet-light": {
+        "role": "primary-light",
+        "displayName": "Thought Violet Light",
+        "canonical": "oklch(75% 0.13 267)",
+        "tonalRamp": ["#151646", "#1E2065", "#3336A3", "#4E52D4", "#6366F1", "#818CF8", "#A5B4FC", "#E0E7FF"]
+      },
+      "shell": {
+        "role": "neutral-bg",
+        "displayName": "Shell Warm",
+        "canonical": "oklch(14% 0.01 50)",
+        "tonalRamp": ["#0A0806", "#130F0C", "#1E1B18", "#2C2824", "#443F3A", "#6B6260", "#958C89", "#CFC8C5"]
+      },
+      "surface-content": {
+        "role": "neutral-surface",
+        "displayName": "Content Surface",
+        "canonical": "oklch(11% 0 0)",
+        "tonalRamp": ["#080808", "#0F0F0F", "#151515", "#1E1E1E", "#282828", "#404040", "#737373", "#B8B8B8"]
+      },
+      "surface-composer": {
+        "role": "neutral-input",
+        "displayName": "Composer Dark",
+        "canonical": "oklch(13% 0.005 240)",
+        "tonalRamp": ["#0A0A0D", "#111115", "#1C1C1E", "#262628", "#313135", "#484850", "#78787E", "#B8B8BC"]
+      },
+      "text-ink": {
+        "role": "neutral-ink",
+        "displayName": "Ink",
+        "canonical": "oklch(90% 0.02 230)",
+        "tonalRamp": ["#2D3748", "#3B4A61", "#4A5A74", "#637183", "#818FA0", "#9DABB8", "#C2CDD9", "#E2E8F0"]
+      },
+      "destructive": {
+        "role": "destructive",
+        "displayName": "Alert Red",
+        "canonical": "oklch(63% 0.23 25)",
+        "tonalRamp": ["#290A07", "#491009", "#7A1812", "#B22018", "#EF4444", "#F87171", "#FCA5A5", "#FEE2E2"]
+      },
+      "user-gradient-start": {
+        "role": "secondary",
+        "displayName": "User Blue",
+        "canonical": "oklch(63% 0.18 265)",
+        "tonalRamp": ["#11102E", "#1D1C4F", "#2D2D7A", "#4347B5", "#667EEA", "#8E9EF8", "#BAC5FB", "#E8EDFE"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Chillax Display",
+        "purpose": "Brand identity moments only — AURA wordmark, auth screen hero. Never in functional UI."
+      },
+      "headline": {
+        "displayName": "Sora Headline",
+        "purpose": "Section headings inside the app: welcome title, document editor H1, drawer headings."
+      },
+      "title": {
+        "displayName": "Sora Title",
+        "purpose": "Card titles, modal titles, chat session name, panel headers."
+      },
+      "body": {
+        "displayName": "Manrope Body",
+        "purpose": "AI-generated prose, markdown-rendered content, long-form reading. Max 65–75ch."
+      },
+      "label": {
+        "displayName": "Sora Label",
+        "purpose": "UI chrome: nav links, button text, pills, placeholders, dropdown items, timestamps."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-float",
+        "value": "0 12px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.35) inset",
+        "purpose": "Composer surface at rest. Diffuse lift that doesn't feel directional."
+      },
+      {
+        "name": "focus-glow",
+        "value": "0 0 0 3px rgba(99, 102, 241, 0.18)",
+        "purpose": "Composer focused state. The only elevation shadow that uses Thought Violet."
+      },
+      {
+        "name": "action-glow",
+        "value": "0 4px 14px rgba(99, 102, 241, 0.35)",
+        "purpose": "Send button at rest. Rises to rgba(0.45) on hover."
+      },
+      {
+        "name": "menu-float",
+        "value": "0 8px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3)",
+        "purpose": "Dropdown and context menus. Strongest ambient shadow; signals z-stack dominance."
+      },
+      {
+        "name": "overlay-deep",
+        "value": "0 20px 50px rgba(0, 0, 0, 0.45)",
+        "purpose": "Drag overlays, drop zones. Maximum depth signal."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default easing for state transitions (sidebar collapse, button hover)."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+        "purpose": "Elements exiting or collapsing — sidebar close, menu dismiss."
+      },
+      {
+        "name": "ease-spring",
+        "value": "cubic-bezier(0.34, 1.06, 0.64, 1)",
+        "purpose": "Sidebar expand, content reveal. Slight overshoot for a feeling of snap."
+      },
+      {
+        "name": "duration-fast",
+        "value": "150ms",
+        "purpose": "Button hover, icon swap, badge appear. Immediate feedback."
+      },
+      {
+        "name": "duration-standard",
+        "value": "200ms",
+        "purpose": "Composer border/glow, tooltip, chip state change."
+      },
+      {
+        "name": "duration-sidebar",
+        "value": "340ms",
+        "purpose": "Sidebar open. The longer duration is intentional — communicates a structural shift."
+      },
+      {
+        "name": "duration-sidebar-close",
+        "value": "420ms",
+        "purpose": "Sidebar close. Slightly slower close than open, creates a weighted feel."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px", "purpose": "Mobile composer and message layout adjustments." },
+      { "name": "md", "value": "768px", "purpose": "Message max-width shift (70% → 85%), header padding compression." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Send Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action button. Appears in the composer footer. Gradient Thought Violet → Violet Deep.",
+      "html": "<button class=\"ds-send-btn\" aria-label=\"Send message\">\n  <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"/>\n    <polygon points=\"22 2 15 22 11 13 2 9 22 2\"/>\n  </svg>\n</button>",
+      "css": ".ds-send-btn { display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border: none; border-radius: 0.75rem; background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%); color: #fff; cursor: pointer; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35); transition: opacity 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease, filter 0.15s ease; } .ds-send-btn:hover:not(:disabled) { filter: brightness(1.06); box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45); } .ds-send-btn:active:not(:disabled) { transform: scale(0.96); } .ds-send-btn:disabled { opacity: 0.38; cursor: not-allowed; box-shadow: none; filter: none; } .ds-send-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4); } @media (prefers-reduced-motion: reduce) { .ds-send-btn { transition: none; } }"
+    },
+    {
+      "name": "Ghost Icon Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action button used for message actions, sidebar toggles, and attachment controls.",
+      "html": "<button class=\"ds-ghost-btn\" aria-label=\"Attach file\">\n  <svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n    <path d=\"M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48\"/>\n  </svg>\n</button>",
+      "css": ".ds-ghost-btn { display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border: none; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.04); color: #9ca3af; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease; } .ds-ghost-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); color: #e2e8f0; } .ds-ghost-btn:active:not(:disabled) { transform: scale(0.96); } .ds-ghost-btn:disabled { opacity: 0.38; cursor: not-allowed; } .ds-ghost-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25); } @media (prefers-reduced-motion: reduce) { .ds-ghost-btn { transition: none; } }"
+    },
+    {
+      "name": "Mode Pill (Active)",
+      "kind": "chip",
+      "refersTo": "chip-active",
+      "description": "Mode selector chip in active state. Used in the composer footer and toolbar.",
+      "html": "<button class=\"ds-pill ds-pill--active\">\n  <svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>\n  AI Chat\n</button>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.625rem; border: 1px solid transparent; border-radius: 0.5rem; background: transparent; color: #9ca3af; font-family: 'Sora', sans-serif; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; } .ds-pill:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); color: #e2e8f0; } .ds-pill--active { background: rgba(99, 102, 241, 0.18); border-color: rgba(99, 102, 241, 0.4); color: #a5b4fc; } .ds-pill--active:hover:not(:disabled) { background: rgba(99, 102, 241, 0.25); } @media (prefers-reduced-motion: reduce) { .ds-pill { transition: none; } }"
+    },
+    {
+      "name": "Composer Surface",
+      "kind": "custom",
+      "refersTo": "input-composer",
+      "description": "The primary message input surface. Signature component: full focus ring and glow on interaction.",
+      "html": "<div class=\"ds-composer\">\n  <textarea class=\"ds-composer__input\" placeholder=\"Ask AURA anything...\"></textarea>\n  <div class=\"ds-composer__footer\">\n    <button class=\"ds-ghost-btn\" aria-label=\"Attach file\">\n      <svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48\"/></svg>\n    </button>\n    <div style=\"flex:1\"></div>\n    <button class=\"ds-send-btn\" aria-label=\"Send\">\n      <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"/><polygon points=\"22 2 15 22 11 13 2 9 22 2\"/></svg>\n    </button>\n  </div>\n</div>",
+      "css": ".ds-composer { display: flex; flex-direction: column; width: 100%; background: #1c1c1e; border: 1px solid rgba(255,255,255,0.10); border-radius: 1.25rem; box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.35) inset; transition: border-color 0.2s ease, box-shadow 0.2s ease; padding: 10px; box-sizing: border-box; } .ds-composer:focus-within { border-color: rgba(129,140,248,0.45); box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.25) inset, 0 0 0 3px rgba(99,102,241,0.18); } .ds-composer__input { width: 100%; background: transparent; border: none; outline: none; color: #e2e8f0; font-family: 'Sora', sans-serif; font-size: 0.9375rem; line-height: 1.5; padding: 1rem 1.15rem 0.65rem; resize: none; min-height: 52px; } .ds-composer__input::placeholder { color: #6b7280; } .ds-composer__footer { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.65rem 0.25rem; } .ds-ghost-btn { display:flex; align-items:center; justify-content:center; width:2.5rem; height:2.5rem; border:none; border-radius:0.75rem; background:rgba(255,255,255,0.04); color:#9ca3af; cursor:pointer; } .ds-ghost-btn:hover { background:rgba(255,255,255,0.08); color:#e2e8f0; } .ds-send-btn { display:flex; align-items:center; justify-content:center; width:2.5rem; height:2.5rem; border:none; border-radius:0.75rem; background:linear-gradient(135deg,#6366f1 0%,#7c3aed 100%); color:#fff; cursor:pointer; box-shadow:0 4px 14px rgba(99,102,241,0.35); } .ds-send-btn:hover { filter:brightness(1.06); box-shadow:0 6px 18px rgba(99,102,241,0.45); } @media (prefers-reduced-motion: reduce) { .ds-composer { transition: none; } }"
+    },
+    {
+      "name": "User Message Bubble",
+      "kind": "custom",
+      "refersTo": "message-user",
+      "description": "User-side chat message. Gradient Thought Violet bubble, right-aligned.",
+      "html": "<div class=\"ds-msg ds-msg--user\">\n  <div class=\"ds-msg__avatar ds-msg__avatar--user\">JD</div>\n  <div class=\"ds-msg__content\">\n    <div class=\"ds-msg__bubble ds-msg__bubble--user\">\n      <p class=\"ds-msg__text\">Summarize the Q3 board report and flag any risks.</p>\n    </div>\n    <span class=\"ds-msg__time\">2:14 PM</span>\n  </div>\n</div>",
+      "css": ".ds-msg { display: flex; gap: 10px; max-width: min(70%, 680px); } .ds-msg--user { margin-left: auto; flex-direction: row-reverse; } .ds-msg__avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 11px; letter-spacing: 0.04em; flex-shrink: 0; } .ds-msg__avatar--user { background: linear-gradient(145deg, #0ea5e9 0%, #0284c7 52%, #0369a1 100%); box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset, 0 4px 14px rgba(14,165,233,0.28); } .ds-msg__content { display: flex; flex-direction: column; gap: 4px; } .ds-msg__bubble { border-radius: 14px; padding: 12px 14px; } .ds-msg__bubble--user { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 1px solid rgba(255,255,255,0.10); } .ds-msg__text { margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; line-height: 1.5; color: rgba(255,255,255,0.96); } .ds-msg__time { font-size: 11px; align-self: flex-end; color: rgba(255,255,255,0.75); } .ds-msg--user .ds-msg__time { align-self: flex-end; }"
+    },
+    {
+      "name": "Assistant Message Bubble",
+      "kind": "custom",
+      "refersTo": "message-assistant",
+      "description": "AI-side chat message. Subtle transparent container, full-width, Manrope body.",
+      "html": "<div class=\"ds-msg ds-msg--assistant\">\n  <div class=\"ds-msg__avatar ds-msg__avatar--assistant\">\n    <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>\n  </div>\n  <div class=\"ds-msg__content ds-msg__content--full\">\n    <div class=\"ds-msg__bubble ds-msg__bubble--assistant\">\n      <p class=\"ds-msg__text\">The Q3 report shows revenue up 18% YoY, but operating costs grew faster at 24%. Three risks flagged: rising CAC in the SMB segment, delayed product launch in EMEA, and FX headwinds in Q4.</p>\n    </div>\n    <span class=\"ds-msg__time ds-msg__time--assistant\">2:14 PM</span>\n  </div>\n</div>",
+      "css": ".ds-msg--assistant { margin-right: 0; margin-left: 0; max-width: 100%; width: 100%; } .ds-msg__avatar--assistant { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); } .ds-msg__content--full { flex: 1; min-width: 0; } .ds-msg__bubble--assistant { width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 25px rgba(0,0,0,0.35); } .ds-msg__text--assistant { color: #ececf1; font-family: 'Manrope', sans-serif; font-size: 14px; line-height: 1.62; } .ds-msg__time--assistant { color: #6b7280; }"
+    },
+    {
+      "name": "Sidebar Nav Link",
+      "kind": "nav",
+      "refersTo": "button-ghost",
+      "description": "Navigation item in the collapsible sidebar. Active state uses Thought Violet surface tint.",
+      "html": "<nav class=\"ds-sidebar-nav\">\n  <a href=\"#\" class=\"ds-nav-link ds-nav-link--active\" aria-current=\"page\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z\"/></svg>\n    <span class=\"ds-nav-link__text\">Chats</span>\n  </a>\n  <a href=\"#\" class=\"ds-nav-link\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2\"/><circle cx=\"12\" cy=\"7\" r=\"4\"/></svg>\n    <span class=\"ds-nav-link__text\">Profile</span>\n  </a>\n</nav>",
+      "css": ".ds-sidebar-nav { display: flex; flex-direction: column; gap: 0.35rem; } .ds-nav-link { display: flex; align-items: center; gap: 0.65rem; width: 100%; padding: 0.75rem 0.85rem; border: none; border-radius: 8px; background: transparent; color: #e2e8f0; font-family: 'Sora', sans-serif; font-size: 0.95rem; text-decoration: none; cursor: pointer; transition: background-color 0.18s ease, color 0.18s ease; } .ds-nav-link svg { color: #9ca3af; flex-shrink: 0; } .ds-nav-link:hover { background: rgba(255,255,255,0.04); } .ds-nav-link--active { background: rgba(99,102,241,0.12); } .ds-nav-link--active svg { color: #a5b4fc; } .ds-nav-link__text { font-weight: 500; } @media (prefers-reduced-motion: reduce) { .ds-nav-link { transition: none; } }"
+    },
+    {
+      "name": "Artifact Card",
+      "kind": "card",
+      "refersTo": "message-assistant",
+      "description": "AI-generated document surfaced inline in the chat thread. Shows type, title, status, and an open action.",
+      "html": "<div class=\"ds-artifact\">\n  <div class=\"ds-artifact__header\">\n    <span class=\"ds-artifact__badge\">Report</span>\n    <span class=\"ds-artifact__status ds-artifact__status--final\">final</span>\n  </div>\n  <p class=\"ds-artifact__title\">Q3 Board Report — Risk Summary</p>\n  <p class=\"ds-artifact__desc\">Three financial risks identified in the Q3 board report, with mitigation recommendations.</p>\n  <div class=\"ds-artifact__footer\">\n    <span class=\"ds-artifact__time\">Just now</span>\n    <button class=\"ds-artifact__open\">Open document</button>\n  </div>\n</div>",
+      "css": ".ds-artifact { width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 14px 16px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 8px; } .ds-artifact__header { display: flex; align-items: center; gap: 8px; } .ds-artifact__badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; background: rgba(129,140,248,0.15); color: #a5b4fc; font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; } .ds-artifact__status { font-family: 'Sora', sans-serif; font-size: 10px; } .ds-artifact__status--final { color: #6ee7b7; } .ds-artifact__status--draft { color: #fbbf24; } .ds-artifact__title { margin: 0; font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600; color: #e2e8f0; line-height: 1.4; } .ds-artifact__desc { margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: #9ca3af; line-height: 1.5; } .ds-artifact__footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; } .ds-artifact__time { font-family: 'Sora', sans-serif; font-size: 11px; color: #6b7280; } .ds-artifact__open { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border: 1px solid rgba(99,102,241,0.50); border-radius: 7px; background: rgba(99,102,241,0.12); color: #a5b4fc; font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease; } .ds-artifact__open:hover { background: rgba(99,102,241,0.28); border-color: rgba(99,102,241,0.70); color: #c7d2fe; } @media (prefers-reduced-motion: reduce) { .ds-artifact__open { transition: none; } }"
+    },
+    {
+      "name": "Dropdown Menu",
+      "kind": "custom",
+      "refersTo": "button-ghost",
+      "description": "Floating context menu — mode selector, chat actions. Appears above trigger by default.",
+      "html": "<div class=\"ds-dropdown\">\n  <button class=\"ds-dropdown__item ds-dropdown__item--active\">\n    <svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3\"/><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"/></svg>\n    <span>AI Chat</span>\n  </button>\n  <button class=\"ds-dropdown__item\">\n    <svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z\"/><path d=\"M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z\"/><path d=\"M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z\"/><path d=\"M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z\"/><path d=\"M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z\"/><path d=\"M15.5 9H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5S16.33 9 15.5 9z\"/><path d=\"M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z\"/><path d=\"M8.5 15H10v-1.5c0-.83-.67-1.5-1.5-1.5S7 12.67 7 13.5 7.67 15 8.5 15z\"/></svg>\n    <span>Generate</span>\n  </button>\n  <button class=\"ds-dropdown__item\">\n    <svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"11 5 6 9 2 9 2 15 6 15 11 19 11 5\"/></svg>\n    <span>Voice</span>\n  </button>\n</div>",
+      "css": ".ds-dropdown { display: flex; flex-direction: column; gap: 0.125rem; min-width: 11rem; background: #1c1c1e; border: 1px solid rgba(255,255,255,0.10); border-radius: 0.75rem; padding: 0.25rem; box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.30); } .ds-dropdown__item { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.45rem 0.65rem; border: none; border-radius: 0.5rem; background: transparent; color: #9ca3af; font-family: 'Sora', sans-serif; font-size: 0.8125rem; font-weight: 500; cursor: pointer; text-align: left; transition: background 0.12s ease, color 0.12s ease; } .ds-dropdown__item:hover { background: rgba(255,255,255,0.07); color: #e2e8f0; } .ds-dropdown__item--active { color: #a5b4fc; background: rgba(99,102,241,0.12); } .ds-dropdown__item--active:hover { background: rgba(99,102,241,0.20); } @media (prefers-reduced-motion: reduce) { .ds-dropdown__item { transition: none; } }"
+    },
+    {
+      "name": "File Attachment Chip",
+      "kind": "chip",
+      "refersTo": "chip-active",
+      "description": "Pending file chip shown in the composer before sending. Inline removal button.",
+      "html": "<div class=\"ds-file-chip\">\n  <svg class=\"ds-file-chip__icon\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z\"/><polyline points=\"13 2 13 9 20 9\"/></svg>\n  <span class=\"ds-file-chip__name\">board-report-q3.pdf</span>\n  <button class=\"ds-file-chip__remove\" aria-label=\"Remove file\">\n    <svg width=\"8\" height=\"8\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg>\n  </button>\n</div>",
+      "css": ".ds-file-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 220px; padding: 5px 6px 5px 10px; border-radius: 10px; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); font-family: 'Sora', sans-serif; font-size: 12px; color: #c7d2fe; } .ds-file-chip__icon { flex-shrink: 0; color: #818cf8; } .ds-file-chip__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-file-chip__remove { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border: none; border-radius: 50%; background: rgba(255,255,255,0.08); color: rgba(199,210,254,0.6); cursor: pointer; transition: background 0.12s, color 0.12s; } .ds-file-chip__remove:hover { background: rgba(239,68,68,0.28); color: #fca5a5; } @media (prefers-reduced-motion: reduce) { .ds-file-chip__remove { transition: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Senior Collaborator",
+    "overview": "AURA's interface does not announce itself. It arrives already knowing what you need, steps out of the way while you think, and surfaces itself again exactly when you act. The aesthetic is not minimal for its own sake — it is minimal because decoration would compete with the AI's output, and the output is the product. Every surface decision asks the same question: does this element serve the work, or does it serve the interface?\n\nThe visual system is built on a two-layer dark ground: a warm near-black shell (#1E1B18) that frames the workspace, and a cooler near-black content surface (#151515) where messages, artifacts, and editors live. Thought Violet — the indigo-to-violet accent — does not appear as ambient color. It appears only when the system is asking for attention: a send button, an active selection, a focus ring. Anywhere else it would be noise.\n\nThis is an enterprise tool for professionals who return to the same workflows every day. Familiarity and predictability are features. Motion conveys state, not personality. Shadows establish hierarchy, not drama. The type is legible, dense without feeling cramped, and never competes with AI-generated content in the reading column.",
+    "keyCharacteristics": [
+      "Warm two-layer dark foundation (shell below content surface)",
+      "Single accent color (Thought Violet) used only for action and selection",
+      "Sora for UI chrome and labels; Manrope for prose and long-form content",
+      "Chillax reserved for display moments (brand identity, not functional UI)",
+      "Hybrid elevation: tonal layering as floor, shadows only for floating elements",
+      "150-250 ms transitions; motion tied strictly to state change",
+      "Full light-mode parity — not an inversion, a genuine resolved alternative"
+    ],
+    "rules": [
+      {
+        "name": "The Thought Violet Rule",
+        "body": "Thought Violet and its ramp appear only on interactive or stateful elements: buttons, active selections, focus rings, progress indicators, count badges. It is never used as decoration. Its rarity is what makes it register.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Layer Rule",
+        "body": "The dark theme is built on two distinct tonal layers: the warm shell and the cooler content surface. These must never be the same value. If a component sits on the wrong layer, it flattens the hierarchy.",
+        "section": "colors"
+      },
+      {
+        "name": "The Sora-in-Chrome Rule",
+        "body": "Sora is for the tool's own voice: navigation, controls, labels, buttons, menu items. Manrope is for content the AI produces. Never use Manrope for UI controls or Sora for long-form body copy.",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Display-in-Chrome Rule",
+        "body": "Chillax never appears in functional UI: no button labels, no nav items, no form fields, no tooltips. Its presence signals brand context, not product UI. Overuse destroys the distinction.",
+        "section": "typography"
+      },
+      {
+        "name": "The Colored-Shadow Exception Rule",
+        "body": "Only the send button uses a Thought Violet shadow. All other shadows are black-based. Any new shadow added must be black-based unless it is specifically a primary-action state indicator.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Flat-Floor Rule",
+        "body": "Static surfaces are flat. The sidebar, topbar, content background, and message thread carry no shadows. Shadows enter only when an element lifts above the static floor.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use Thought Violet exclusively on actionable and stateful elements — buttons, active selections, progress, focus rings, count badges.",
+      "Do maintain the two-layer dark hierarchy: Shell Warm (#1E1B18) as the outermost container, Content Surface (#151515) as the reading and composition area.",
+      "Do use Sora for all UI chrome and Manrope for all AI-generated prose and long-form reading content.",
+      "Do keep transitions at 150–250 ms for state changes.",
+      "Do use 12px radius for dropdowns and menus, 20px for the composer surface, 24px for floating panels.",
+      "Do distinguish user messages from assistant messages visually at a glance: user messages are Thought Violet gradient bubbles; assistant messages are near-invisible subtle containers at full width.",
+      "Do use ghost buttons that reveal their danger only on hover rather than pre-coloring them red."
+    ],
+    "donts": [
+      "Don't use Thought Violet as a section background, hero fill, card accent, or ambient decoration.",
+      "Don't design AURA to look like a generic SaaS dashboard: no blue-primary card grids, no metric widgets, no enterprise-boilerplate spacing.",
+      "Don't use consumer chatbot conventions: no bubbly rounded chat layouts with full-saturation color gradients on both sides of the conversation.",
+      "Don't copy the ChatGPT layout: no white-card center-column on a neutral background.",
+      "Don't use border-left greater than 1px as a colored accent stripe on cards, messages, or alerts.",
+      "Don't use Chillax in functional UI contexts — nav items, button labels, form fields, modal titles.",
+      "Don't add shadows to static surfaces (sidebar, content background, topbar).",
+      "Don't apply gradient text (background-clip: text with a gradient fill).",
+      "Don't use the send-button gradient for backgrounds, section fills, or decorative bands.",
+      "Don't gate content visibility on animation. Reveal transitions must enhance content that is already visible at rest."
+    ]
+  }
+}

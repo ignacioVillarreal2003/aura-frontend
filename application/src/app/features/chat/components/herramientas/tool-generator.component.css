@@ -2,7 +2,7 @@
   display: block;
   width: 100%;
   color: #fafaf9;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
 }
 
 .gen {

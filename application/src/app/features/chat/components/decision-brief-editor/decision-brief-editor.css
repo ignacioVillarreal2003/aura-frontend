@@ -22,7 +22,7 @@
 .db-back {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.1); background: transparent;
-  color: var(--text-secondary, #9a9aa3); font-family: 'Sora', sans-serif; font-size: 13px;
+  color: var(--text-secondary, #9a9aa3); font-family: var(--font-ui, 'Sora', sans-serif); font-size: 13px;
   cursor: pointer; flex-shrink: 0; white-space: nowrap; transition: background 0.15s, color 0.15s;
 }
 .db-back:hover { background: rgba(255,255,255,0.07); color: var(--text-primary); }
@@ -30,7 +30,7 @@
 .db-title {
   flex: 1; min-width: 0; background: transparent; border: none;
   border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600;
+  font-family: var(--font-ui, 'Sora', sans-serif); font-size: 15px; font-weight: 600;
   padding: 4px 2px; outline: none; transition: border-color 0.15s;
 }
 .db-title:focus { border-bottom-color: rgba(248,113,113,0.6); }
@@ -40,7 +40,7 @@
 .db-action-btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);
-  color: var(--text-secondary, #9a9aa3); font-family: 'Sora', sans-serif; font-size: 13px;
+  color: var(--text-secondary, #9a9aa3); font-family: var(--font-ui, 'Sora', sans-serif); font-size: 13px;
   font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .db-action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: var(--text-primary); }
@@ -94,7 +94,7 @@
 .db-textarea {
   width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
-  color: var(--text-primary, #fafaf9); font-family: 'Sora', sans-serif; font-size: 13px;
+  color: var(--text-primary, #fafaf9); font-family: var(--font-ui, 'Sora', sans-serif); font-size: 13px;
   line-height: 1.6; resize: vertical; outline: none; transition: border-color 0.2s;
 }
 .db-textarea:focus { border-color: rgba(248,113,113,0.35); }
@@ -107,7 +107,7 @@
 .db-input {
   width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
-  color: var(--text-primary, #fafaf9); font-family: 'Sora', sans-serif; font-size: 13px;
+  color: var(--text-primary, #fafaf9); font-family: var(--font-ui, 'Sora', sans-serif); font-size: 13px;
   outline: none; transition: border-color 0.2s;
 }
 .db-input:focus { border-color: rgba(248,113,113,0.35); }
@@ -205,7 +205,7 @@
   display: flex; align-items: center; justify-content: center;
   gap: 8px; width: 100%; padding: 13px 16px; border-radius: 10px;
   border: 1px dashed rgba(255,255,255,0.12); background: transparent;
-  color: rgba(255,255,255,0.3); font-family: 'Sora', sans-serif; font-size: 13px;
+  color: rgba(255,255,255,0.3); font-family: var(--font-ui, 'Sora', sans-serif); font-size: 13px;
   cursor: pointer; box-sizing: border-box; margin-top: 4px; transition: all 0.15s;
 }
 .db-add-btn .pi-plus { font-size: 11px; }

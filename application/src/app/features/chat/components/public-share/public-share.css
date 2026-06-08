@@ -3,7 +3,7 @@
   min-height: 100dvh;
   background: #0d0d0f;
   color: var(--text-primary, #e8e8ea);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
 }
 
 /* ── Page layout ───────────────────────────────────────────── */
@@ -263,7 +263,7 @@
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary, #9a9aa3);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;

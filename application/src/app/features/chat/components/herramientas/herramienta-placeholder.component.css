@@ -15,7 +15,7 @@
   box-sizing: border-box;
   background-color: #151515;
   color: #fafaf9;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
 }
 
 .herramienta-back {

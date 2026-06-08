@@ -17,7 +17,7 @@
   height: 100%;
   overflow: hidden;
   position: relative;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
 }
 
 .user-nav {

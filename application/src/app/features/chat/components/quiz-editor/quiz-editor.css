@@ -48,7 +48,7 @@
   border: 1px solid rgba(255,255,255,0.1);
   background: transparent;
   color: var(--text-secondary, #9a9aa3);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   cursor: pointer;
   flex-shrink: 0;
@@ -64,7 +64,7 @@
   border: none;
   border-bottom: 1px solid rgba(255,255,255,0.1);
   color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 15px;
   font-weight: 600;
   padding: 4px 2px;
@@ -84,7 +84,7 @@
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.05);
   color: var(--text-secondary, #9a9aa3);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -152,7 +152,7 @@
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
   color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   line-height: 1.6;
   resize: vertical;
@@ -168,7 +168,7 @@
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
   color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   outline: none;
   transition: border-color 0.2s;
@@ -241,7 +241,7 @@
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
   color: rgba(255,255,255,0.4);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -325,7 +325,7 @@
   background: transparent;
   border: none;
   color: var(--text-primary, #fafaf9);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   padding: 2px 0;
   outline: none;
@@ -361,7 +361,7 @@
   border: 1px dashed rgba(255,255,255,0.1);
   background: transparent;
   color: rgba(255,255,255,0.3);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 12px;
   cursor: pointer;
   align-self: flex-start;
@@ -402,7 +402,7 @@
   border: 1px dashed rgba(255,255,255,0.12);
   background: transparent;
   color: rgba(255,255,255,0.3);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   cursor: pointer;
   box-sizing: border-box;
