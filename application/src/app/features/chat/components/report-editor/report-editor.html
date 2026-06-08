@@ -25,6 +25,26 @@
       </div>
 
       <div class="re-bar__actions">
+        <div class="re-view-toggle" role="group" aria-label="Modo de visualización">
+          <button
+            type="button"
+            class="re-view-btn"
+            [class.re-view-btn--active]="viewMode() === 'edit'"
+            (click)="viewMode.set('edit')"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i>
+            Editar
+          </button>
+          <button
+            type="button"
+            class="re-view-btn"
+            [class.re-view-btn--active]="viewMode() === 'preview'"
+            (click)="viewMode.set('preview')"
+          >
+            <i class="pi pi-eye" aria-hidden="true"></i>
+            Vista previa
+          </button>
+        </div>
         <button
           type="button"
           class="re-action-btn"
@@ -75,14 +95,27 @@
     </div>
 
     <div class="re-editor">
-      <textarea
-        class="re-textarea"
-        aria-label="Contenido del informe"
-        [value]="editContent()"
-        (input)="editContent.set($any($event.target).value)"
-        placeholder="Escribe el contenido del informe aquí…"
-        spellcheck="false"
-      ></textarea>
+      @if (viewMode() === 'edit') {
+        <textarea
+          class="re-textarea"
+          aria-label="Contenido del informe"
+          [value]="editContent()"
+          (input)="editContent.set($any($event.target).value)"
+          placeholder="Escribe el contenido del informe aquí…"
+          spellcheck="false"
+        ></textarea>
+      } @else {
+        <div class="re-preview">
+          @if (editContent().trim()) {
+            <div class="re-preview__body" [innerHTML]="editContent() | markdown"></div>
+          } @else {
+            <div class="re-preview__empty">
+              <i class="pi pi-file-edit" aria-hidden="true"></i>
+              <p>Sin contenido. Cambiá a modo edición para escribir.</p>
+            </div>
+          }
+        </div>
+      }
     </div>
   }
 </div>

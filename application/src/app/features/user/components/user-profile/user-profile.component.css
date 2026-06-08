@@ -18,7 +18,7 @@
   box-sizing: border-box;
   background: transparent;
   color: var(--text-primary);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -205,7 +205,7 @@
   padding: 0.75rem;
   border-radius: 6px;
   font-size: 1rem;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   transition: border-color 0.2s ease;
 }
 

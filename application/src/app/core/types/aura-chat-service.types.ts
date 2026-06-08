@@ -61,7 +61,82 @@ export const AURA_CHAT_EXPORT_CONTENT_TYPE = {
 
 export type IsoDateTimeString = string;
 
-export type MessageSenderType = 'system' | 'user';
+export type MessageSenderType = 'user' | 'assistant';
+
+export type ArtifactType =
+  | 'MESSAGE'
+  | 'REPORT'
+  | 'CHECKLIST'
+  | 'QUIZ'
+  | 'TIMELINE'
+  | 'LESSONS_LEARNED'
+  | 'DECISION_BRIEF'
+  | 'DOCUMENT_SUMMARY'
+  | 'DOCUMENT_ACTION';
+
+export type ArtifactStatus = 'draft' | 'final' | 'archived';
+export type ArtifactMode = 'direct' | 'rag';
+
+export interface ArtifactMessagePreviewDto {
+  readonly id: number;
+  readonly message: string;
+  readonly sender_type: 'user' | 'assistant';
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface ArtifactSummaryDto {
+  readonly id: number;
+  readonly type: ArtifactType;
+  readonly title: string;
+  readonly description: string;
+  readonly status: ArtifactStatus;
+  readonly version: number;
+  readonly mode: ArtifactMode;
+  readonly source_chat_id: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_at: IsoDateTimeString | null;
+  readonly message: ArtifactMessagePreviewDto | null;
+  readonly linked_id: number | null;
+}
+
+export interface ArtifactDetailDto {
+  readonly id: number;
+  readonly type: ArtifactType;
+  readonly title: string;
+  readonly description: string;
+  readonly status: ArtifactStatus;
+  readonly version: number;
+  readonly mode: ArtifactMode;
+  readonly fragments: readonly unknown[] | null;
+  readonly source_chat_id: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface ArtifactVersionDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly version_number: number;
+  readonly title: string;
+  readonly description: string;
+  readonly status: ArtifactStatus;
+  readonly mode: ArtifactMode;
+  readonly change_summary: string;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface PinnedArtifactDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly chat_id: number;
+  readonly pinned_by: number;
+  readonly pinned_at: IsoDateTimeString;
+  readonly artifact: ArtifactSummaryDto;
+}
 
 export type MembershipStatus = 'active' | 'inactive' | 'pending';
 
@@ -122,6 +197,7 @@ export interface ChatListItemDto {
 
 export interface MessageDto {
   readonly id: number;
+  readonly artifact_id: number;
   readonly chat_id: number;
   readonly message: string;
   readonly sender_type: MessageSenderType;
@@ -325,6 +401,7 @@ export interface FeedbackAnalyticsDto {
 }
 
 export interface SendMessageTextJsonBody {
+  readonly chat_id: number;
   readonly message: string;
   readonly mode?: AuraChatAiMode;
 }
@@ -543,6 +620,383 @@ export interface UpdateChecklistBody {
   readonly sections?: readonly UpdateChecklistSectionBody[];
 }
 
+// ── Quiz ───────────────────────────────────────────────────────────────────────
+
+export type QuizMode = 'direct' | 'rag';
+export type QuizQuestionKind = 'single' | 'multiple' | 'boolean' | 'open';
+
+export interface QuizOptionDto {
+  readonly id: number;
+  readonly text: string;
+  readonly position: number;
+}
+
+export interface QuizQuestionDto {
+  readonly id: number;
+  readonly text: string;
+  readonly kind: QuizQuestionKind;
+  readonly explanation: string;
+  readonly position: number;
+  readonly options: readonly QuizOptionDto[];
+}
+
+export interface QuizDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly instructions: string;
+  readonly pass_score: number | null;
+  readonly mode: QuizMode;
+  readonly questions: readonly QuizQuestionDto[];
+  readonly source_chat_id: number | null;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface QuizListItemDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly mode: QuizMode;
+  readonly pass_score: number | null;
+  readonly source_chat_id: number | null;
+  readonly question_count: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface GenerateQuizBody {
+  readonly mode: QuizMode;
+  readonly message: string;
+  readonly chat_id?: number | null;
+}
+
+export interface QuizGenerateResponseDto {
+  readonly quiz: QuizDto;
+  readonly messages: readonly GenerateMessageDto[];
+  readonly fragments: readonly GenerateFragmentDto[];
+}
+
+export interface UpdateQuizOptionBody {
+  readonly text: string;
+  readonly is_correct: boolean;
+  readonly position: number;
+}
+
+export interface UpdateQuizQuestionBody {
+  readonly text: string;
+  readonly kind: QuizQuestionKind;
+  readonly explanation?: string;
+  readonly position: number;
+  readonly options?: readonly UpdateQuizOptionBody[];
+}
+
+export interface UpdateQuizBody {
+  readonly title?: string;
+  readonly instructions?: string;
+  readonly pass_score?: number | null;
+  readonly questions?: readonly UpdateQuizQuestionBody[];
+}
+
+// ── Timeline ───────────────────────────────────────────────────────────────────
+
+export type TimelineMode = 'direct' | 'rag';
+
+export interface TimelineEventDto {
+  readonly id: number;
+  readonly title: string;
+  readonly description: string;
+  readonly occurred_at: IsoDateTimeString | null;
+  readonly occurred_label: string;
+  readonly position: number;
+}
+
+export interface TimelineDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly summary: string;
+  readonly mode: TimelineMode;
+  readonly events: readonly TimelineEventDto[];
+  readonly source_chat_id: number | null;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface TimelineListItemDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly mode: TimelineMode;
+  readonly source_chat_id: number | null;
+  readonly event_count: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface GenerateTimelineBody {
+  readonly mode: TimelineMode;
+  readonly message: string;
+  readonly chat_id?: number | null;
+}
+
+export interface TimelineGenerateResponseDto {
+  readonly timeline: TimelineDto;
+  readonly messages: readonly GenerateMessageDto[];
+  readonly fragments: readonly GenerateFragmentDto[];
+}
+
+export interface UpdateTimelineEventBody {
+  readonly title: string;
+  readonly description?: string;
+  readonly occurred_at?: IsoDateTimeString | null;
+  readonly occurred_label?: string;
+  readonly position: number;
+}
+
+export interface UpdateTimelineBody {
+  readonly title?: string;
+  readonly summary?: string;
+  readonly events?: readonly UpdateTimelineEventBody[];
+}
+
+// ── LessonsLearned ─────────────────────────────────────────────────────────────
+
+export type LessonsLearnedMode = 'direct' | 'rag';
+export type LessonsLearnedCategory = 'sustain' | 'improve' | 'recommendation';
+
+export interface LessonsLearnedItemDto {
+  readonly id: number;
+  readonly category: LessonsLearnedCategory;
+  readonly observation: string;
+  readonly discussion: string;
+  readonly recommendation: string;
+  readonly position: number;
+}
+
+export interface LessonsLearnedDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly context: string;
+  readonly mode: LessonsLearnedMode;
+  readonly items: readonly LessonsLearnedItemDto[];
+  readonly source_chat_id: number | null;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface LessonsLearnedListItemDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly mode: LessonsLearnedMode;
+  readonly source_chat_id: number | null;
+  readonly item_count: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface GenerateLessonsLearnedBody {
+  readonly mode: LessonsLearnedMode;
+  readonly message: string;
+  readonly chat_id?: number | null;
+}
+
+export interface LessonsLearnedGenerateResponseDto {
+  readonly lessons_learned: LessonsLearnedDto;
+  readonly messages: readonly GenerateMessageDto[];
+  readonly fragments: readonly GenerateFragmentDto[];
+}
+
+export interface UpdateLessonsLearnedItemBody {
+  readonly category: LessonsLearnedCategory;
+  readonly observation: string;
+  readonly discussion?: string;
+  readonly recommendation?: string;
+  readonly position: number;
+}
+
+export interface UpdateLessonsLearnedBody {
+  readonly title?: string;
+  readonly context?: string;
+  readonly items?: readonly UpdateLessonsLearnedItemBody[];
+}
+
+// ── DecisionBrief ──────────────────────────────────────────────────────────────
+
+export type DecisionBriefMode = 'direct' | 'rag';
+
+export interface DecisionBriefOptionDto {
+  readonly id: number;
+  readonly title: string;
+  readonly description: string;
+  readonly pros: string;
+  readonly cons: string;
+  readonly is_recommended: boolean;
+  readonly position: number;
+}
+
+export interface DecisionBriefDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly problem: string;
+  readonly context: string;
+  readonly risks: string;
+  readonly recommendation: string;
+  readonly mode: DecisionBriefMode;
+  readonly options: readonly DecisionBriefOptionDto[];
+  readonly source_chat_id: number | null;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface DecisionBriefListItemDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly mode: DecisionBriefMode;
+  readonly source_chat_id: number | null;
+  readonly option_count: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface GenerateDecisionBriefBody {
+  readonly mode: DecisionBriefMode;
+  readonly message: string;
+  readonly chat_id?: number | null;
+}
+
+export interface DecisionBriefGenerateResponseDto {
+  readonly decision_brief: DecisionBriefDto;
+  readonly messages: readonly GenerateMessageDto[];
+  readonly fragments: readonly GenerateFragmentDto[];
+}
+
+export interface UpdateDecisionBriefOptionBody {
+  readonly title: string;
+  readonly description?: string;
+  readonly pros?: string;
+  readonly cons?: string;
+  readonly is_recommended: boolean;
+  readonly position: number;
+}
+
+export interface UpdateDecisionBriefBody {
+  readonly title?: string;
+  readonly problem?: string;
+  readonly context?: string;
+  readonly risks?: string;
+  readonly recommendation?: string;
+  readonly options?: readonly UpdateDecisionBriefOptionBody[];
+}
+
+// ── DocumentSummary ────────────────────────────────────────────────────────────
+
+export interface DocumentSummaryDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly summary: string;
+  readonly document_ids: readonly number[];
+  readonly source_chat_id: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface DocumentSummaryListItemDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly source_chat_id: number;
+  readonly document_ids: readonly number[];
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface GenerateDocumentSummaryBody {
+  readonly document_ids: readonly number[];
+  readonly chat_id: number;
+}
+
+export interface DocumentSummaryGenerateResponseDto {
+  readonly document_summary: DocumentSummaryDto;
+  readonly fragments: readonly GenerateFragmentDto[];
+}
+
+export interface UpdateDocumentSummaryBody {
+  readonly title?: string;
+  readonly summary?: string;
+}
+
+// ── DocumentAction ─────────────────────────────────────────────────────────────
+
+export type DocumentActionType =
+  | 'summarize'
+  | 'essay'
+  | 'key_points'
+  | 'compare'
+  | 'analyze'
+  | 'explain'
+  | 'report';
+
+export interface DocumentActionDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly result: string;
+  readonly document_ids: readonly number[];
+  readonly instruction: string;
+  readonly action: DocumentActionType | null;
+  readonly source_chat_id: number;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface DocumentActionListItemDto {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly source_chat_id: number;
+  readonly document_ids: readonly number[];
+  readonly instruction: string;
+  readonly action: DocumentActionType | null;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+}
+
+export interface GenerateDocumentActionBody {
+  readonly document_ids: readonly number[];
+  readonly instruction: string;
+  readonly action?: DocumentActionType | null;
+  readonly chat_id: number;
+}
+
+export interface DocumentActionGenerateResponseDto {
+  readonly document_action: DocumentActionDto;
+  readonly fragments: readonly GenerateFragmentDto[];
+}
+
+export interface UpdateDocumentActionBody {
+  readonly title?: string;
+  readonly result?: string;
+  readonly instruction?: string;
+}
+
 // ── Assistants ─────────────────────────────────────────────────────────────────
 
 export interface AssistantDto {
@@ -588,7 +1042,7 @@ export type AuraChatAiMode = 'document_question' | 'general_chat' | 'rag_agent' 
 export const AURA_CHAT_AI_MODE_DEFAULT: AuraChatAiMode = 'document_question';
 
 export type AuraChatWsClientMessage =
-  | { readonly type: 'chat.message'; readonly message: string; readonly mode?: AuraChatAiMode }
+  | { readonly type: 'chat.message'; readonly message: string; readonly mode?: AuraChatAiMode; readonly document_ids?: readonly number[] }
   | { readonly type: 'chat.regenerate'; readonly mode?: AuraChatAiMode }
   | { readonly type: 'chat.typing'; readonly is_typing: boolean };
 
@@ -642,4 +1096,24 @@ export type AuraChatWsServerMessage =
       readonly by?: number;
     }
   | { readonly type: 'member_joined'; readonly member_id: number }
-  | { readonly type: 'member_left'; readonly member_id: number };
+  | { readonly type: 'member_left'; readonly member_id: number }
+  | {
+      readonly type: 'artifact_created';
+      readonly artifact_id: number;
+      readonly artifact_type: ArtifactType;
+      readonly title: string;
+      readonly created_by: number;
+      readonly created_at: IsoDateTimeString;
+    }
+  | {
+      readonly type: 'artifact_updated';
+      readonly artifact_id: number;
+      readonly artifact_type: ArtifactType;
+      readonly title: string;
+      readonly updated_by: number | null;
+    }
+  | {
+      readonly type: 'artifact_deleted';
+      readonly artifact_id: number;
+      readonly deleted_by: number | null;
+    };

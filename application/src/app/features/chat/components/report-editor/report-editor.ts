@@ -4,12 +4,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
+import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
 import type { ReportDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
   selector: 'app-report-editor',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MarkdownPipe],
   templateUrl: './report-editor.html',
   styleUrl: './report-editor.css',
 })
@@ -25,6 +26,7 @@ export class ReportEditorComponent implements OnInit {
   readonly editContent = signal('');
   readonly saving = signal(false);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
+  readonly viewMode = signal<'edit' | 'preview'>('edit');
 
   readonly hasChanges = computed(() => {
     const r = this.report();

@@ -17,7 +17,7 @@
   box-sizing: border-box;
   background: transparent;
   color: var(--text-primary);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
 }
 
 .user-settings-header {
@@ -116,7 +116,7 @@
   padding: 0.875rem 1rem;
   border-radius: 8px;
   font-size: 1rem;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   transition: all 0.2s ease;
   width: 100%;
   max-width: 400px;
@@ -165,7 +165,7 @@
   padding: 0.75rem 2.5rem 0.75rem 0.75rem;
   border-radius: 8px;
   font-size: 1rem;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   cursor: pointer;
   transition: border-color 0.2s ease;
   appearance: none;
@@ -246,7 +246,7 @@
   font-size: 1rem;
   color: var(--text-primary);
   font-weight: 500;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
 }
 
 .toggle-description {

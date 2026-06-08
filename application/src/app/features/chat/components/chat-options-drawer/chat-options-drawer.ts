@@ -18,15 +18,20 @@ import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/
 import { ToastService } from '@core/components/toast-service';
 import { UserState } from '@core/state/user.state';
 import {
-  type ChatExportBackupDto,
+  type ArtifactSummaryDto,
   type ChecklistListItemDto,
+  type DecisionBriefListItemDto,
+  type DocumentActionListItemDto,
+  type DocumentSummaryListItemDto,
+  type LessonsLearnedListItemDto,
   type MembershipDto,
   type MembershipRole,
   type MembershipStatus,
-  type MessageDto,
-  type PinnedMessageDto,
+  type PinnedArtifactDto,
+  type QuizListItemDto,
   type ReportListItemDto,
   type ShareLinkDto,
+  type TimelineListItemDto,
 } from '@aura-types/aura-chat-service.types';
 
 export interface ChatRef {
@@ -42,6 +47,7 @@ export interface ChatRef {
 interface ConfirmOpts {
   readonly title: string;
   readonly description?: string;
+  readonly confirmLabel?: string;
   readonly onConfirm: () => void;
 }
 
@@ -52,7 +58,28 @@ export interface DocumentItem {
   readonly created_at: string;
 }
 
-type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'mute' | 'pinned' | 'bookmarks' | 'export' | 'reports' | 'checklists' | 'rename' | 'tags';
+type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'mute' | 'pinned' | 'bookmarks' | 'export' | 'artifacts' | 'reports' | 'checklists' | 'rename' | 'tags';
+
+export type ArtifactTabKey = 'reports' | 'checklists' | 'quizzes' | 'timelines' | 'lessons-learned' | 'decision-briefs' | 'document-summaries' | 'document-actions';
+
+interface ArtifactTabItem {
+  readonly id: number;
+  readonly artifact_id: number;
+  readonly title: string;
+  readonly source_chat_id: number;
+  readonly created_at: string;
+}
+
+const ARTIFACT_TAB_META: Record<ArtifactTabKey, { label: string; icon: string; permission: string; route: string; color: string }> = {
+  'reports':            { label: 'Informes',     icon: 'pi-file-edit',     permission: 'LIST_REPORTS',             route: 'report',           color: '#a5b4fc' },
+  'checklists':         { label: 'Checklists',   icon: 'pi-list-check',    permission: 'LIST_CHECKLISTS',          route: 'checklist',        color: '#86efac' },
+  'quizzes':            { label: 'Quiz',         icon: 'pi-question-circle',permission: 'LIST_QUIZZES',            route: 'quiz',             color: '#fde68a' },
+  'timelines':          { label: 'Línea tiempo', icon: 'pi-calendar',      permission: 'LIST_TIMELINES',           route: 'timeline',         color: '#7dd3fc' },
+  'lessons-learned':    { label: 'Lecciones',    icon: 'pi-book',          permission: 'LIST_LESSONS_LEARNED',     route: 'lessons-learned',  color: '#f9a8d4' },
+  'decision-briefs':    { label: 'Decisiones',   icon: 'pi-check-circle',  permission: 'LIST_DECISION_BRIEFS',     route: 'decision-brief',   color: '#c4b5fd' },
+  'document-summaries': { label: 'Resúmenes',    icon: 'pi-file',          permission: 'LIST_DOCUMENT_SUMMARIES',  route: 'document-summary', color: '#5eead4' },
+  'document-actions':   { label: 'Acciones doc', icon: 'pi-cog',           permission: 'LIST_DOCUMENT_ACTIONS',    route: 'document-action',  color: '#fdba74' },
+};
 
 @Component({
   selector: 'app-chat-options-drawer',
@@ -84,6 +111,24 @@ export class ChatOptionsDrawer {
     this.userState.user()?.permissions.includes('SOFT_DELETE_DOCUMENT') ?? false
   );
 
+  readonly availableArtifactTabs = computed((): ArtifactTabKey[] => {
+    const perms = this.userState.user()?.permissions ?? [];
+    return (Object.keys(ARTIFACT_TAB_META) as ArtifactTabKey[]).filter(
+      (k) => perms.includes(ARTIFACT_TAB_META[k].permission)
+    );
+  });
+
+  readonly canSeeArtifacts = computed(() => this.availableArtifactTabs().length > 0);
+
+  readonly selectedArtifactTab = signal<ArtifactTabKey>('reports');
+  readonly artifactsItems = signal<ArtifactTabItem[]>([]);
+  readonly artifactsLoading = signal(false);
+  readonly artifactsPage = signal(1);
+  readonly artifactsHasNext = signal(false);
+  readonly artifactsHasPrev = signal(false);
+  readonly artifactsTotalCount = signal(0);
+  private readonly artifactsPageSize = 10;
+
   readonly isOpen = input.required<boolean>();
   readonly isOpenChange = output<boolean>();
   readonly panelTitle = input<string>('Opciones del chat');
@@ -108,11 +153,11 @@ export class ChatOptionsDrawer {
   readonly deletingDocId = signal<number | null>(null);
   readonly shareLinks = signal<ShareLinkDto[]>([]);
   readonly shareLinksLoading = signal(false);
-  readonly pinnedMessages = signal<PinnedMessageDto[]>([]);
+  readonly pinnedMessages = signal<PinnedArtifactDto[]>([]);
   readonly pinnedLoading = signal(false);
-  readonly bookmarkedMessages = signal<MessageDto[]>([]);
+  readonly bookmarkedMessages = signal<ArtifactSummaryDto[]>([]);
   readonly bookmarkedLoading = signal(false);
-  readonly exportingAs = signal<'pdf' | 'markdown' | 'json' | 'ai' | null>(null);
+  readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
 
   readonly reports = signal<ReportListItemDto[]>([]);
   readonly reportsLoading = signal(false);
@@ -152,6 +197,7 @@ export class ChatOptionsDrawer {
       case 'pinned': return 'Mensajes fijados';
       case 'bookmarks': return 'Guardados';
       case 'export': return 'Exportar chat';
+      case 'artifacts': return 'Artefactos';
       case 'reports': return 'Informes';
       case 'checklists': return 'Checklists';
       case 'rename': return 'Cambiar nombre';
@@ -257,6 +303,14 @@ export class ChatOptionsDrawer {
     if (view === 'export') {
       this.exportingAs.set(null);
     }
+    if (view === 'artifacts') {
+      const firstTab = this.availableArtifactTabs()[0];
+      if (firstTab) {
+        this.selectedArtifactTab.set(firstTab);
+        this.artifactsPage.set(1);
+        this.reloadArtifactsTab();
+      }
+    }
     if (view === 'reports') {
       this.reportsPage.set(1);
       this.reloadReports();
@@ -327,6 +381,7 @@ export class ChatOptionsDrawer {
   deleteDocument(doc: DocumentItem): void {
     this.requestConfirm({
       title: `¿Eliminar "${doc.name}"?`,
+      confirmLabel: 'Eliminar documento',
       onConfirm: () => {
         if (this.deletingDocId() !== null) return;
         this.deletingDocId.set(doc.id);
@@ -404,6 +459,7 @@ export class ChatOptionsDrawer {
     this.requestConfirm({
       title: '¿Eliminar esta conversación?',
       description: 'Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar conversación',
       onConfirm: () => {
         this.chatHttp.deleteChat(cid).subscribe({
           next: () => {
@@ -609,6 +665,7 @@ export class ChatOptionsDrawer {
     if (cid == null) return;
     this.requestConfirm({
       title: '¿Salir de este chat?',
+      confirmLabel: 'Salir del chat',
       onConfirm: () => {
         this.chatHttp.leaveChat(cid).subscribe({
           next: () => {
@@ -688,11 +745,21 @@ export class ChatOptionsDrawer {
     }
   }
 
+  docStatusLabel(status: string): string {
+    switch (status) {
+      case 'uploaded':   return 'Procesando';
+      case 'processed':  return 'Listo';
+      case 'failed':     return 'Error';
+      default:           return status;
+    }
+  }
+
   removeMember(row: MembershipDto): void {
     const cid = this.contextChatId();
     if (cid == null) return;
     this.requestConfirm({
       title: '¿Quitar a este participante?',
+      confirmLabel: 'Quitar participante',
       onConfirm: () => {
         this.chatHttp.removeMember(cid, row.id).subscribe({
           next: () => {
@@ -712,6 +779,7 @@ export class ChatOptionsDrawer {
     this.requestConfirm({
       title: '¿Limpiar el historial de mensajes?',
       description: 'Esta acción no se puede deshacer.',
+      confirmLabel: 'Limpiar historial',
       onConfirm: () => {
         this.chatHttp.clearChatHistory(cid).subscribe({
           next: () => {
@@ -730,7 +798,7 @@ export class ChatOptionsDrawer {
     if (cid == null) return;
     this.pinnedLoading.set(true);
     this.chatHttp
-      .listPinnedMessages(cid, { page_size: 50 })
+      .listPinnedArtifacts(cid, { page_size: 50 })
       .pipe(take(1))
       .subscribe({
         next: (page) => {
@@ -749,7 +817,7 @@ export class ChatOptionsDrawer {
     if (cid == null) return;
     this.bookmarkedLoading.set(true);
     this.chatHttp
-      .listBookmarkedMessages(cid, { page_size: 50 })
+      .listBookmarkedArtifacts(cid, { page_size: 50 })
       .pipe(take(1))
       .subscribe({
         next: (page) => {
@@ -763,7 +831,7 @@ export class ChatOptionsDrawer {
       });
   }
 
-  exportChat(format: 'pdf' | 'markdown' | 'json' | 'ai'): void {
+  exportChat(format: 'pdf' | 'markdown'): void {
     const cid = this.contextChatId();
     if (cid == null || this.exportingAs() !== null) return;
     this.exportingAs.set(format);
@@ -780,20 +848,6 @@ export class ChatOptionsDrawer {
     } else if (format === 'markdown') {
       this.chatHttp.exportChatMarkdown(cid).pipe(take(1)).subscribe({
         next: (blob) => { this.downloadBlob(blob, `${slug}.md`); this.exportingAs.set(null); },
-        error: onError,
-      });
-    } else if (format === 'ai') {
-      this.chatHttp.exportAiResponsesMarkdown(cid).pipe(take(1)).subscribe({
-        next: (blob) => { this.downloadBlob(blob, `${slug}-ia.md`); this.exportingAs.set(null); },
-        error: onError,
-      });
-    } else if (format === 'json') {
-      this.chatHttp.exportChatJsonBackup(cid).pipe(take(1)).subscribe({
-        next: (data: ChatExportBackupDto) => {
-          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-          this.downloadBlob(blob, `${slug}-backup.json`);
-          this.exportingAs.set(null);
-        },
         error: onError,
       });
     }
@@ -825,6 +879,76 @@ export class ChatOptionsDrawer {
           this.toastService.show('No se pudieron cargar los participantes.', 'error');
         },
       });
+  }
+
+  // ── Artifacts tab ────────────────────────────────────────────────────────
+  readonly artifactTabMeta = ARTIFACT_TAB_META;
+
+  selectArtifactTab(key: ArtifactTabKey): void {
+    this.selectedArtifactTab.set(key);
+    this.artifactsPage.set(1);
+    this.reloadArtifactsTab();
+  }
+
+  artifactsNextPage(): void {
+    this.artifactsPage.update((p) => p + 1);
+    this.reloadArtifactsTab();
+  }
+
+  artifactsPrevPage(): void {
+    this.artifactsPage.update((p) => p - 1);
+    this.reloadArtifactsTab();
+  }
+
+  openArtifact(item: ArtifactTabItem): void {
+    const tab = this.selectedArtifactTab();
+    const route = ARTIFACT_TAB_META[tab].route;
+    void this.router.navigate(['/main-container', route, item.id]);
+    this.close();
+  }
+
+  reloadArtifactsTab(): void {
+    const cid = this.contextChatId();
+    if (cid == null) return;
+    const tab = this.selectedArtifactTab();
+    const page = this.artifactsPage();
+    const page_size = this.artifactsPageSize;
+    this.artifactsLoading.set(true);
+    this.artifactsItems.set([]);
+
+    type CommonItem = { id: number; artifact_id: number; title: string; source_chat_id: number; created_at: string };
+    const toItems = (results: CommonItem[]): ArtifactTabItem[] =>
+      results.map((r) => ({ id: r.id, artifact_id: r.artifact_id, title: r.title, source_chat_id: r.source_chat_id, created_at: r.created_at }));
+
+    const query = { chat_id: cid, page, page_size };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let req$: any;
+    switch (tab) {
+      case 'reports':            req$ = this.chatHttp.listReports(query); break;
+      case 'checklists':         req$ = this.chatHttp.listChecklists(query); break;
+      case 'quizzes':            req$ = this.chatHttp.listQuizzes(query); break;
+      case 'timelines':          req$ = this.chatHttp.listTimelines(query); break;
+      case 'lessons-learned':    req$ = this.chatHttp.listLessonsLearned(query); break;
+      case 'decision-briefs':    req$ = this.chatHttp.listDecisionBriefs(query); break;
+      case 'document-summaries': req$ = this.chatHttp.listDocumentSummaries(query); break;
+      case 'document-actions':   req$ = this.chatHttp.listDocumentActions(query); break;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    (req$ as ReturnType<typeof this.chatHttp.listReports>).pipe(take(1)).subscribe({
+      next: (p) => {
+        this.artifactsItems.set(toItems(p.results as unknown as CommonItem[]));
+        this.artifactsHasNext.set(p.next !== null);
+        this.artifactsHasPrev.set(p.previous !== null);
+        this.artifactsTotalCount.set(p.count);
+        this.artifactsLoading.set(false);
+      },
+      error: () => {
+        this.artifactsLoading.set(false);
+        this.toastService.show('No se pudieron cargar los artefactos.', 'error');
+      },
+    });
   }
 
   // ── Reports ──────────────────────────────────────────────────────────────
@@ -868,6 +992,7 @@ export class ChatOptionsDrawer {
   deleteReport(reportId: number): void {
     this.requestConfirm({
       title: '¿Eliminar este informe?',
+      confirmLabel: 'Eliminar informe',
       onConfirm: () => {
         this.chatHttp
           .deleteReport(reportId)
@@ -950,6 +1075,7 @@ export class ChatOptionsDrawer {
   deleteChecklist(checklistId: number): void {
     this.requestConfirm({
       title: '¿Eliminar esta checklist?',
+      confirmLabel: 'Eliminar checklist',
       onConfirm: () => {
         this.chatHttp
           .deleteChecklist(checklistId)

@@ -37,6 +37,46 @@ export const chatShellRoutes: Routes = [
           ),
       },
       {
+        path: 'quiz/:id',
+        loadComponent: () =>
+          import('./components/quiz-editor/quiz-editor').then((m) => m.QuizEditorComponent),
+      },
+      {
+        path: 'timeline/:id',
+        loadComponent: () =>
+          import('./components/timeline-editor/timeline-editor').then(
+            (m) => m.TimelineEditorComponent
+          ),
+      },
+      {
+        path: 'lessons-learned/:id',
+        loadComponent: () =>
+          import('./components/lessons-learned-editor/lessons-learned-editor').then(
+            (m) => m.LessonsLearnedEditorComponent
+          ),
+      },
+      {
+        path: 'decision-brief/:id',
+        loadComponent: () =>
+          import('./components/decision-brief-editor/decision-brief-editor').then(
+            (m) => m.DecisionBriefEditorComponent
+          ),
+      },
+      {
+        path: 'document-summary/:id',
+        loadComponent: () =>
+          import('./components/document-summary-editor/document-summary-editor').then(
+            (m) => m.DocumentSummaryEditorComponent
+          ),
+      },
+      {
+        path: 'document-action/:id',
+        loadComponent: () =>
+          import('./components/document-action-editor/document-action-editor').then(
+            (m) => m.DocumentActionEditorComponent
+          ),
+      },
+      {
         path: 'assistants',
         loadComponent: () =>
           import('./components/herramientas/asistentes-hub.component').then(

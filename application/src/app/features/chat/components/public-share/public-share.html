@@ -36,9 +36,9 @@
     } @else {
       <ol class="share-message-list">
         @for (msg of messages(); track msg.id) {
-          <li class="share-message" [class.share-message--user]="msg.sender_type === 'user'" [class.share-message--system]="msg.sender_type === 'system'">
+          <li class="share-message" [class.share-message--user]="msg.sender_type === 'user'" [class.share-message--system]="msg.sender_type === 'assistant'">
             <div class="share-message__avatar" aria-hidden="true">
-              @if (msg.sender_type === 'system') {
+              @if (msg.sender_type === 'assistant') {
                 <i class="pi pi-sparkles"></i>
               } @else {
                 <i class="pi pi-user"></i>
@@ -46,7 +46,7 @@
             </div>
             <div class="share-message__body">
               <span class="share-message__sender">
-                {{ msg.sender_type === 'system' ? 'AURA' : 'Usuario' }}
+                {{ msg.sender_type === 'assistant' ? 'AURA' : 'Usuario' }}
               </span>
               <div class="share-message__bubble">
                 <div class="share-message__text" [innerHTML]="msg.message | markdown"></div>

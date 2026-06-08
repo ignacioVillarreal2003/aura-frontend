@@ -1,0 +1,186 @@
+<div class="qe-root">
+  @if (loading()) {
+    <div class="qe-loading">
+      <i class="pi pi-spin pi-spinner qe-loading__spinner" aria-hidden="true"></i>
+      <p class="qe-loading__text">Cargando quiz…</p>
+    </div>
+  } @else if (quiz(); as q) {
+
+    <!-- ── Top bar ──────────────────────────────────────────── -->
+    <header class="qe-bar">
+      <button type="button" class="qe-back" (click)="goBack()">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        Volver
+      </button>
+      <input
+        class="qe-title"
+        type="text"
+        [value]="editTitle()"
+        (input)="editTitle.set($any($event.target).value)"
+        placeholder="Título del quiz"
+        maxlength="255"
+        aria-label="Título"
+      />
+      <div class="qe-bar__actions">
+        <button type="button" class="qe-action-btn" [disabled]="exportingAs() !== null" (click)="export('pdf')">
+          <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
+          PDF
+        </button>
+        <button type="button" class="qe-action-btn" [disabled]="exportingAs() !== null" (click)="export('markdown')">
+          <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
+          MD
+        </button>
+        <button type="button" class="qe-action-btn qe-action-btn--primary"
+          [disabled]="saving()" (click)="save()">
+          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
+          Guardar
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Meta strip ──────────────────────────────────────── -->
+    <div class="qe-meta">
+      <span class="qe-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ q.created_at | date: 'mediumDate' }}
+      </span>
+      <span class="qe-meta__chip">
+        <i class="pi pi-bolt" aria-hidden="true"></i>
+        {{ q.mode === 'rag' ? 'RAG' : 'Directo' }}
+      </span>
+      <span class="qe-meta__chip">
+        <i class="pi pi-question-circle" aria-hidden="true"></i>
+        {{ questions().length }} pregunta{{ questions().length !== 1 ? 's' : '' }}
+      </span>
+    </div>
+
+    <!-- ── Body ────────────────────────────────────────────── -->
+    <div class="qe-body">
+
+      <!-- Instructions & Pass Score row -->
+      <div class="qe-config-row">
+        <div class="qe-field qe-field--grow">
+          <label class="qe-label">Instrucciones</label>
+          <textarea
+            class="qe-textarea qe-textarea--sm"
+            rows="2"
+            placeholder="Instrucciones para el participante…"
+            [value]="editInstructions()"
+            (input)="editInstructions.set($any($event.target).value)"
+          ></textarea>
+        </div>
+        <div class="qe-field qe-field--narrow">
+          <label class="qe-label">Puntaje mínimo (%)</label>
+          <input
+            class="qe-input"
+            type="number"
+            min="0"
+            max="100"
+            placeholder="—"
+            [value]="editPassScore()"
+            (input)="editPassScore.set($any($event.target).value)"
+          />
+        </div>
+      </div>
+
+      <!-- Questions list -->
+      @if (questions().length === 0) {
+        <div class="qe-empty">
+          <i class="pi pi-question-circle qe-empty__icon" aria-hidden="true"></i>
+          <p>Sin preguntas aún. Añadí la primera con el botón de abajo.</p>
+        </div>
+      }
+
+      @for (q of questions(); track q.uid; let qi = $index) {
+        <div class="qe-question">
+          <div class="qe-question__header">
+            <span class="qe-question__num">{{ qi + 1 }}</span>
+
+            <!-- Kind pills -->
+            <div class="qe-kind-pills">
+              @for (k of questionKinds; track k.value) {
+                <button
+                  type="button"
+                  class="qe-kind-pill"
+                  [class.qe-kind-pill--active]="q.kind === k.value"
+                  (click)="setQuestionKind(qi, k.value)"
+                  [title]="k.label">
+                  <i [ngClass]="['pi', k.icon]" aria-hidden="true"></i>
+                  {{ k.label }}
+                </button>
+              }
+            </div>
+
+            <button type="button" class="qe-question__del" (click)="deleteQuestion(qi)" title="Eliminar pregunta">
+              <i class="pi pi-trash" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <textarea
+            class="qe-textarea qe-question__text"
+            rows="2"
+            placeholder="Enunciado de la pregunta…"
+            [value]="q.text"
+            (input)="updateQuestionText(qi, $event)"
+          ></textarea>
+
+          <!-- Options (single / multiple / boolean) -->
+          @if (hasOptions(q.kind)) {
+            <div class="qe-options">
+              @for (opt of q.options; track opt.uid; let oi = $index) {
+                <div class="qe-option" [class.qe-option--correct]="opt.is_correct">
+                  <button
+                    type="button"
+                    class="qe-option__check"
+                    [class.qe-option__check--active]="opt.is_correct"
+                    (click)="toggleOptionCorrect(qi, oi)"
+                    [title]="opt.is_correct ? 'Respuesta correcta' : 'Marcar como correcta'">
+                    <i [ngClass]="['pi', opt.is_correct ? 'pi-check-circle' : 'pi-circle']" aria-hidden="true"></i>
+                  </button>
+                  <input
+                    type="text"
+                    class="qe-option__text"
+                    [value]="opt.text"
+                    (input)="updateOptionText(qi, oi, $event)"
+                    [placeholder]="'Opción ' + (oi + 1)"
+                    [readonly]="q.kind === 'boolean'"
+                  />
+                  @if (q.kind !== 'boolean') {
+                    <button type="button" class="qe-option__del" (click)="deleteOption(qi, oi)" title="Eliminar opción">
+                      <i class="pi pi-times" aria-hidden="true"></i>
+                    </button>
+                  }
+                </div>
+              }
+              @if (q.kind !== 'boolean') {
+                <button type="button" class="qe-add-option-btn" (click)="addOption(qi)">
+                  <i class="pi pi-plus" aria-hidden="true"></i>
+                  Añadir opción
+                </button>
+              }
+            </div>
+          } @else {
+            <p class="qe-open-hint">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              Pregunta abierta — no requiere opciones predefinidas.
+            </p>
+          }
+
+          <!-- Explanation -->
+          <input
+            type="text"
+            class="qe-input qe-question__explanation"
+            [value]="q.explanation"
+            (input)="updateQuestionExplanation(qi, $event)"
+            placeholder="Explicación (opcional)…"
+          />
+        </div>
+      }
+
+      <button type="button" class="qe-add-question-btn" (click)="addQuestion()">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        Añadir pregunta
+      </button>
+    </div>
+  }
+</div>

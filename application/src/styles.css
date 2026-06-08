@@ -12,7 +12,11 @@ html, body {
 
 body {
   margin: 0;
-  font-family: Manrope, serif;
+  font-family: var(--font-prose, 'Manrope', sans-serif);
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 app-root {

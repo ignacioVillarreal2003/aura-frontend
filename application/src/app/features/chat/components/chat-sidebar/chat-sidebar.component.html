@@ -60,10 +60,11 @@
               <p class="chats-section-label">Recientes</p>
               <div class="chats-container">
                 <div class="sidebar-nav-links sidebar-nav-links--recents" role="list">
-                  @for (c of sortedChats(); track c.id) {
+                  @for (c of sortedChats(); track c.id; let i = $index) {
                     <div
                       class="sidebar-chat-item"
                       role="listitem"
+                      [style.--i]="i"
                       [class.menu-open]="drawerContextChat()?.id === c.id">
                       <button
                         type="button"

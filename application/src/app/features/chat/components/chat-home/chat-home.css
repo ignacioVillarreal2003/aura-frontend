@@ -48,21 +48,23 @@
 }
 
 .welcome-title {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: clamp(1.5rem, 4vw, 2.25rem);
   font-weight: 500;
   color: var(--text-primary);
   margin: 0 0 0.5rem;
   line-height: 1.25;
+  text-wrap: balance;
+  letter-spacing: -0.015em;
 }
 
 .welcome-subtitle {
-  font-family: 'Sora', sans-serif;
-  font-size: 0.9375rem;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: var(--text-body-sm, 0.9375rem);
   font-weight: 400;
   color: var(--text-secondary);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .chat-home-visually-hidden {
@@ -118,8 +120,8 @@
   border-radius: 1.25rem 1.25rem 0 0;
   background: transparent;
   color: var(--text-primary);
-  font-family: 'Sora', sans-serif;
-  font-size: 0.9375rem;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: var(--text-body-sm, 0.9375rem);
   line-height: var(--chat-home-textarea-lh);
   resize: none;
   outline: none;
@@ -191,7 +193,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary, #e8e8ea);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   cursor: pointer;
   outline: none;
@@ -222,7 +224,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary, #9a9aa3);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -283,7 +285,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary, #9a9aa3);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
@@ -351,7 +353,7 @@
   border: none;
   background: transparent;
   color: var(--text-primary, #e8e8ea);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   cursor: pointer;
   transition: background 0.12s;
@@ -426,7 +428,7 @@
   border-radius: 10px;
   background: rgba(99, 102, 241, 0.12);
   border: 1px solid rgba(99, 102, 241, 0.25);
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 12px;
   color: #c7d2fe;
 }

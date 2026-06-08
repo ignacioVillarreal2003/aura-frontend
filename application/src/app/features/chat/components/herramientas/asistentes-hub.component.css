@@ -14,7 +14,7 @@
   box-sizing: border-box;
   background-color: #151515;
   color: #fafaf9;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -87,7 +87,7 @@
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 8px;
   color: #fafaf9;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.15s ease, background 0.15s ease;

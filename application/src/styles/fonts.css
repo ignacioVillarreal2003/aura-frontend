@@ -1,4 +1,5 @@
 :root {
+  /* Size scale (heading aliases kept for compat) */
   --font-h1: 3rem;
   --font-h2: 2.25rem;
   --font-h3: 1.875rem;
@@ -6,6 +7,19 @@
   --font-h5: 1.25rem;
   --font-h6: 1.125rem;
   --font-p:  1rem;
+
+  /* Semantic size tokens */
+  --text-caption:  0.75rem;    /* 12px — timestamps, hints */
+  --text-label:    0.8125rem;  /* 13px — UI labels, metadata */
+  --text-body-sm:  0.9375rem;  /* 15px — composer, compact prose */
+  --text-body:     1rem;       /* 16px — AI prose, body */
+  --text-title:    1.125rem;   /* 18px — card/panel titles */
+  --text-headline: 1.5rem;     /* 24px — section headings */
+
+  /* Semantic font-family variables */
+  --font-display: 'Chillax', sans-serif;
+  --font-ui:      'Sora', sans-serif;
+  --font-prose:   'Manrope', sans-serif;
 }
 
 @font-face {
@@ -24,4 +38,8 @@
   font-display: swap;
   font-style: normal;
 }
+
+/* Balance short headings; reduce orphans in prose */
+h1, h2, h3 { text-wrap: balance; }
+p, li       { text-wrap: pretty; }
 

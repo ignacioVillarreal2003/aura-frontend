@@ -5,14 +5,15 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import type {
   AddMembersBody,
+  ArtifactDetailDto,
+  ArtifactSummaryDto,
+  ArtifactVersionDto,
   AssistantAdminDto,
   AssistantDto,
-  AuraChatAiMode,
   BulkArchiveChatResultDto,
   BulkChatIdsBody,
   BulkUnarchiveChatResultDto,
   ChatDetailDto,
-  ChatExportBackupDto,
   ChatListItemDto,
   ChatListQueryParams,
   ChecklistDto,
@@ -22,19 +23,38 @@ import type {
   CreateChatBody,
   CursorPageResult,
   CursorPaginationQueryParams,
+  DecisionBriefDto,
+  DecisionBriefGenerateResponseDto,
+  DecisionBriefListItemDto,
+  DocumentActionDto,
+  DocumentActionGenerateResponseDto,
+  DocumentActionListItemDto,
+  DocumentSummaryDto,
+  DocumentSummaryGenerateResponseDto,
+  DocumentSummaryListItemDto,
   FeedbackAnalyticsDto,
   FeedbackAnalyticsQuery,
   GenerateChecklistBody,
+  GenerateDecisionBriefBody,
+  GenerateDocumentActionBody,
+  GenerateDocumentSummaryBody,
+  GenerateLessonsLearnedBody,
+  GenerateQuizBody,
   GenerateReportBody,
+  GenerateTimelineBody,
   HealthResponseDto,
+  LessonsLearnedDto,
+  LessonsLearnedGenerateResponseDto,
+  LessonsLearnedListItemDto,
   MemberListQueryParams,
   MembershipDto,
   MessageDto,
-  MessageFeedbackDto,
   MuteChatBody,
   PageNumberResult,
-  PinnedMessageDto,
-  RegenerateResponseDto,
+  PinnedArtifactDto,
+  QuizDto,
+  QuizGenerateResponseDto,
+  QuizListItemDto,
   ReportDto,
   ReportGenerateResponseDto,
   ReportListItemDto,
@@ -45,13 +65,22 @@ import type {
   ShareLinkCreateBody,
   ShareLinkDto,
   ThreadReplyDto,
+  TimelineDto,
+  TimelineGenerateResponseDto,
+  TimelineListItemDto,
   UpdateChatBody,
   StartChatResponseDto,
   UpdateAssistantBody,
   UpdateChecklistBody,
+  UpdateDecisionBriefBody,
+  UpdateDocumentActionBody,
+  UpdateDocumentSummaryBody,
+  UpdateLessonsLearnedBody,
   UpdateMemberRoleBody,
   UpdateMemberStatusBody,
+  UpdateQuizBody,
   UpdateReportBody,
+  UpdateTimelineBody,
 } from '@aura-types/aura-chat-service.types';
 
 interface PageFollowQuery {
@@ -77,8 +106,8 @@ export class AuraChatServiceHttp {
     return `${this.base}/chats/${chatId}/`;
   }
 
-  private messagesRoot(chatId: number): string {
-    return `${this.base}/chats/${chatId}/messages/`;
+  private artifactsBase(): string {
+    return `${this.base}/artifacts/`;
   }
 
   private membersRoot(chatId: number): string {
@@ -200,145 +229,129 @@ export class AuraChatServiceHttp {
     if (query.url) {
       return this.http.get<CursorPageResult<MessageDto>>(query.url);
     }
-    return this.http.get<CursorPageResult<MessageDto>>(this.messagesRoot(chatId), {
-      params: this.paramsForCursor(query),
-    });
+    let p = this.paramsForCursor(query);
+    p = p.set('chat_id', String(chatId));
+    return this.http.get<CursorPageResult<MessageDto>>(`${this.base}/messages/`, { params: p });
+  }
+
+  listChatArtifacts(
+    chatId: number,
+    query: PageFollowQuery = {},
+  ): Observable<PageNumberResult<ArtifactSummaryDto>> {
+    if (query.url) {
+      return this.http.get<PageNumberResult<ArtifactSummaryDto>>(query.url);
+    }
+    return this.http.get<PageNumberResult<ArtifactSummaryDto>>(
+      `${this.artifactsBase()}chats/${chatId}/`,
+      { params: this.paramsForPaging(query) },
+    );
   }
 
   sendMessageJson(
     chatId: number,
     body: SendMessageTextJsonBody,
   ): Observable<SendMessageResponseDto> {
-    return this.http.post<SendMessageResponseDto>(this.messagesRoot(chatId), body);
+    return this.http.post<SendMessageResponseDto>(`${this.base}/messages/generate/`, {
+      ...body,
+      chat_id: chatId,
+    });
   }
 
   sendMessageMultipart(chatId: number, formData: FormData): Observable<SendMessageResponseDto> {
-    return this.http.post<SendMessageResponseDto>(this.messagesRoot(chatId), formData);
+    formData.set('chat_id', String(chatId));
+    return this.http.post<SendMessageResponseDto>(`${this.base}/messages/generate/`, formData);
   }
 
   transcribeAudio(chatId: number, formData: FormData): Observable<{ transcript: string }> {
-    return this.http.post<{ transcript: string }>(`${this.messagesRoot(chatId)}transcribe/`, formData);
+    return this.http.post<{ transcript: string }>(`${this.chatDetail(chatId)}transcribe/`, formData);
   }
 
   clearChatHistory(chatId: number): Observable<void> {
-    return this.http.delete<void>(`${this.messagesRoot(chatId)}clear/`);
+    return this.http.delete<void>(`${this.chatDetail(chatId)}clear/`);
   }
 
   markChatAsRead(chatId: number): Observable<void> {
-    return this.http.post<void>(`${this.messagesRoot(chatId)}read/`, {});
+    return this.http.post<void>(`${this.chatDetail(chatId)}read/`, {});
   }
 
-  listPinnedMessages(
+  listPinnedArtifacts(
     chatId: number,
     query: PageFollowQuery = {},
-  ): Observable<PageNumberResult<PinnedMessageDto>> {
+  ): Observable<PageNumberResult<PinnedArtifactDto>> {
     if (query.url) {
-      return this.http.get<PageNumberResult<PinnedMessageDto>>(query.url);
+      return this.http.get<PageNumberResult<PinnedArtifactDto>>(query.url);
     }
-    return this.http.get<PageNumberResult<PinnedMessageDto>>(
-      `${this.messagesRoot(chatId)}pinned/`,
-      { params: this.paramsForPaging(query) },
+    let p = this.paramsForPaging(query);
+    p = p.set('chat_id', String(chatId));
+    return this.http.get<PageNumberResult<PinnedArtifactDto>>(
+      `${this.artifactsBase()}pinned/`,
+      { params: p },
     );
   }
 
-  regenerateAssistantResponse(
+  listBookmarkedArtifacts(
     chatId: number,
-    mode?: AuraChatAiMode,
-  ): Observable<RegenerateResponseDto> {
-    return this.http.post<RegenerateResponseDto>(
-      `${this.messagesRoot(chatId)}regenerate/`,
-      mode ? { mode } : {},
-    );
-  }
-
-  listBookmarkedMessages(
-    chatId: number,
-    query: CursorFollowQuery = {},
-  ): Observable<CursorPageResult<MessageDto>> {
+    query: PageFollowQuery = {},
+  ): Observable<PageNumberResult<ArtifactSummaryDto>> {
     if (query.url) {
-      return this.http.get<CursorPageResult<MessageDto>>(query.url);
+      return this.http.get<PageNumberResult<ArtifactSummaryDto>>(query.url);
     }
-    return this.http.get<CursorPageResult<MessageDto>>(
-      `${this.messagesRoot(chatId)}bookmarked/`,
-      { params: this.paramsForCursor(query) },
+    let p = this.paramsForPaging(query);
+    p = p.set('chat_id', String(chatId));
+    return this.http.get<PageNumberResult<ArtifactSummaryDto>>(
+      `${this.artifactsBase()}bookmarked/`,
+      { params: p },
     );
   }
 
   exportChatPdf(chatId: number): Observable<Blob> {
-    return this.http.get(`${this.messagesRoot(chatId)}export/pdf/`, {
+    return this.http.get(`${this.chatDetail(chatId)}export/pdf/`, {
       responseType: 'blob',
     });
   }
 
   exportChatMarkdown(chatId: number): Observable<Blob> {
-    return this.http.get(`${this.messagesRoot(chatId)}export/markdown/`, {
+    return this.http.get(`${this.chatDetail(chatId)}export/markdown/`, {
       responseType: 'blob',
     });
   }
 
-  exportChatJsonBackup(chatId: number): Observable<ChatExportBackupDto> {
-    return this.http.get<ChatExportBackupDto>(`${this.messagesRoot(chatId)}export/json/`);
+  deleteArtifact(artifactId: number): Observable<void> {
+    return this.http.delete<void>(`${this.artifactsBase()}${artifactId}/`);
   }
 
-  exportAiResponsesMarkdown(chatId: number): Observable<Blob> {
-    return this.http.get(`${this.messagesRoot(chatId)}export/ai/`, {
-      responseType: 'blob',
-    });
+  bookmarkArtifact(artifactId: number): Observable<void> {
+    return this.http.post<void>(`${this.artifactsBase()}${artifactId}/bookmark/`, {});
   }
 
-  deleteMessage(chatId: number, messageId: number): Observable<void> {
-    return this.http.delete<void>(`${this.messagesRoot(chatId)}${messageId}/`);
+  unbookmarkArtifact(artifactId: number): Observable<void> {
+    return this.http.delete<void>(`${this.artifactsBase()}${artifactId}/bookmark/`);
   }
 
-  bookmarkMessage(chatId: number, messageId: number): Observable<void> {
-    return this.http.post<void>(`${this.messagesRoot(chatId)}${messageId}/bookmark/`, {});
+  pinArtifact(artifactId: number): Observable<void> {
+    return this.http.post<void>(`${this.artifactsBase()}${artifactId}/pin/`, {});
   }
 
-  unbookmarkMessage(chatId: number, messageId: number): Observable<void> {
-    return this.http.delete<void>(`${this.messagesRoot(chatId)}${messageId}/bookmark/`);
+  unpinArtifact(artifactId: number): Observable<void> {
+    return this.http.delete<void>(`${this.artifactsBase()}${artifactId}/pin/`);
   }
 
-  pinMessage(chatId: number, messageId: number): Observable<PinnedMessageDto> {
-    return this.http.post<PinnedMessageDto>(
-      `${this.messagesRoot(chatId)}${messageId}/pin/`,
-      {},
+  listArtifactThreadReplies(artifactId: number): Observable<PageNumberResult<ThreadReplyDto>> {
+    return this.http.get<PageNumberResult<ThreadReplyDto>>(
+      `${this.artifactsBase()}${artifactId}/thread/`,
     );
   }
 
-  unpinMessage(chatId: number, messageId: number): Observable<void> {
-    return this.http.delete<void>(`${this.messagesRoot(chatId)}${messageId}/pin/`);
+  addArtifactThreadReply(artifactId: number, body: SendThreadReplyBody): Observable<ThreadReplyDto> {
+    return this.http.post<ThreadReplyDto>(`${this.artifactsBase()}${artifactId}/thread/`, body);
   }
 
-  listThreadReplies(chatId: number, messageId: number): Observable<readonly ThreadReplyDto[]> {
-    return this.http
-      .get<readonly ThreadReplyDto[]>(`${this.messagesRoot(chatId)}${messageId}/thread/`)
-      .pipe(map((rows) => [...rows]));
+  setArtifactFeedback(artifactId: number, body: SetFeedbackBody): Observable<void> {
+    return this.http.post<void>(`${this.artifactsBase()}${artifactId}/feedback/`, body);
   }
 
-  addThreadReply(
-    chatId: number,
-    messageId: number,
-    body: SendThreadReplyBody,
-  ): Observable<ThreadReplyDto> {
-    return this.http.post<ThreadReplyDto>(
-      `${this.messagesRoot(chatId)}${messageId}/thread/`,
-      body,
-    );
-  }
-
-  setMessageFeedback(
-    chatId: number,
-    messageId: number,
-    body: SetFeedbackBody,
-  ): Observable<MessageFeedbackDto> {
-    return this.http.post<MessageFeedbackDto>(
-      `${this.messagesRoot(chatId)}${messageId}/feedback/`,
-      body,
-    );
-  }
-
-  deleteMessageFeedback(chatId: number, messageId: number): Observable<void> {
-    return this.http.delete<void>(`${this.messagesRoot(chatId)}${messageId}/feedback/`);
+  deleteArtifactFeedback(artifactId: number): Observable<void> {
+    return this.http.delete<void>(`${this.artifactsBase()}${artifactId}/feedback/`);
   }
 
   getFeedbackAnalytics(query: FeedbackAnalyticsQuery = {}): Observable<FeedbackAnalyticsDto> {
@@ -346,13 +359,41 @@ export class AuraChatServiceHttp {
     if (query.days != null) {
       params = params.set('days', String(query.days));
     }
-    return this.http.get<FeedbackAnalyticsDto>(`${this.base}/feedback/analytics/`, { params });
+    return this.http.get<FeedbackAnalyticsDto>(`${this.artifactsBase()}feedback/analytics/`, { params });
   }
 
-  exportMessagePdf(chatId: number, messageId: number): Observable<Blob> {
+  getMessage(messageId: number): Observable<MessageDto> {
+    return this.http.get<MessageDto>(`${this.base}/messages/${messageId}/`);
+  }
+
+  exportArtifactMessagePdf(messageId: number): Observable<Blob> {
     return this.http.get(
-      `${this.messagesRoot(chatId)}${messageId}/export/pdf/`,
+      `${this.base}/messages/${messageId}/export/pdf/`,
       { responseType: 'blob' },
+    );
+  }
+
+  exportArtifactMessageMarkdown(messageId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.base}/messages/${messageId}/export/markdown/`,
+      { responseType: 'blob' },
+    );
+  }
+
+  getArtifact(artifactId: number): Observable<ArtifactDetailDto> {
+    return this.http.get<ArtifactDetailDto>(`${this.artifactsBase()}${artifactId}/`);
+  }
+
+  listArtifactVersions(
+    artifactId: number,
+    query: PageFollowQuery = {},
+  ): Observable<PageNumberResult<ArtifactVersionDto>> {
+    if (query.url) {
+      return this.http.get<PageNumberResult<ArtifactVersionDto>>(query.url);
+    }
+    return this.http.get<PageNumberResult<ArtifactVersionDto>>(
+      `${this.artifactsBase()}${artifactId}/versions/`,
+      { params: this.paramsForPaging(query) },
     );
   }
 
@@ -372,6 +413,10 @@ export class AuraChatServiceHttp {
     return this.http
       .post<readonly MembershipDto[]>(this.membersRoot(chatId), body)
       .pipe(map((rows) => [...rows]));
+  }
+
+  getMember(chatId: number, memberId: number): Observable<MembershipDto> {
+    return this.http.get<MembershipDto>(`${this.membersRoot(chatId)}${memberId}/`);
   }
 
   patchMember(
@@ -473,6 +518,198 @@ export class AuraChatServiceHttp {
 
   exportChecklistMarkdown(checklistId: number): Observable<Blob> {
     return this.http.get(`${this.base}/checklists/${checklistId}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── Quiz ────────────────────────────────────────────────────────────────────
+
+  listQuizzes(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<QuizListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
+    return this.http.get<PageNumberResult<QuizListItemDto>>(`${this.base}/quizzes/`, { params: p });
+  }
+
+  generateQuiz(body: GenerateQuizBody | FormData): Observable<QuizGenerateResponseDto> {
+    return this.http.post<QuizGenerateResponseDto>(`${this.base}/quizzes/generate/`, body);
+  }
+
+  getQuiz(quizId: number): Observable<QuizDto> {
+    return this.http.get<QuizDto>(`${this.base}/quizzes/${quizId}/`);
+  }
+
+  patchQuiz(quizId: number, body: UpdateQuizBody): Observable<QuizDto> {
+    return this.http.patch<QuizDto>(`${this.base}/quizzes/${quizId}/`, body);
+  }
+
+  deleteQuiz(quizId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/quizzes/${quizId}/`);
+  }
+
+  exportQuizPdf(quizId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/quizzes/${quizId}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportQuizMarkdown(quizId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/quizzes/${quizId}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── Timeline ─────────────────────────────────────────────────────────────────
+
+  listTimelines(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<TimelineListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
+    return this.http.get<PageNumberResult<TimelineListItemDto>>(`${this.base}/timelines/`, { params: p });
+  }
+
+  generateTimeline(body: GenerateTimelineBody | FormData): Observable<TimelineGenerateResponseDto> {
+    return this.http.post<TimelineGenerateResponseDto>(`${this.base}/timelines/generate/`, body);
+  }
+
+  getTimeline(timelineId: number): Observable<TimelineDto> {
+    return this.http.get<TimelineDto>(`${this.base}/timelines/${timelineId}/`);
+  }
+
+  patchTimeline(timelineId: number, body: UpdateTimelineBody): Observable<TimelineDto> {
+    return this.http.patch<TimelineDto>(`${this.base}/timelines/${timelineId}/`, body);
+  }
+
+  deleteTimeline(timelineId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/timelines/${timelineId}/`);
+  }
+
+  exportTimelinePdf(timelineId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/timelines/${timelineId}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportTimelineMarkdown(timelineId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/timelines/${timelineId}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── LessonsLearned ───────────────────────────────────────────────────────────
+
+  listLessonsLearned(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<LessonsLearnedListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
+    return this.http.get<PageNumberResult<LessonsLearnedListItemDto>>(`${this.base}/lessons-learned/`, { params: p });
+  }
+
+  generateLessonsLearned(body: GenerateLessonsLearnedBody | FormData): Observable<LessonsLearnedGenerateResponseDto> {
+    return this.http.post<LessonsLearnedGenerateResponseDto>(`${this.base}/lessons-learned/generate/`, body);
+  }
+
+  getLessonsLearned(id: number): Observable<LessonsLearnedDto> {
+    return this.http.get<LessonsLearnedDto>(`${this.base}/lessons-learned/${id}/`);
+  }
+
+  patchLessonsLearned(id: number, body: UpdateLessonsLearnedBody): Observable<LessonsLearnedDto> {
+    return this.http.patch<LessonsLearnedDto>(`${this.base}/lessons-learned/${id}/`, body);
+  }
+
+  deleteLessonsLearned(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/lessons-learned/${id}/`);
+  }
+
+  exportLessonsLearnedPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/lessons-learned/${id}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportLessonsLearnedMarkdown(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/lessons-learned/${id}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── DecisionBrief ────────────────────────────────────────────────────────────
+
+  listDecisionBriefs(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<DecisionBriefListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
+    return this.http.get<PageNumberResult<DecisionBriefListItemDto>>(`${this.base}/decision-briefs/`, { params: p });
+  }
+
+  generateDecisionBrief(body: GenerateDecisionBriefBody | FormData): Observable<DecisionBriefGenerateResponseDto> {
+    return this.http.post<DecisionBriefGenerateResponseDto>(`${this.base}/decision-briefs/generate/`, body);
+  }
+
+  getDecisionBrief(id: number): Observable<DecisionBriefDto> {
+    return this.http.get<DecisionBriefDto>(`${this.base}/decision-briefs/${id}/`);
+  }
+
+  patchDecisionBrief(id: number, body: UpdateDecisionBriefBody): Observable<DecisionBriefDto> {
+    return this.http.patch<DecisionBriefDto>(`${this.base}/decision-briefs/${id}/`, body);
+  }
+
+  deleteDecisionBrief(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/decision-briefs/${id}/`);
+  }
+
+  exportDecisionBriefPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/decision-briefs/${id}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportDecisionBriefMarkdown(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/decision-briefs/${id}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── DocumentSummary ──────────────────────────────────────────────────────────
+
+  listDocumentSummaries(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<DocumentSummaryListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
+    return this.http.get<PageNumberResult<DocumentSummaryListItemDto>>(`${this.base}/document-summaries/`, { params: p });
+  }
+
+  generateDocumentSummary(body: GenerateDocumentSummaryBody): Observable<DocumentSummaryGenerateResponseDto> {
+    return this.http.post<DocumentSummaryGenerateResponseDto>(`${this.base}/document-summaries/generate/`, body);
+  }
+
+  getDocumentSummary(id: number): Observable<DocumentSummaryDto> {
+    return this.http.get<DocumentSummaryDto>(`${this.base}/document-summaries/${id}/`);
+  }
+
+  patchDocumentSummary(id: number, body: UpdateDocumentSummaryBody): Observable<DocumentSummaryDto> {
+    return this.http.patch<DocumentSummaryDto>(`${this.base}/document-summaries/${id}/`, body);
+  }
+
+  deleteDocumentSummary(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/document-summaries/${id}/`);
+  }
+
+  exportDocumentSummaryPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/document-summaries/${id}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportDocumentSummaryMarkdown(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/document-summaries/${id}/export/markdown/`, { responseType: 'blob' });
+  }
+
+  // ── DocumentAction ───────────────────────────────────────────────────────────
+
+  listDocumentActions(query: { chat_id?: number; page?: number; page_size?: number } = {}): Observable<PageNumberResult<DocumentActionListItemDto>> {
+    let p = this.paramsForPaging(query);
+    if (query.chat_id != null) p = p.set('chat_id', String(query.chat_id));
+    return this.http.get<PageNumberResult<DocumentActionListItemDto>>(`${this.base}/document-actions/`, { params: p });
+  }
+
+  generateDocumentAction(body: GenerateDocumentActionBody): Observable<DocumentActionGenerateResponseDto> {
+    return this.http.post<DocumentActionGenerateResponseDto>(`${this.base}/document-actions/generate/`, body);
+  }
+
+  getDocumentAction(id: number): Observable<DocumentActionDto> {
+    return this.http.get<DocumentActionDto>(`${this.base}/document-actions/${id}/`);
+  }
+
+  patchDocumentAction(id: number, body: UpdateDocumentActionBody): Observable<DocumentActionDto> {
+    return this.http.patch<DocumentActionDto>(`${this.base}/document-actions/${id}/`, body);
+  }
+
+  deleteDocumentAction(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/document-actions/${id}/`);
+  }
+
+  exportDocumentActionPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/document-actions/${id}/export/pdf/`, { responseType: 'blob' });
+  }
+
+  exportDocumentActionMarkdown(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/document-actions/${id}/export/markdown/`, { responseType: 'blob' });
   }
 
   // ── Assistants ──────────────────────────────────────────────────────────────

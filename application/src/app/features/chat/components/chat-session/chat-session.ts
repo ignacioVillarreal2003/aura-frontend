@@ -15,33 +15,45 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   EMPTY,
+  Subject,
   Subscription,
   catchError,
   distinctUntilChanged,
   expand,
+  firstValueFrom,
   forkJoin,
   map,
   reduce,
   switchMap,
+  takeUntil,
   tap,
+  timer,
 } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type {
+  ArtifactMode,
+  ArtifactStatus,
+  ArtifactSummaryDto,
+  ArtifactType,
   AuraChatAiMode,
   AuraChatWsServerMessage,
   ChatDetailDto,
   ChatFragment,
   ChecklistMode,
-  CursorPageResult,
+  DecisionBriefMode,
+  DocumentActionType,
   FeedbackReason,
   FeedbackValue,
-  MessageDto,
+  LessonsLearnedMode,
   MessageSenderType,
-  PinnedMessageDto,
+  PageNumberResult,
+  PinnedArtifactDto,
+  QuizMode,
   ReportMode,
   ReportType,
   ThreadReplyDto,
+  TimelineMode,
 } from '@aura-types/aura-chat-service.types';
 import { AURA_CHAT_AI_MODE_DEFAULT } from '@aura-types/aura-chat-service.types';
 import { ChatService } from '@core/services/chat/chat.service';
@@ -53,6 +65,7 @@ import { ToastService } from '@core/components/toast-service';
 import { ChatOptionsDrawer, type DocumentItem } from '../chat-options-drawer/chat-options-drawer';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
+import { TokenMaterializeDirective } from '../../../../shared/directives/token-materialize.directive';
 import { UserState } from '@core/state/user.state';
 import {
   FeedbackDialogComponent,
@@ -66,12 +79,19 @@ interface ChatMessage {
   readonly sender_type: MessageSenderType;
   readonly created_by: number | null;
   readonly created_at: string;
-  readonly is_bookmarked: boolean;
+  is_bookmarked: boolean;
   readonly user_feedback: FeedbackValue | null;
   readonly user_feedback_reason?: FeedbackReason | null;
   readonly user_feedback_comment?: string | null;
   readonly thread_reply_count: number;
   readonly fragments?: readonly ChatFragment[] | null;
+  readonly artifactType: ArtifactType;
+  readonly artifactTitle?: string;
+  readonly artifactDescription?: string;
+  readonly artifactStatus?: ArtifactStatus;
+  readonly artifactMode?: ArtifactMode;
+  readonly artifactLinkedId?: number | null;
+  readonly messageId?: number;
 }
 
 const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: string }[] = [
@@ -98,7 +118,7 @@ const AI_MODES: readonly AiModeOption[] = [
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, FeedbackDialogComponent],
+  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, TokenMaterializeDirective, FeedbackDialogComponent],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
 })
@@ -118,11 +138,26 @@ export class ChatSessionComponent implements OnDestroy {
 
   readonly canUseTools = computed(() => {
     const perms = this.userState.user()?.permissions ?? [];
-    return perms.includes('LLM_REPORT_GENERATE') || perms.includes('LLM_CHECKLIST_GENERATE');
+    return (
+      perms.includes('LLM_REPORT_GENERATE') ||
+      perms.includes('LLM_CHECKLIST_GENERATE') ||
+      perms.includes('LLM_QUIZ_GENERATE') ||
+      perms.includes('LLM_TIMELINE_GENERATE') ||
+      perms.includes('LLM_LESSONS_LEARNED_GENERATE') ||
+      perms.includes('LLM_DECISION_BRIEF_GENERATE') ||
+      perms.includes('LLM_DOCUMENT_SUMMARY_GENERATE') ||
+      perms.includes('LLM_DOCUMENT_ACTION_GENERATE')
+    );
   });
 
-  readonly canReport = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_REPORT_GENERATE'));
-  readonly canChecklist = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_CHECKLIST_GENERATE'));
+  readonly canReport            = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_REPORT_GENERATE'));
+  readonly canChecklist         = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_CHECKLIST_GENERATE'));
+  readonly canQuiz              = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_QUIZ_GENERATE'));
+  readonly canTimeline          = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_TIMELINE_GENERATE'));
+  readonly canLessonsLearned    = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_LESSONS_LEARNED_GENERATE'));
+  readonly canDecisionBrief     = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_DECISION_BRIEF_GENERATE'));
+  readonly canDocumentSummary   = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_DOCUMENT_SUMMARY_GENERATE'));
+  readonly canDocumentAction    = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_DOCUMENT_ACTION_GENERATE'));
 
   private chatId: number | null = null;
   private wsSessionId = 0;
@@ -149,13 +184,14 @@ export class ChatSessionComponent implements OnDestroy {
   readonly threadReplyText = signal('');
   readonly submittingReply = signal(false);
   readonly exportingMessageId = signal<number | null>(null);
+  readonly resolvingLinkedId = signal<number | null>(null);
   readonly regenerating = signal(false);
   readonly canRegenerate = computed(() => {
     const msgs = this.messages();
     if (msgs.length === 0) return false;
     const last = msgs[msgs.length - 1];
     return (
-      last.sender_type === 'system' &&
+      last.sender_type === 'assistant' &&
       !this.isTyping() &&
       this.streamingAssistantId() === null &&
       !this.regenerating()
@@ -172,7 +208,8 @@ export class ChatSessionComponent implements OnDestroy {
   loading = true;
   isTyping = signal(false);
   optionsOpen = signal(false);
-  readonly composerMode = signal<'chat' | 'report' | 'checklist'>('chat');
+  readonly composerMode = signal<'chat' | 'report' | 'checklist' | 'quiz' | 'timeline' | 'lessons-learned' | 'decision-brief' | 'document-summary' | 'document-action'>('chat');
+  readonly genDocumentActionType = signal<DocumentActionType | ''>('');
 
   // ── AI chat mode (document_question / general_chat / rag_agent / agent) ──
   readonly aiModes = AI_MODES;
@@ -197,23 +234,49 @@ export class ChatSessionComponent implements OnDestroy {
 
   readonly composerModeLabel = computed(() => {
     switch (this.composerMode()) {
-      case 'report':    return { icon: 'pi-file-edit',    label: 'Informe' };
-      case 'checklist': return { icon: 'pi-check-square', label: 'Checklist' };
-      default:          return { icon: 'pi-comments',     label: 'Chat' };
+      case 'report':           return { icon: 'pi-file-edit',       label: 'Informe' };
+      case 'checklist':        return { icon: 'pi-check-square',    label: 'Checklist' };
+      case 'quiz':             return { icon: 'pi-question-circle', label: 'Quiz' };
+      case 'timeline':         return { icon: 'pi-calendar',        label: 'Línea de tiempo' };
+      case 'lessons-learned':  return { icon: 'pi-book',            label: 'Lecciones' };
+      case 'decision-brief':   return { icon: 'pi-bolt',            label: 'Decisión' };
+      case 'document-summary': return { icon: 'pi-align-left',      label: 'Resumen' };
+      case 'document-action':  return { icon: 'pi-cog',             label: 'Acción' };
+      default:                 return { icon: 'pi-comments',        label: 'Chat' };
     }
   });
 
   readonly genTextareaPlaceholder = computed(() => {
-    if (this.composerMode() === 'checklist') return 'Describí el procedimiento o SOP a convertir en checklist…';
-    return REPORT_TYPES.find((t) => t.value === this.genReportType())?.placeholder ?? 'Ingresá el contenido…';
+    switch (this.composerMode()) {
+      case 'checklist':        return 'Describí el procedimiento o SOP a convertir en checklist…';
+      case 'quiz':             return 'Describí el tema para el que querés generar preguntas de evaluación…';
+      case 'timeline':         return 'Describí la secuencia de eventos a ordenar cronológicamente…';
+      case 'lessons-learned':  return 'Describí el ejercicio o actividad cuyos aprendizajes querés capturar…';
+      case 'decision-brief':   return 'Describí el problema y las alternativas a evaluar…';
+      case 'document-action':  return 'Describí la instrucción o tarea a ejecutar sobre los documentos…';
+      default:                 return REPORT_TYPES.find((t) => t.value === this.genReportType())?.placeholder ?? 'Ingresá el contenido…';
+    }
   });
 
-  readonly canGenerate = computed(() => this.genMessage().trim().length > 0 && !this.genLoading());
+  readonly hasProcessingDocs = computed(() =>
+    this.sessionDocuments().some(d => d.status === 'uploaded'),
+  );
+
+  readonly canGenerate = computed(() => {
+    const mode = this.composerMode();
+    if (this.genLoading()) return false;
+    const docs = this.sessionDocuments();
+    const allDocsReady = docs.every(d => d.status === 'processed');
+    if (mode === 'document-summary') return docs.length > 0 && allDocsReady;
+    if (mode === 'document-action') return docs.length > 0 && allDocsReady && this.genMessage().trim().length > 0;
+    return this.genMessage().trim().length > 0;
+  });
 
   documentUploading = signal(false);
   readonly docDropOverlayVisible = signal(false);
   readonly sessionDocuments = signal<DocumentItem[]>([]);
 
+  private readonly _docPolls = new Map<number, Subject<void>>();
   private deltaBuffer = '';
   private rafHandle: number | null = null;
   private pendingDeltaChatId: number | null = null;
@@ -259,7 +322,7 @@ export class ChatSessionComponent implements OnDestroy {
           return forkJoin({
             detail: this.http.getChat(id),
             messages: this.loadAllMessagesChronological(id),
-            pinned: this.http.listPinnedMessages(id, { page_size: 100 }),
+            pinned: this.http.listPinnedArtifacts(id, { page_size: 100 }),
           }).pipe(
             catchError(() => {
               this.toast.show('No se pudo cargar el chat.', 'error');
@@ -271,7 +334,7 @@ export class ChatSessionComponent implements OnDestroy {
               this.chatShell.setCurrentChat(detail);
               this.messages.set(msgs);
               this._loadFragmentsFromMessages(msgs);
-              this.pinnedMessageIds.set(new Set(pinned.results.map((p: PinnedMessageDto) => p.message_id)));
+              this.pinnedMessageIds.set(new Set(pinned.results.map((p: PinnedArtifactDto) => p.artifact_id)));
               this.loading = false;
               this.http.markChatAsRead(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
               void this.openWebSocketAfterLoad(id, sessionId, pending);
@@ -295,11 +358,13 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   private loadAllMessagesChronological(chatId: number): Observable<ChatMessage[]> {
-    return this.http.listMessages(chatId).pipe(
-      expand((page: CursorPageResult<MessageDto>) =>
-        page.next ? this.http.listMessages(chatId, { url: page.next }) : EMPTY
+    return this.http.listChatArtifacts(chatId, { page_size: 100 }).pipe(
+      expand((page: PageNumberResult<ArtifactSummaryDto>) =>
+        page.next ? this.http.listChatArtifacts(chatId, { url: page.next }) : EMPTY
       ),
-      map((page: CursorPageResult<MessageDto>) => page.results as unknown as ChatMessage[]),
+      map((page: PageNumberResult<ArtifactSummaryDto>) =>
+        page.results.map((a) => this._artifactToMessage(a))
+      ),
       reduce<ChatMessage[], ChatMessage[]>((acc, curr) => [...acc, ...curr], []),
       map((msgs) =>
         [...msgs].sort(
@@ -307,6 +372,41 @@ export class ChatSessionComponent implements OnDestroy {
         )
       ),
     );
+  }
+
+  private _artifactToMessage(artifact: ArtifactSummaryDto): ChatMessage {
+    if (artifact.type === 'MESSAGE' && artifact.message) {
+      return {
+        id: artifact.id,
+        chat_id: artifact.source_chat_id,
+        message: artifact.message.message,
+        sender_type: artifact.message.sender_type,
+        created_by: artifact.created_by,
+        created_at: artifact.message.created_at,
+        is_bookmarked: false,
+        user_feedback: null,
+        thread_reply_count: 0,
+        artifactType: 'MESSAGE',
+        messageId: artifact.message.id,
+      };
+    }
+    return {
+      id: artifact.id,
+      chat_id: artifact.source_chat_id,
+      message: artifact.description || artifact.title,
+      sender_type: 'assistant' as MessageSenderType,
+      created_by: artifact.created_by,
+      created_at: artifact.created_at,
+      is_bookmarked: false,
+      user_feedback: null,
+      thread_reply_count: 0,
+      artifactType: artifact.type,
+      artifactTitle: artifact.title,
+      artifactDescription: artifact.description,
+      artifactStatus: artifact.status,
+      artifactMode: artifact.mode,
+      artifactLinkedId: artifact.linked_id ?? null,
+    };
   }
 
   toggleOptions(): void {
@@ -317,10 +417,11 @@ export class ChatSessionComponent implements OnDestroy {
     this.modeDropdownOpen.update((v) => !v);
   }
 
-  setComposerMode(mode: 'chat' | 'report' | 'checklist'): void {
+  setComposerMode(mode: 'chat' | 'report' | 'checklist' | 'quiz' | 'timeline' | 'lessons-learned' | 'decision-brief' | 'document-summary' | 'document-action'): void {
     this.composerMode.set(mode);
     this.genMessage.set('');
     this.genMode.set('direct');
+    this.genDocumentActionType.set('');
     this.modeDropdownOpen.set(false);
     if (mode === 'chat') {
       setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
@@ -343,47 +444,157 @@ export class ChatSessionComponent implements OnDestroy {
 
   generateTool(): void {
     const message = this.genMessage().trim();
-    if (!message) return;
+    const composerMode = this.composerMode();
+    if (!message && composerMode !== 'document-summary') return;
 
     const chatId = this.chatId ?? undefined;
     const mode = this.genMode();
-
     this.genLoading.set(true);
 
-    if (this.composerMode() === 'checklist') {
-      this.http
-        .generateChecklist({ mode: mode as ChecklistMode, message, chat_id: chatId })
+    const onSuccess = (
+      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+      type: ArtifactType,
+      toastMsg: string,
+    ) => {
+      this.genLoading.set(false);
+      this.genMessage.set('');
+      this.composerMode.set('chat');
+      this._pushGeneratedArtifact(resource, type);
+      this.toast.show(toastMsg, 'success');
+    };
+
+    const onError = (toastMsg: string) => {
+      this.genLoading.set(false);
+      this.toast.show(toastMsg, 'error');
+    };
+
+    if (composerMode === 'checklist') {
+      this.http.generateChecklist({ mode: mode as ChecklistMode, message, chat_id: chatId })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: () => {
-            this.genLoading.set(false);
-            this.genMessage.set('');
-            this.composerMode.set('chat');
-            this.toast.show('Checklist generada. Disponible en Opciones del chat → Checklists.', 'success');
-          },
-          error: () => {
-            this.genLoading.set(false);
-            this.toast.show('No se pudo generar la checklist.', 'error');
-          },
+          next: (res) => onSuccess(res.checklist, 'CHECKLIST', 'Checklist generada.'),
+          error: () => onError('No se pudo generar la checklist.'),
         });
       return;
     }
 
-    this.http
-      .generateReport({ type: this.genReportType(), mode: mode as ReportMode, message, chat_id: chatId })
+    if (composerMode === 'quiz') {
+      this.http.generateQuiz({ mode: mode as QuizMode, message, chat_id: chatId })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => onSuccess(res.quiz, 'QUIZ', 'Quiz generado.'),
+          error: () => onError('No se pudo generar el quiz.'),
+        });
+      return;
+    }
+
+    if (composerMode === 'timeline') {
+      this.http.generateTimeline({ mode: mode as TimelineMode, message, chat_id: chatId })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => onSuccess(res.timeline, 'TIMELINE', 'Línea de tiempo generada.'),
+          error: () => onError('No se pudo generar la línea de tiempo.'),
+        });
+      return;
+    }
+
+    if (composerMode === 'lessons-learned') {
+      this.http.generateLessonsLearned({ mode: mode as LessonsLearnedMode, message, chat_id: chatId })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => onSuccess(res.lessons_learned, 'LESSONS_LEARNED', 'Lecciones aprendidas generadas.'),
+          error: () => onError('No se pudo generar las lecciones aprendidas.'),
+        });
+      return;
+    }
+
+    if (composerMode === 'decision-brief') {
+      this.http.generateDecisionBrief({ mode: mode as DecisionBriefMode, message, chat_id: chatId })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => onSuccess(res.decision_brief, 'DECISION_BRIEF', 'Brief de decisión generado.'),
+          error: () => onError('No se pudo generar el brief de decisión.'),
+        });
+      return;
+    }
+
+    if (composerMode === 'document-summary') {
+      const docIds = this.sessionDocuments().map((d) => d.id);
+      if (docIds.length === 0) { onError('Subí al menos un documento antes de generar un resumen.'); return; }
+      this.http.generateDocumentSummary({ document_ids: docIds, chat_id: chatId! })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => {
+            this.sessionDocuments.set([]);
+            onSuccess(res.document_summary as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_SUMMARY', 'Resumen generado.');
+          },
+          error: () => onError('No se pudo generar el resumen.'),
+        });
+      return;
+    }
+
+    if (composerMode === 'document-action') {
+      const docIds = this.sessionDocuments().map((d) => d.id);
+      if (docIds.length === 0) { onError('Subí al menos un documento antes de generar la acción.'); return; }
+      const actionType = this.genDocumentActionType();
+      this.http.generateDocumentAction({
+        document_ids: docIds,
+        instruction: message,
+        action: actionType || null,
+        chat_id: chatId!,
+      })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => {
+            this.sessionDocuments.set([]);
+            onSuccess(res.document_action as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_ACTION', 'Acción generada.');
+          },
+          error: () => onError('No se pudo generar la acción.'),
+        });
+      return;
+    }
+
+    // report (default)
+    this.http.generateReport({ type: this.genReportType(), mode: mode as ReportMode, message, chat_id: chatId })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
-          this.genLoading.set(false);
-          this.genMessage.set('');
-          this.composerMode.set('chat');
-          this.toast.show('Informe generado. Disponible en Opciones del chat → Informes.', 'success');
-        },
-        error: () => {
-          this.genLoading.set(false);
-          this.toast.show('No se pudo generar el informe.', 'error');
-        },
+        next: (res) => onSuccess(res.report, 'REPORT', 'Informe generado.'),
+        error: () => onError('No se pudo generar el informe.'),
       });
+  }
+
+  private _pushGeneratedArtifact(
+    resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+    type: ArtifactType,
+  ): void {
+    this.messages.update((msgs) => [
+      ...msgs,
+      {
+        id: -Date.now(),
+        chat_id: resource.source_chat_id ?? this.chatId ?? 0,
+        message: resource.title,
+        sender_type: 'assistant' as MessageSenderType,
+        created_by: resource.created_by,
+        created_at: resource.created_at,
+        is_bookmarked: false,
+        user_feedback: null,
+        thread_reply_count: 0,
+        artifactType: type,
+        artifactTitle: resource.title,
+        artifactStatus: 'draft' as ArtifactStatus,
+        artifactMode: resource.mode as ArtifactMode,
+        artifactLinkedId: resource.id,
+      },
+    ]);
+    setTimeout(() => this.scrollToBottom(), 50);
+  }
+
+  removeSessionDocument(docId: number): void {
+    this._stopDocumentPolling(docId);
+    this.sessionDocuments.update((docs) => docs.filter((d) => d.id !== docId));
+    this.documents.deleteDocument(docId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      error: () => this.toast.show('No se pudo eliminar el documento del servidor.', 'error'),
+    });
   }
 
   onAttachClick(fileInput: HTMLInputElement): void {
@@ -399,6 +610,36 @@ export class ChatSessionComponent implements OnDestroy {
 
   onDocumentFromDrawer(file: File): void {
     this.uploadDocumentFromFile(file, true);
+  }
+
+  private _startDocumentPolling(docId: number): void {
+    this._stopDocumentPolling(docId);
+    const stop$ = new Subject<void>();
+    this._docPolls.set(docId, stop$);
+
+    timer(1500, 2500).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      takeUntil(stop$),
+      switchMap(() => this.documents.getDocument(docId)),
+    ).subscribe({
+      next: (doc) => {
+        this.sessionDocuments.update(docs =>
+          docs.map(d => d.id === docId ? { ...d, status: doc.status } : d),
+        );
+        if (doc.status === 'processed' || doc.status === 'failed') {
+          this._stopDocumentPolling(docId);
+          if (doc.status === 'failed') {
+            this.toast.show('Error al procesar el documento.', 'error');
+          }
+        }
+      },
+      error: () => this._stopDocumentPolling(docId),
+    });
+  }
+
+  private _stopDocumentPolling(docId: number): void {
+    const stop$ = this._docPolls.get(docId);
+    if (stop$) { stop$.next(); stop$.complete(); this._docPolls.delete(docId); }
   }
 
   private uploadDocumentFromFile(file: File | null, closeDrawerOnSuccess: boolean): void {
@@ -428,11 +669,11 @@ export class ChatSessionComponent implements OnDestroy {
             created_at: new Date().toISOString(),
           },
         ]);
-        this.toast.show('Documento subido; se procesará en segundo plano.', 'success');
         this.documentUploading.set(false);
         if (closeDrawerOnSuccess) {
           this.optionsOpen.set(false);
         }
+        this._startDocumentPolling(res.id);
       },
       error: () => {
         this.toast.show('Error al subir el documento.', 'error');
@@ -602,6 +843,18 @@ export class ChatSessionComponent implements OnDestroy {
 
     const done = () => { this.voiceState.set('idle'); this.recordingSeconds.set(0); };
 
+    const voiceSuccess = (
+      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+      type: ArtifactType,
+      toastMsg: string,
+    ) => {
+      done();
+      this.genMessage.set('');
+      this.composerMode.set('chat');
+      this._pushGeneratedArtifact(resource, type);
+      this.toast.show(toastMsg, 'success');
+    };
+
     if (mode === 'report') {
       formData.append('type', this.genReportType());
       formData.append('mode', this.genMode());
@@ -609,12 +862,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateReport(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: () => {
-            done();
-            this.genMessage.set('');
-            this.composerMode.set('chat');
-            this.toast.show('Informe generado. Disponible en Opciones del chat → Informes.', 'success');
-          },
+          next: (res) => voiceSuccess(res.report, 'REPORT', 'Informe generado.'),
           error: () => { done(); this.toast.show('No se pudo generar el informe.', 'error'); },
         });
       return;
@@ -626,13 +874,56 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateChecklist(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: () => {
-            done();
-            this.genMessage.set('');
-            this.composerMode.set('chat');
-            this.toast.show('Checklist generada. Disponible en Opciones del chat → Checklists.', 'success');
-          },
+          next: (res) => voiceSuccess(res.checklist, 'CHECKLIST', 'Checklist generada.'),
           error: () => { done(); this.toast.show('No se pudo generar la checklist.', 'error'); },
+        });
+      return;
+    }
+
+    if (mode === 'quiz') {
+      formData.append('mode', this.genMode());
+      formData.append('chat_id', String(chatId));
+      this.http.generateQuiz(formData)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => voiceSuccess(res.quiz, 'QUIZ', 'Quiz generado.'),
+          error: () => { done(); this.toast.show('No se pudo generar el quiz.', 'error'); },
+        });
+      return;
+    }
+
+    if (mode === 'timeline') {
+      formData.append('mode', this.genMode());
+      formData.append('chat_id', String(chatId));
+      this.http.generateTimeline(formData)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => voiceSuccess(res.timeline, 'TIMELINE', 'Línea de tiempo generada.'),
+          error: () => { done(); this.toast.show('No se pudo generar la línea de tiempo.', 'error'); },
+        });
+      return;
+    }
+
+    if (mode === 'lessons-learned') {
+      formData.append('mode', this.genMode());
+      formData.append('chat_id', String(chatId));
+      this.http.generateLessonsLearned(formData)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => voiceSuccess(res.lessons_learned, 'LESSONS_LEARNED', 'Lecciones aprendidas generadas.'),
+          error: () => { done(); this.toast.show('No se pudo generar las lecciones aprendidas.', 'error'); },
+        });
+      return;
+    }
+
+    if (mode === 'decision-brief') {
+      formData.append('mode', this.genMode());
+      formData.append('chat_id', String(chatId));
+      this.http.generateDecisionBrief(formData)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (res) => voiceSuccess(res.decision_brief, 'DECISION_BRIEF', 'Brief de decisión generado.'),
+          error: () => { done(); this.toast.show('No se pudo generar el brief de decisión.', 'error'); },
         });
       return;
     }
@@ -683,7 +974,8 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   sendBlocked(): boolean {
-    return this.isTyping() || this.streamingAssistantId() !== null;
+    return this.isTyping() || this.streamingAssistantId() !== null
+      || this.sessionDocuments().some(d => d.status === 'uploaded');
   }
 
   regenerateResponse(): void {
@@ -700,41 +992,13 @@ export class ChatSessionComponent implements OnDestroy {
       return;
     }
 
-    // Fallback (no socket): non-streaming REST regeneration, replace in place.
-    this.regenerating.set(true);
-    this.http
-      .regenerateAssistantResponse(this.chatId, this.aiMode())
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          const text = res.assistant?.answer ?? '';
-          if (text) {
-            this.messages.update((msgs) => {
-              const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'system');
-              if (lastSystemIdx === -1) return msgs;
-              const realIdx = msgs.length - 1 - lastSystemIdx;
-              return msgs.map((m, i) =>
-                i === realIdx ? { ...m, message: text, created_at: new Date().toISOString() } : m
-              );
-            });
-          }
-          if (res.assistant_error) {
-            this.toast.show(res.assistant_error.detail, 'error');
-          }
-          this.regenerating.set(false);
-          setTimeout(() => this.scrollToBottom(), 50);
-        },
-        error: () => {
-          this.toast.show('No se pudo regenerar la respuesta.', 'error');
-          this.regenerating.set(false);
-        },
-      });
+    this.toast.show('Reconectá el chat para regenerar la respuesta.', 'error');
   }
 
   private removeLastAiMessage(): void {
     let removedId: number | null = null;
     this.messages.update((msgs) => {
-      const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'system');
+      const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'assistant');
       if (lastSystemIdx === -1) return msgs;
       const realIdx = msgs.length - 1 - lastSystemIdx;
       removedId = msgs[realIdx].id;
@@ -757,8 +1021,11 @@ export class ChatSessionComponent implements OnDestroy {
     this.newMessage = '';
     queueMicrotask(() => this.autosizeTextarea());
 
+    const docIds = this.sessionDocuments().map((d) => d.id);
+    if (docIds.length > 0) this.sessionDocuments.set([]);
+
     if (this.socket) {
-      this.socket.sendUserMessage(text, this.aiMode());
+      this.socket.sendUserMessage(text, this.aiMode(), docIds.length > 0 ? docIds : undefined);
       setTimeout(() => this.scrollToBottom(), 50);
       return;
     }
@@ -766,11 +1033,23 @@ export class ChatSessionComponent implements OnDestroy {
     if (!this.chatId) return;
     this.isTyping.set(true);
     this.http
-      .sendMessageJson(this.chatId, { message: text, mode: this.aiMode() })
+      .sendMessageJson(this.chatId, { chat_id: this.chatId!, message: text, mode: this.aiMode() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
-          const userRow: ChatMessage = { ...res.message, created_by: res.message.created_by };
+          const userRow: ChatMessage = {
+            id: res.message.artifact_id ?? res.message.id,
+            chat_id: res.message.chat_id,
+            message: res.message.message,
+            sender_type: res.message.sender_type,
+            created_by: res.message.created_by,
+            created_at: res.message.created_at,
+            is_bookmarked: false,
+            user_feedback: null,
+            thread_reply_count: 0,
+            artifactType: 'MESSAGE',
+            messageId: res.message.id,
+          };
           this.messages.update((m) => [...m, userRow]);
           if (res.assistant?.answer) {
             this.messages.update((m) => [
@@ -779,12 +1058,13 @@ export class ChatSessionComponent implements OnDestroy {
                 id: Date.now(),
                 chat_id: this.chatId!,
                 message: res.assistant!.answer,
-                sender_type: 'system' as MessageSenderType,
+                sender_type: 'assistant' as MessageSenderType,
                 created_by: null,
                 created_at: new Date().toISOString(),
                 is_bookmarked: false,
                 user_feedback: null,
                 thread_reply_count: 0,
+                artifactType: 'MESSAGE' as ArtifactType,
               },
             ]);
           }
@@ -856,9 +1136,9 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   deleteMessage(message: ChatMessage): void {
-    if (!this.chatId || !window.confirm('¿Eliminar este mensaje?')) return;
+    if (!window.confirm('¿Eliminar este artefacto?')) return;
     this.setProcessing(message.id, true);
-    this.http.deleteMessage(this.chatId, message.id)
+    this.http.deleteArtifact(message.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -866,23 +1146,24 @@ export class ChatSessionComponent implements OnDestroy {
           this.setProcessing(message.id, false);
         },
         error: () => {
-          this.toast.show('No se pudo eliminar el mensaje.', 'error');
+          this.toast.show('No se pudo eliminar.', 'error');
           this.setProcessing(message.id, false);
         },
       });
   }
 
   toggleBookmark(message: ChatMessage): void {
-    if (!this.chatId) return;
     this.setProcessing(message.id, true);
     const obs$ = message.is_bookmarked
-      ? this.http.unbookmarkMessage(this.chatId, message.id)
-      : this.http.bookmarkMessage(this.chatId, message.id);
+      ? this.http.unbookmarkArtifact(message.id)
+      : this.http.bookmarkArtifact(message.id);
     obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
+        const nowBookmarked = !message.is_bookmarked;
         this.messages.update((msgs) =>
-          msgs.map((m) => (m.id === message.id ? { ...m, is_bookmarked: !m.is_bookmarked } : m))
+          msgs.map((m) => (m.id === message.id ? { ...m, is_bookmarked: nowBookmarked } : m))
         );
+        this.toast.show(nowBookmarked ? 'Mensaje guardado.' : 'Eliminado de guardados.', 'success');
         this.setProcessing(message.id, false);
       },
       error: () => {
@@ -893,12 +1174,11 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   togglePinMessage(message: ChatMessage): void {
-    if (!this.chatId) return;
     const pinned = this.isPinned(message.id);
     this.setProcessing(message.id, true);
     const obs$ = pinned
-      ? this.http.unpinMessage(this.chatId, message.id)
-      : this.http.pinMessage(this.chatId, message.id);
+      ? this.http.unpinArtifact(message.id)
+      : this.http.pinArtifact(message.id);
     (obs$ as Observable<unknown>).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.pinnedMessageIds.update((s) => {
@@ -906,10 +1186,11 @@ export class ChatSessionComponent implements OnDestroy {
           pinned ? next.delete(message.id) : next.add(message.id);
           return next;
         });
+        this.toast.show(pinned ? 'Mensaje desfijado.' : 'Mensaje fijado.', 'success');
         this.setProcessing(message.id, false);
       },
       error: () => {
-        this.toast.show('No se pudo actualizar el mensaje fijado.', 'error');
+        this.toast.show('No se pudo actualizar el fijado.', 'error');
         this.setProcessing(message.id, false);
       },
     });
@@ -929,14 +1210,13 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   private loadThreadReplies(messageId: number): void {
-    if (!this.chatId) return;
     this.threadLoading.set(true);
     this.http
-      .listThreadReplies(this.chatId, messageId)
+      .listArtifactThreadReplies(messageId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (replies) => {
-          this.threadReplies.set([...replies]);
+        next: (page) => {
+          this.threadReplies.set([...page.results]);
           this.threadLoading.set(false);
         },
         error: () => {
@@ -947,11 +1227,11 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   submitThreadReply(messageId: number): void {
-    if (!this.chatId || !this.threadReplyText().trim() || this.submittingReply()) return;
+    if (!this.threadReplyText().trim() || this.submittingReply()) return;
     const text = this.threadReplyText().trim();
     this.submittingReply.set(true);
     this.http
-      .addThreadReply(this.chatId, messageId, { message: text })
+      .addArtifactThreadReply(messageId, { message: text })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (reply) => {
@@ -1014,10 +1294,9 @@ export class ChatSessionComponent implements OnDestroy {
     reason: FeedbackReason | null,
     comment: string | null
   ): void {
-    if (!this.chatId) return;
     this.setProcessing(messageId, true);
     this.http
-      .setMessageFeedback(this.chatId, messageId, { value, reason, comment })
+      .setArtifactFeedback(messageId, { value, reason, comment })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -1038,10 +1317,9 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   private removeFeedback(messageId: number): void {
-    if (!this.chatId) return;
     this.setProcessing(messageId, true);
     this.http
-      .deleteMessageFeedback(this.chatId, messageId)
+      .deleteArtifactFeedback(messageId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -1062,17 +1340,18 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   exportMessageAsPdf(message: ChatMessage): void {
-    if (!this.chatId || this.exportingMessageId() !== null) return;
+    const exportId = message.messageId ?? message.id;
+    if (this.exportingMessageId() !== null) return;
     this.exportingMessageId.set(message.id);
     this.http
-      .exportMessagePdf(this.chatId, message.id)
+      .exportArtifactMessagePdf(exportId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (blob) => {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `mensaje-${message.id}.pdf`;
+          a.download = `mensaje-${exportId}.pdf`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -1155,6 +1434,106 @@ export class ChatSessionComponent implements OnDestroy {
     return step ? (labels[step] ?? step) : '';
   }
 
+  isMessageItem(msg: ChatMessage): boolean {
+    return msg.artifactType === 'MESSAGE';
+  }
+
+  artifactTypeLabel(type: ArtifactType): string {
+    const labels: Record<ArtifactType, string> = {
+      MESSAGE: 'Mensaje',
+      REPORT: 'Informe',
+      CHECKLIST: 'Checklist',
+      QUIZ: 'Quiz',
+      TIMELINE: 'Línea de tiempo',
+      LESSONS_LEARNED: 'Lecciones aprendidas',
+      DECISION_BRIEF: 'Decisión',
+      DOCUMENT_SUMMARY: 'Resumen de documentos',
+      DOCUMENT_ACTION: 'Acción sobre documentos',
+    };
+    return labels[type] ?? type;
+  }
+
+  artifactStatusLabel(status: string | null | undefined): string {
+    switch (status) {
+      case 'draft':    return 'Borrador';
+      case 'final':    return 'Final';
+      case 'archived': return 'Archivado';
+      default:         return status ?? '';
+    }
+  }
+
+  artifactTypeIcon(type: ArtifactType): string {
+    const icons: Record<ArtifactType, string> = {
+      MESSAGE: 'pi-comment',
+      REPORT: 'pi-file-edit',
+      CHECKLIST: 'pi-check-square',
+      QUIZ: 'pi-question-circle',
+      TIMELINE: 'pi-calendar',
+      LESSONS_LEARNED: 'pi-book',
+      DECISION_BRIEF: 'pi-bolt',
+      DOCUMENT_SUMMARY: 'pi-align-left',
+      DOCUMENT_ACTION: 'pi-cog',
+    };
+    return icons[type] ?? 'pi-file';
+  }
+
+  async navigateToLinkedArtifact(message: ChatMessage): Promise<void> {
+    if (this.resolvingLinkedId() !== null) return;
+
+    let contentId = message.artifactLinkedId;
+
+    if (contentId == null) {
+      contentId = await this._resolveLinkedId(message);
+      if (contentId == null) {
+        this.toast.show('No se pudo obtener el ID del artefacto.', 'error');
+        return;
+      }
+      this.messages.update((msgs) =>
+        msgs.map((m) => (m.id === message.id ? { ...m, artifactLinkedId: contentId } : m))
+      );
+    }
+
+    const routeMap: Partial<Record<ArtifactType, string>> = {
+      REPORT: 'report',
+      CHECKLIST: 'checklist',
+      QUIZ: 'quiz',
+      TIMELINE: 'timeline',
+      LESSONS_LEARNED: 'lessons-learned',
+      DECISION_BRIEF: 'decision-brief',
+      DOCUMENT_SUMMARY: 'document-summary',
+      DOCUMENT_ACTION: 'document-action',
+    };
+    const segment = routeMap[message.artifactType];
+    if (segment) {
+      void this.router.navigate(['/main-container', segment, contentId]);
+    }
+  }
+
+  private async _resolveLinkedId(message: ChatMessage): Promise<number | null> {
+    const chatId = this.chatId;
+    if (!chatId) return null;
+    this.resolvingLinkedId.set(message.id);
+    try {
+      if (message.artifactType === 'DOCUMENT_SUMMARY') {
+        const page = await firstValueFrom(
+          this.http.listDocumentSummaries({ chat_id: chatId, page_size: 100 })
+        );
+        return page.results.find((x) => x.artifact_id === message.id)?.id ?? null;
+      }
+      if (message.artifactType === 'DOCUMENT_ACTION') {
+        const page = await firstValueFrom(
+          this.http.listDocumentActions({ chat_id: chatId, page_size: 100 })
+        );
+        return page.results.find((x) => x.artifact_id === message.id)?.id ?? null;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      this.resolvingLinkedId.set(null);
+    }
+  }
+
   hasFragments(id: number): boolean {
     return (this.messageFragments().get(id)?.length ?? 0) > 0;
   }
@@ -1208,7 +1587,7 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   private consumePendingGenerationFromHistory(): {
-    mode: 'report' | 'checklist';
+    mode: 'report' | 'checklist' | 'quiz' | 'timeline' | 'lessons-learned' | 'decision-brief' | 'document-summary' | 'document-action';
     type?: ReportType;
     genMode: 'direct' | 'rag';
     message: string;
@@ -1221,9 +1600,10 @@ export class ChatSessionComponent implements OnDestroy {
     }
     if (!raw || typeof raw !== 'object') return undefined;
     const g = raw as Record<string, unknown>;
-    if (g['mode'] !== 'report' && g['mode'] !== 'checklist') return undefined;
+    const validModes = ['report', 'checklist', 'quiz', 'timeline', 'lessons-learned', 'decision-brief', 'document-summary', 'document-action'] as const;
+    if (!validModes.includes(g['mode'] as typeof validModes[number])) return undefined;
     return {
-      mode: g['mode'] as 'report' | 'checklist',
+      mode: g['mode'] as typeof validModes[number],
       type: g['type'] as ReportType | undefined,
       genMode: (g['genMode'] === 'rag' ? 'rag' : 'direct'),
       message: String(g['message'] ?? ''),
@@ -1291,12 +1671,13 @@ export class ChatSessionComponent implements OnDestroy {
           id: msg.id,
           chat_id: cid,
           message: msg.message,
-          sender_type: msg.sender_type,
+          sender_type: msg.sender_type as MessageSenderType,
           created_by: msg.created_by,
           created_at: msg.created_at,
           is_bookmarked: false,
           user_feedback: null,
           thread_reply_count: 0,
+          artifactType: 'MESSAGE',
         };
         this.messages.update((list) => (list.some((m) => m.id === row.id) ? list : [...list, row]));
         setTimeout(() => this.scrollToBottom(), 50);
@@ -1320,6 +1701,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.flushPendingDeltas();
         const text = msg.answer || msg.message || '';
         const sid = this.streamingAssistantId();
+        const aiSenderType: MessageSenderType = (msg.sender_type as MessageSenderType | undefined) ?? 'assistant';
         if (sid != null && msg.id != null) {
           this.messages.update((list) =>
             list.map((m) =>
@@ -1328,12 +1710,13 @@ export class ChatSessionComponent implements OnDestroy {
                     id: msg.id!,
                     chat_id: cid,
                     message: text,
-                    sender_type: (msg.sender_type ?? 'system') as MessageSenderType,
+                    sender_type: aiSenderType,
                     created_by: msg.created_by ?? null,
                     created_at: msg.created_at ?? new Date().toISOString(),
                     is_bookmarked: false,
                     user_feedback: null,
                     thread_reply_count: 0,
+                    artifactType: 'MESSAGE' as ArtifactType,
                   }
                 : m
             )
@@ -1349,12 +1732,13 @@ export class ChatSessionComponent implements OnDestroy {
               id: msg.id ?? Date.now(),
               chat_id: cid,
               message: text,
-              sender_type: (msg.sender_type ?? 'system') as MessageSenderType,
+              sender_type: aiSenderType,
               created_by: msg.created_by ?? null,
               created_at: msg.created_at ?? new Date().toISOString(),
               is_bookmarked: false,
               user_feedback: null,
               thread_reply_count: 0,
+              artifactType: 'MESSAGE' as ArtifactType,
             },
           ]);
         }
@@ -1494,12 +1878,13 @@ export class ChatSessionComponent implements OnDestroy {
           id: tempId,
           chat_id: cid,
           message: chunk,
-          sender_type: 'system' as MessageSenderType,
+          sender_type: 'assistant' as MessageSenderType,
           created_by: null,
           created_at: new Date().toISOString(),
           is_bookmarked: false,
           user_feedback: null,
           thread_reply_count: 0,
+          artifactType: 'MESSAGE' as ArtifactType,
         },
       ]);
     } else {
