@@ -115,7 +115,7 @@ export class ChatSidebarComponent implements OnInit {
     }
   }
 
-  onChatUpdated(_event: { chatId: number; name: string }): void {
+  onChatUpdated(_event: { chatId: number; name?: string; system_prompt?: string | null; response_style?: string | null }): void {
     this.reloadChats();
   }
 

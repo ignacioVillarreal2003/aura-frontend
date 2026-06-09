@@ -10,8 +10,19 @@ import { UserState } from '@core/state/user.state';
 import type { AuraChatAiMode, ReportType } from '@aura-types/aura-chat-service.types';
 import { AURA_CHAT_AI_MODE_DEFAULT } from '@aura-types/aura-chat-service.types';
 
+type ComposerMode =
+  | 'chat'
+  | 'report'
+  | 'checklist'
+  | 'quiz'
+  | 'timeline'
+  | 'lessons-learned'
+  | 'decision-brief'
+  | 'document-summary'
+  | 'document-action';
+
 interface PendingGeneration {
-  mode: 'report' | 'checklist';
+  mode: Exclude<ComposerMode, 'chat'>;
   type?: ReportType;
   genMode: 'direct' | 'rag';
   message: string;
@@ -26,17 +37,16 @@ interface AiModeOption {
 }
 
 const AI_MODES: readonly AiModeOption[] = [
-  { value: 'document_question', label: 'Documentos', icon: 'pi-database', hint: 'Responde usando tus documentos (RAG).', permission: null },
-  { value: 'general_chat', label: 'General', icon: 'pi-comment', hint: 'Asistente general, sin documentos.', permission: 'LLM_GENERAL_CHAT' },
-  { value: 'rag_agent', label: 'Agente RAG', icon: 'pi-sitemap', hint: 'Pipeline RAG avanzado con razonamiento.', permission: 'LLM_AGENT' },
-  { value: 'agent', label: 'Agente', icon: 'pi-bolt', hint: 'Agente con herramientas sobre documentos.', permission: 'LLM_AGENT' },
+  { value: 'document_question', label: 'Documentos',  icon: 'pi-database', hint: 'Responde usando tus documentos (RAG).',          permission: null },
+  { value: 'general_chat',      label: 'General',     icon: 'pi-comment',  hint: 'Asistente general, sin documentos.',              permission: 'LLM_GENERAL_CHAT' },
+  { value: 'rag_agent',         label: 'Agente RAG',  icon: 'pi-sitemap',  hint: 'Pipeline RAG avanzado con razonamiento.',         permission: 'LLM_AGENT' },
+  { value: 'agent',             label: 'Agente',      icon: 'pi-bolt',     hint: 'Agente con herramientas sobre documentos.',       permission: 'LLM_AGENT' },
 ];
 
-
 const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: string }[] = [
-  { value: 'SITREP', label: 'SITREP — Situación', placeholder: 'Describí la situación, unidades involucradas, área de operaciones…' },
+  { value: 'SITREP', label: 'SITREP — Situación',    placeholder: 'Describí la situación, unidades involucradas, área de operaciones…' },
   { value: 'INTSUM', label: 'INTSUM — Inteligencia', placeholder: 'Describí la amenaza, período cubierto, eventos relevantes…' },
-  { value: 'OPORD',  label: 'OPORD — Operaciones',  placeholder: 'Describí la misión, situación, plan de ejecución…' },
+  { value: 'OPORD',  label: 'OPORD — Operaciones',   placeholder: 'Describí la misión, situación, plan de ejecución…' },
 ];
 
 @Component({
@@ -47,32 +57,44 @@ const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: st
   styleUrls: ['./chat-home.css'],
 })
 export class ChatHomeComponent {
-  private readonly router   = inject(Router);
-  private readonly api      = inject(AuraChatServiceHttp);
-  private readonly docHttp  = inject(AuraDocumentProcessingServiceHttp);
-  private readonly toast    = inject(ToastService);
+  private readonly router    = inject(Router);
+  private readonly api       = inject(AuraChatServiceHttp);
+  private readonly docHttp   = inject(AuraDocumentProcessingServiceHttp);
+  private readonly toast     = inject(ToastService);
   private readonly userState = inject(UserState);
 
   readonly reportTypes = REPORT_TYPES;
 
   // ── Permissions ────────────────────────────────────────────────
-  readonly canReport    = computed(() => this.userState.user()?.permissions.includes('LLM_REPORT_GENERATE') ?? false);
-  readonly canChecklist = computed(() => this.userState.user()?.permissions.includes('LLM_CHECKLIST_GENERATE') ?? false);
-  readonly canUseTools  = computed(() => this.canReport() || this.canChecklist());
+  private perms = computed(() => this.userState.user()?.permissions ?? []);
+
+  readonly canReport          = computed(() => this.perms().includes('LLM_REPORT_GENERATE'));
+  readonly canChecklist       = computed(() => this.perms().includes('LLM_CHECKLIST_GENERATE'));
+  readonly canQuiz            = computed(() => this.perms().includes('LLM_QUIZ_GENERATE'));
+  readonly canTimeline        = computed(() => this.perms().includes('LLM_TIMELINE_GENERATE'));
+  readonly canLessonsLearned  = computed(() => this.perms().includes('LLM_LESSONS_LEARNED_GENERATE'));
+  readonly canDecisionBrief   = computed(() => this.perms().includes('LLM_DECISION_BRIEF_GENERATE'));
+  readonly canDocumentSummary = computed(() => this.perms().includes('LLM_DOCUMENT_SUMMARY_GENERATE'));
+  readonly canDocumentAction  = computed(() => this.perms().includes('LLM_DOCUMENT_ACTION_GENERATE'));
+
+  readonly canUseTools = computed(() =>
+    this.canReport() || this.canChecklist() || this.canQuiz() ||
+    this.canTimeline() || this.canLessonsLearned() || this.canDecisionBrief() ||
+    this.canDocumentSummary() || this.canDocumentAction()
+  );
 
   // ── Composer state ─────────────────────────────────────────────
-  readonly composerMode     = signal<'chat' | 'report' | 'checklist'>('chat');
+  readonly composerMode = signal<ComposerMode>('chat');
 
-  // ── AI chat mode (document_question / general_chat / rag_agent / agent) ──
-  readonly aiModes          = AI_MODES;
-  readonly aiMode           = signal<AuraChatAiMode>(AURA_CHAT_AI_MODE_DEFAULT);
+  // ── AI chat mode ───────────────────────────────────────────────
+  readonly aiModes            = AI_MODES;
+  readonly aiMode             = signal<AuraChatAiMode>(AURA_CHAT_AI_MODE_DEFAULT);
   readonly aiModeDropdownOpen = signal(false);
-  readonly availableAiModes = computed(() => {
-    const perms = this.userState.user()?.permissions ?? [];
-    return AI_MODES.filter((m) => m.permission === null || perms.includes(m.permission));
-  });
+  readonly availableAiModes   = computed(() =>
+    AI_MODES.filter((m) => m.permission === null || this.perms().includes(m.permission))
+  );
   readonly showAiModeSelector = computed(() => this.availableAiModes().length > 1);
-  readonly activeAiMode = computed(
+  readonly activeAiMode       = computed(
     () => AI_MODES.find((m) => m.value === this.aiMode()) ?? AI_MODES[0],
   );
 
@@ -86,20 +108,43 @@ export class ChatHomeComponent {
 
   readonly composerModeLabel = computed(() => {
     switch (this.composerMode()) {
-      case 'report':    return { icon: 'pi-file-edit',    label: 'Informe' };
-      case 'checklist': return { icon: 'pi-check-square', label: 'Checklist' };
-      default:          return { icon: 'pi-comments',     label: 'Chat' };
+      case 'report':           return { icon: 'pi-file-edit',       label: 'Informe' };
+      case 'checklist':        return { icon: 'pi-check-square',    label: 'Checklist' };
+      case 'quiz':             return { icon: 'pi-question-circle', label: 'Quiz' };
+      case 'timeline':         return { icon: 'pi-calendar',        label: 'Línea de tiempo' };
+      case 'lessons-learned':  return { icon: 'pi-book',            label: 'Lecciones' };
+      case 'decision-brief':   return { icon: 'pi-bolt',            label: 'Decisión' };
+      case 'document-summary': return { icon: 'pi-align-left',      label: 'Resumen' };
+      case 'document-action':  return { icon: 'pi-cog',             label: 'Acción doc' };
+      default:                 return { icon: 'pi-comments',        label: 'Chat' };
     }
   });
 
   readonly genPlaceholder = computed(() => {
-    if (this.composerMode() === 'checklist') return 'Describí el procedimiento o SOP a convertir en checklist…';
-    return REPORT_TYPES.find((t) => t.value === this.genReportType())?.placeholder ?? 'Ingresá el contenido…';
+    switch (this.composerMode()) {
+      case 'checklist':        return 'Describí el procedimiento o SOP a convertir en checklist…';
+      case 'quiz':             return 'Describí el tema para el que querés generar preguntas de evaluación…';
+      case 'timeline':         return 'Describí la secuencia de eventos a ordenar cronológicamente…';
+      case 'lessons-learned':  return 'Describí el ejercicio o actividad cuyos aprendizajes querés capturar…';
+      case 'decision-brief':   return 'Describí el problema y las alternativas a evaluar…';
+      case 'document-action':  return 'Describí la instrucción o tarea a ejecutar sobre los documentos (opcional)…';
+      default:
+        return REPORT_TYPES.find((t) => t.value === this.genReportType())?.placeholder ?? 'Ingresá el contenido…';
+    }
   });
+
+  readonly showGenControls = computed(() =>
+    this.composerMode() !== 'chat' &&
+    this.composerMode() !== 'document-summary' &&
+    this.composerMode() !== 'document-action'
+  );
 
   readonly canSend = computed(() => {
     if (this.submitting()) return false;
-    if (this.composerMode() === 'chat') return this.message().trim().length > 0 || this.pendingFiles().length > 0;
+    const mode = this.composerMode();
+    if (mode === 'chat') return this.message().trim().length > 0 || this.pendingFiles().length > 0;
+    if (mode === 'document-summary') return this.pendingFiles().length > 0;
+    if (mode === 'document-action')  return this.pendingFiles().length > 0 || this.genMessage().trim().length > 0;
     return this.genMessage().trim().length > 0;
   });
 
@@ -112,6 +157,20 @@ export class ChatHomeComponent {
     this.composerMode() === 'chat' ? 'Enviar' : 'Crear y generar'
   );
 
+  readonly welcomeSubtitle = computed(() => {
+    switch (this.composerMode()) {
+      case 'report':           return 'Describí el contexto y el tipo de informe a generar.';
+      case 'checklist':        return 'Describí el procedimiento o SOP a convertir en checklist.';
+      case 'quiz':             return 'Describí el tema para generar preguntas de evaluación.';
+      case 'timeline':         return 'Describí la secuencia de eventos para construir la cronología.';
+      case 'lessons-learned':  return 'Describí la actividad cuyos aprendizajes querés registrar.';
+      case 'decision-brief':   return 'Describí el problema y las alternativas para el análisis.';
+      case 'document-summary': return 'Adjuntá documentos con el botón + para generar el resumen.';
+      case 'document-action':  return 'Adjuntá documentos y describí la tarea a ejecutar sobre ellos.';
+      default:                 return 'Escribí una pregunta o sube un documento para empezar.';
+    }
+  });
+
   private readonly messageBox = viewChild<ElementRef<HTMLTextAreaElement>>('messageBox');
 
   // ── Mode methods ───────────────────────────────────────────────
@@ -119,7 +178,7 @@ export class ChatHomeComponent {
     this.modeDropdownOpen.update((v) => !v);
   }
 
-  setComposerMode(mode: 'chat' | 'report' | 'checklist'): void {
+  setComposerMode(mode: ComposerMode): void {
     this.composerMode.set(mode);
     this.genMessage.set('');
     this.genMode.set('direct');
@@ -186,10 +245,7 @@ export class ChatHomeComponent {
 
     const mode  = this.composerMode();
     const files = this.pendingFiles();
-
-    const text = mode === 'chat'
-      ? this.message().trim()
-      : this.genMessage().trim();
+    const text  = mode === 'chat' ? this.message().trim() : this.genMessage().trim();
 
     const chatName = text.slice(0, 80).replace(/\s+/g, ' ').trim()
       || files[0]?.name.replace(/\.[^.]+$/, '').slice(0, 80)
@@ -226,7 +282,7 @@ export class ChatHomeComponent {
           if (this.aiMode() !== AURA_CHAT_AI_MODE_DEFAULT) {
             routerState['pendingAiMode'] = this.aiMode();
           }
-        } else if (mode === 'report' || mode === 'checklist') {
+        } else if (mode !== 'chat') {
           const gen: PendingGeneration = {
             mode,
             genMode: this.genMode(),

@@ -26,7 +26,7 @@ export class ReportEditorComponent implements OnInit {
   readonly editContent = signal('');
   readonly saving = signal(false);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
-  readonly viewMode = signal<'edit' | 'preview'>('edit');
+  readonly viewMode = signal<'edit' | 'preview'>('preview');
 
   readonly hasChanges = computed(() => {
     const r = this.report();

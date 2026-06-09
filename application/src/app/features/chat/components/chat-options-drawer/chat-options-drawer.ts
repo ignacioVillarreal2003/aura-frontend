@@ -1018,7 +1018,7 @@ export class ChatOptionsDrawer {
   openArtifact(item: ArtifactTabItem): void {
     const tab = this.selectedArtifactTab();
     const route = ARTIFACT_TAB_META[tab].route;
-    void this.router.navigate(['/main-container', route, item.id]);
+    void this.router.navigate(['/', route, item.id]);
     this.close();
   }
 
@@ -1090,7 +1090,7 @@ export class ChatOptionsDrawer {
   }
 
   openReport(reportId: number): void {
-    void this.router.navigate(['/main-container', 'report', reportId]);
+    void this.router.navigate(['/', 'report', reportId]);
     this.close();
   }
 
@@ -1173,7 +1173,7 @@ export class ChatOptionsDrawer {
   }
 
   openChecklist(checklistId: number): void {
-    void this.router.navigate(['/main-container', 'checklist', checklistId]);
+    void this.router.navigate(['/', 'checklist', checklistId]);
     this.close();
   }
 

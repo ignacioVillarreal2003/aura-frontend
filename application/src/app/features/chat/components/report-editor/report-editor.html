@@ -1,18 +1,21 @@
 <div class="re-root">
+
   @if (loading()) {
     <div class="re-loading">
-      <i class="pi pi-spin pi-spinner re-loading__spinner" aria-hidden="true"></i>
-      <p class="re-loading__text">Cargando informe…</p>
+      <i class="pi pi-spin pi-spinner re-loading__icon" aria-hidden="true"></i>
+      <span class="re-loading__text">Cargando informe…</span>
     </div>
   } @else if (report(); as r) {
-    <header class="re-bar">
-      <button type="button" class="re-back" (click)="goBack()">
-        <i class="pi pi-arrow-left" aria-hidden="true"></i>
-        Volver
-      </button>
 
-      <div class="re-bar__identity">
-        <span class="re-type-badge">{{ r.type }}</span>
+    <!-- Top bar -->
+    <header class="re-bar">
+      <div class="re-bar__left">
+        <button type="button" class="re-back" (click)="goBack()">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          <span>Volver</span>
+        </button>
+        <div class="re-vdivider" aria-hidden="true"></div>
+        <span class="re-type-badge re-type-badge--{{ r.type.toLowerCase() }}">{{ r.type }}</span>
         <input
           class="re-title"
           type="text"
@@ -24,30 +27,33 @@
         />
       </div>
 
-      <div class="re-bar__actions">
-        <div class="re-view-toggle" role="group" aria-label="Modo de visualización">
+      <div class="re-bar__right">
+        <div class="re-toggle" role="group" aria-label="Modo de visualización">
           <button
             type="button"
-            class="re-view-btn"
-            [class.re-view-btn--active]="viewMode() === 'edit'"
-            (click)="viewMode.set('edit')"
-          >
-            <i class="pi pi-pencil" aria-hidden="true"></i>
-            Editar
-          </button>
-          <button
-            type="button"
-            class="re-view-btn"
-            [class.re-view-btn--active]="viewMode() === 'preview'"
+            class="re-toggle__btn"
+            [class.active]="viewMode() === 'preview'"
             (click)="viewMode.set('preview')"
           >
             <i class="pi pi-eye" aria-hidden="true"></i>
             Vista previa
           </button>
+          <button
+            type="button"
+            class="re-toggle__btn"
+            [class.active]="viewMode() === 'edit'"
+            (click)="viewMode.set('edit')"
+          >
+            <i class="pi pi-pencil" aria-hidden="true"></i>
+            Editar
+          </button>
         </div>
+
+        <div class="re-vdivider" aria-hidden="true"></div>
+
         <button
           type="button"
-          class="re-action-btn"
+          class="re-icon-btn"
           title="Exportar como PDF"
           [disabled]="exportingAs() !== null"
           (click)="export('pdf')"
@@ -57,65 +63,76 @@
         </button>
         <button
           type="button"
-          class="re-action-btn"
+          class="re-icon-btn"
           title="Exportar como Markdown"
           [disabled]="exportingAs() !== null"
           (click)="export('markdown')"
         >
-          <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
-          <span>MD</span>
+          <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
+          <span>.md</span>
         </button>
+
+        <div class="re-vdivider" aria-hidden="true"></div>
+
         <button
           type="button"
-          class="re-action-btn re-action-btn--primary"
+          class="re-save-btn"
+          [class.re-save-btn--active]="hasChanges()"
           [disabled]="saving() || !hasChanges()"
           (click)="save()"
         >
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-          Guardar
+          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-check']" aria-hidden="true"></i>
+          <span>{{ saving() ? 'Guardando…' : 'Guardar' }}</span>
         </button>
       </div>
     </header>
 
+    <!-- Meta strip -->
     <div class="re-meta">
-      <span class="re-meta__chip">
+      <span class="re-meta__item">
         <i class="pi pi-calendar" aria-hidden="true"></i>
-        {{ r.created_at | date: 'mediumDate' }}
+        {{ r.created_at | date: 'd MMM yyyy' }}
       </span>
-      <span class="re-meta__chip">
+      <span class="re-meta__sep" aria-hidden="true">·</span>
+      <span class="re-meta__item">
         <i class="pi pi-bolt" aria-hidden="true"></i>
-        {{ r.mode === 'rag' ? 'RAG' : 'Directo' }}
+        {{ r.mode === 'rag' ? 'Con documentos' : 'Directo' }}
       </span>
       @if (hasChanges()) {
-        <span class="re-meta__chip re-meta__chip--unsaved">
-          <i class="pi pi-circle-fill" aria-hidden="true"></i>
+        <span class="re-meta__sep" aria-hidden="true">·</span>
+        <span class="re-meta__item re-meta__item--unsaved">
+          <i class="pi pi-circle-fill" style="font-size:6px" aria-hidden="true"></i>
           Sin guardar
         </span>
       }
     </div>
 
-    <div class="re-editor">
+    <!-- Main content -->
+    <main class="re-body">
       @if (viewMode() === 'edit') {
         <textarea
           class="re-textarea"
-          aria-label="Contenido del informe"
           [value]="editContent()"
           (input)="editContent.set($any($event.target).value)"
-          placeholder="Escribe el contenido del informe aquí…"
+          placeholder="Escribe el contenido en Markdown…"
           spellcheck="false"
+          aria-label="Contenido del informe"
         ></textarea>
       } @else {
-        <div class="re-preview">
+        <div class="re-preview-wrap">
           @if (editContent().trim()) {
-            <div class="re-preview__body" [innerHTML]="editContent() | markdown"></div>
+            <article class="re-doc">
+              <div class="re-doc__body" [innerHTML]="editContent() | markdown"></div>
+            </article>
           } @else {
-            <div class="re-preview__empty">
+            <div class="re-empty">
               <i class="pi pi-file-edit" aria-hidden="true"></i>
               <p>Sin contenido. Cambiá a modo edición para escribir.</p>
             </div>
           }
         </div>
       }
-    </div>
+    </main>
+
   }
 </div>

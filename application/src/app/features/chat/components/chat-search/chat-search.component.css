@@ -328,6 +328,48 @@
   color: #a5b4fc;
 }
 
+/* ── Loading state ───────────────────────────────────────────── */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 0;
+}
+
+.loading-state__icon {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+}
+
+/* ── Load more button ────────────────────────────────────────── */
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  margin-top: 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background: var(--overlay-hover);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.load-more-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 /* ── Empty state ─────────────────────────────────────────────── */
 .empty-state {
   display: flex;

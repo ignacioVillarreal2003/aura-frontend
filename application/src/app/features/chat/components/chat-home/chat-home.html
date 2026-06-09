@@ -3,17 +3,13 @@
     <div class="chat-home-center">
       <div class="welcome-section">
         <h1 class="welcome-title">¿En qué estás trabajando?</h1>
-        <p class="welcome-subtitle">
-          @if (composerMode() === 'chat') { Escribe una pregunta o sube un documento para empezar. }
-          @else if (composerMode() === 'report') { Describí el contexto y el tipo de informe a generar. }
-          @else { Describí el procedimiento o SOP a convertir en checklist. }
-        </p>
+        <p class="welcome-subtitle">{{ welcomeSubtitle() }}</p>
       </div>
 
       <div class="chat-home-composer">
         <div class="chat-home-composer-surface">
 
-          @if (composerMode() !== 'chat') {
+          @if (showGenControls()) {
             <div class="chat-home-gen-controls">
               @if (composerMode() === 'report') {
                 <select
@@ -52,6 +48,18 @@
             </div>
           }
 
+          @if (composerMode() === 'document-summary') {
+            <div class="chat-home-doc-hint">
+              @if (pendingFiles().length === 0) {
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span>Adjuntá documentos con el botón <strong>+</strong> para generar el resumen.</span>
+              } @else {
+                <i class="pi pi-check-circle chat-home-doc-hint__ok" aria-hidden="true"></i>
+                <span><strong>{{ pendingFiles().length }}</strong> archivo{{ pendingFiles().length !== 1 ? 's' : '' }} listo{{ pendingFiles().length !== 1 ? 's' : '' }}.</span>
+              }
+            </div>
+          }
+
           @if (composerMode() === 'chat') {
             <textarea
               #messageBox
@@ -65,7 +73,7 @@
               (keydown)="onEnterKey($event)"
               [disabled]="submitting()"
             ></textarea>
-          } @else {
+          } @else if (composerMode() !== 'document-summary') {
             <textarea
               class="chat-home-textarea chat-home-textarea--gen"
               rows="4"
@@ -107,18 +115,6 @@
               aria-hidden="true"
               tabindex="-1"
             />
-            <button
-              type="button"
-              class="chat-home-attach"
-              [class.chat-home-attach--has-files]="pendingFiles().length > 0"
-              aria-label="Adjuntar documento"
-              [disabled]="submitting()"
-              (click)="onAttachClick(fileInput)">
-              <i class="pi pi-paperclip" aria-hidden="true"></i>
-              @if (pendingFiles().length > 0) {
-                <span class="chat-home-attach-badge">{{ pendingFiles().length }}</span>
-              }
-            </button>
 
             @if (composerMode() === 'chat' && showAiModeSelector()) {
               <div class="chat-home-mode-selector chat-home-ai-mode-selector">
@@ -184,36 +180,139 @@
                   <div class="chat-home-mode-menu">
                     <button
                       type="button"
-                      class="chat-home-mode-item"
+                      class="chat-home-mode-item chat-home-ai-mode-item"
                       [class.chat-home-mode-item--active]="composerMode() === 'chat'"
                       (click)="setComposerMode('chat')">
                       <i class="pi pi-comments" aria-hidden="true"></i>
-                      Chat
+                      <span class="chat-home-ai-mode-item__text">
+                        <span class="chat-home-ai-mode-item__label">Chat</span>
+                        <span class="chat-home-ai-mode-item__hint">Conversación libre con IA</span>
+                      </span>
                     </button>
+
+                    <div class="chat-home-mode-section-header" aria-hidden="true">Herramientas IA</div>
+
                     @if (canReport()) {
                       <button
                         type="button"
-                        class="chat-home-mode-item"
+                        class="chat-home-mode-item chat-home-ai-mode-item"
                         [class.chat-home-mode-item--active]="composerMode() === 'report'"
                         (click)="setComposerMode('report')">
                         <i class="pi pi-file-edit" aria-hidden="true"></i>
-                        Informe
+                        <span class="chat-home-ai-mode-item__text">
+                          <span class="chat-home-ai-mode-item__label">Informe</span>
+                          <span class="chat-home-ai-mode-item__hint">Generá un informe estructurado</span>
+                        </span>
                       </button>
                     }
                     @if (canChecklist()) {
                       <button
                         type="button"
-                        class="chat-home-mode-item"
+                        class="chat-home-mode-item chat-home-ai-mode-item"
                         [class.chat-home-mode-item--active]="composerMode() === 'checklist'"
                         (click)="setComposerMode('checklist')">
                         <i class="pi pi-check-square" aria-hidden="true"></i>
-                        Checklist
+                        <span class="chat-home-ai-mode-item__text">
+                          <span class="chat-home-ai-mode-item__label">Checklist</span>
+                          <span class="chat-home-ai-mode-item__hint">Creá una lista de verificación</span>
+                        </span>
+                      </button>
+                    }
+                    @if (canQuiz()) {
+                      <button
+                        type="button"
+                        class="chat-home-mode-item chat-home-ai-mode-item"
+                        [class.chat-home-mode-item--active]="composerMode() === 'quiz'"
+                        (click)="setComposerMode('quiz')">
+                        <i class="pi pi-question-circle" aria-hidden="true"></i>
+                        <span class="chat-home-ai-mode-item__text">
+                          <span class="chat-home-ai-mode-item__label">Quiz</span>
+                          <span class="chat-home-ai-mode-item__hint">Generá preguntas de evaluación</span>
+                        </span>
+                      </button>
+                    }
+                    @if (canTimeline()) {
+                      <button
+                        type="button"
+                        class="chat-home-mode-item chat-home-ai-mode-item"
+                        [class.chat-home-mode-item--active]="composerMode() === 'timeline'"
+                        (click)="setComposerMode('timeline')">
+                        <i class="pi pi-calendar" aria-hidden="true"></i>
+                        <span class="chat-home-ai-mode-item__text">
+                          <span class="chat-home-ai-mode-item__label">Línea de tiempo</span>
+                          <span class="chat-home-ai-mode-item__hint">Construí una cronología de eventos</span>
+                        </span>
+                      </button>
+                    }
+                    @if (canLessonsLearned()) {
+                      <button
+                        type="button"
+                        class="chat-home-mode-item chat-home-ai-mode-item"
+                        [class.chat-home-mode-item--active]="composerMode() === 'lessons-learned'"
+                        (click)="setComposerMode('lessons-learned')">
+                        <i class="pi pi-book" aria-hidden="true"></i>
+                        <span class="chat-home-ai-mode-item__text">
+                          <span class="chat-home-ai-mode-item__label">Lecciones aprendidas</span>
+                          <span class="chat-home-ai-mode-item__hint">Registrá aprendizajes del proyecto</span>
+                        </span>
+                      </button>
+                    }
+                    @if (canDecisionBrief()) {
+                      <button
+                        type="button"
+                        class="chat-home-mode-item chat-home-ai-mode-item"
+                        [class.chat-home-mode-item--active]="composerMode() === 'decision-brief'"
+                        (click)="setComposerMode('decision-brief')">
+                        <i class="pi pi-bolt" aria-hidden="true"></i>
+                        <span class="chat-home-ai-mode-item__text">
+                          <span class="chat-home-ai-mode-item__label">Brief de decisión</span>
+                          <span class="chat-home-ai-mode-item__hint">Analizá opciones y criterios</span>
+                        </span>
+                      </button>
+                    }
+                    @if (canDocumentSummary()) {
+                      <button
+                        type="button"
+                        class="chat-home-mode-item chat-home-ai-mode-item"
+                        [class.chat-home-mode-item--active]="composerMode() === 'document-summary'"
+                        (click)="setComposerMode('document-summary')">
+                        <i class="pi pi-align-left" aria-hidden="true"></i>
+                        <span class="chat-home-ai-mode-item__text">
+                          <span class="chat-home-ai-mode-item__label">Resumen de documentos</span>
+                          <span class="chat-home-ai-mode-item__hint">Resumí los documentos adjuntos</span>
+                        </span>
+                      </button>
+                    }
+                    @if (canDocumentAction()) {
+                      <button
+                        type="button"
+                        class="chat-home-mode-item chat-home-ai-mode-item"
+                        [class.chat-home-mode-item--active]="composerMode() === 'document-action'"
+                        (click)="setComposerMode('document-action')">
+                        <i class="pi pi-cog" aria-hidden="true"></i>
+                        <span class="chat-home-ai-mode-item__text">
+                          <span class="chat-home-ai-mode-item__label">Acción sobre documentos</span>
+                          <span class="chat-home-ai-mode-item__hint">Procesá documentos con IA</span>
+                        </span>
                       </button>
                     }
                   </div>
                 }
               </div>
             }
+
+            <button
+              type="button"
+              class="chat-home-attach"
+              [class.chat-home-attach--has-files]="pendingFiles().length > 0"
+              aria-label="Adjuntar documento"
+              [disabled]="submitting()"
+              (click)="onAttachClick(fileInput)">
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              @if (pendingFiles().length > 0) {
+                <span class="chat-home-attach-badge">{{ pendingFiles().length }}</span>
+              }
+            </button>
 
             <span class="chat-home-composer-spacer" aria-hidden="true"></span>
 

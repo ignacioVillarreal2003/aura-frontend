@@ -1837,20 +1837,40 @@
 
 .mode-dropdown-menu {
   position: absolute;
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + 8px);
   left: 0;
   z-index: 201;
-  min-width: 11rem;
-  max-height: 22rem;
+  min-width: 18rem;
+  max-height: 26rem;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.35) transparent;
   background: var(--surface-composer, #1e1e24);
   border: 1px solid var(--overlay-active);
-  border-radius: 0.75rem;
-  padding: 0.25rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 0.875rem;
+  padding: 0.375rem;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
+}
+
+.mode-dropdown-menu::-webkit-scrollbar {
+  width: 4px;
+}
+.mode-dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 6px 0;
+}
+.mode-dropdown-menu::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.35);
+  border-radius: 4px;
+}
+.mode-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(165, 180, 252, 0.55);
 }
 
 .mode-dropdown-item {

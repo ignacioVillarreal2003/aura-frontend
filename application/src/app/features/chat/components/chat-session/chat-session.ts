@@ -1774,7 +1774,7 @@ export class ChatSessionComponent implements OnDestroy {
     };
     const segment = routeMap[message.artifactType];
     if (segment) {
-      void this.router.navigate(['/main-container', segment, contentId]);
+      void this.router.navigate(['/', segment, contentId]);
     }
   }
 
