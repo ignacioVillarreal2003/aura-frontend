@@ -1,39 +1,60 @@
-<app-modal [title]="'¿Qué estuvo mal?'" (onClose)="onClose()">
-  <div class="feedback-dialog">
-    <p class="feedback-dialog__hint">
-      Tu respuesta nos ayuda a mejorar. Es opcional: podés enviar sin elegir motivo.
-    </p>
+<div class="fd-overlay" (click)="onClose()">
+  <div class="fd-panel" (click)="$event.stopPropagation()">
 
-    <div class="feedback-dialog__reasons">
-      @for (option of reasons; track option.value) {
-        <button
-          type="button"
-          class="feedback-dialog__reason"
-          [class.feedback-dialog__reason--active]="selectedReason() === option.value"
-          (click)="toggleReason(option.value)">
-          {{ option.label }}
-        </button>
-      }
+    <div class="fd-header">
+      <div class="fd-header__icon-wrap" aria-hidden="true">
+        <i class="pi pi-thumbs-down"></i>
+      </div>
+      <div class="fd-header__copy">
+        <h2 class="fd-header__title">¿Qué estuvo mal?</h2>
+        <p class="fd-header__hint">Opcional — ayudanos a mejorar las respuestas.</p>
+      </div>
+      <button type="button" class="fd-close" (click)="onClose()" aria-label="Cerrar">
+        <i class="pi pi-times"></i>
+      </button>
     </div>
 
-    <label class="feedback-dialog__label" for="feedback-comment">Comentario (opcional)</label>
-    <textarea
-      id="feedback-comment"
-      class="feedback-dialog__textarea"
-      rows="3"
-      [maxlength]="commentMax"
-      [ngModel]="comment()"
-      (ngModelChange)="onCommentInput($event)"
-      placeholder="Contanos qué esperabas…"></textarea>
-    <div class="feedback-dialog__counter">{{ comment().length }}/{{ commentMax }}</div>
+    <div class="fd-body">
+      <div class="fd-reasons">
+        @for (option of reasons; track option.value) {
+          <button
+            type="button"
+            class="fd-reason"
+            [class.fd-reason--active]="selectedReason() === option.value"
+            (click)="toggleReason(option.value)">
+            <i class="pi {{ option.icon }}" aria-hidden="true"></i>
+            {{ option.label }}
+          </button>
+        }
+      </div>
 
-    <div class="feedback-dialog__actions">
-      <button type="button" class="feedback-dialog__btn feedback-dialog__btn--ghost" (click)="onClose()">
-        Cancelar
-      </button>
-      <button type="button" class="feedback-dialog__btn feedback-dialog__btn--primary" (click)="submit()">
+      <div class="fd-field">
+        <div class="fd-field__header">
+          <label class="fd-field__label" for="feedback-comment">Comentario</label>
+          <span class="fd-field__optional">opcional</span>
+        </div>
+        <textarea
+          id="feedback-comment"
+          class="fd-field__textarea"
+          rows="3"
+          [maxlength]="commentMax"
+          [ngModel]="comment()"
+          (ngModelChange)="onCommentInput($event)"
+          placeholder="Contanos qué esperabas…"></textarea>
+        <div class="fd-field__counter"
+             [class.fd-field__counter--warn]="comment().length > commentMax * 0.9">
+          {{ comment().length }}/{{ commentMax }}
+        </div>
+      </div>
+    </div>
+
+    <div class="fd-footer">
+      <button type="button" class="fd-btn fd-btn--ghost" (click)="onClose()">Cancelar</button>
+      <button type="button" class="fd-btn fd-btn--primary" (click)="submit()">
+        <i class="pi pi-send" aria-hidden="true"></i>
         Enviar feedback
       </button>
     </div>
+
   </div>
-</app-modal>
+</div>

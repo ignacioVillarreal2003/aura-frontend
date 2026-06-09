@@ -11,12 +11,15 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { take } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, take } from 'rxjs';
 import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
+import { AuraAuthServiceHttp } from '@core/services/http-services/aura-auth-service-http.service';
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import { UserState } from '@core/state/user.state';
+import { UserCacheService } from '@core/services/user-cache.service';
+import type { UserLookupDto } from '@aura-types/aura-auth-service.types';
 import {
   type ArtifactSummaryDto,
   type ChecklistListItemDto,
@@ -42,6 +45,8 @@ export interface ChatRef {
   readonly is_locked: boolean;
   readonly is_muted: boolean;
   readonly tags: readonly string[];
+  readonly system_prompt?: string | null;
+  readonly response_style?: string | null;
 }
 
 interface ConfirmOpts {
@@ -58,7 +63,7 @@ export interface DocumentItem {
   readonly created_at: string;
 }
 
-type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'mute' | 'pinned' | 'bookmarks' | 'export' | 'artifacts' | 'reports' | 'checklists' | 'rename' | 'tags';
+type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'mute' | 'pinned' | 'bookmarks' | 'export' | 'artifacts' | 'reports' | 'checklists' | 'rename' | 'tags' | 'prompts';
 
 export type ArtifactTabKey = 'reports' | 'checklists' | 'quizzes' | 'timelines' | 'lessons-learned' | 'decision-briefs' | 'document-summaries' | 'document-actions';
 
@@ -93,10 +98,14 @@ const ARTIFACT_TAB_META: Record<ArtifactTabKey, { label: string; icon: string; p
 })
 export class ChatOptionsDrawer {
   private readonly chatHttp = inject(AuraChatServiceHttp);
+  private readonly authHttp = inject(AuraAuthServiceHttp);
   private readonly docHttp = inject(AuraDocumentProcessingServiceHttp);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
   private readonly userState = inject(UserState);
+  private readonly userCache = inject(UserCacheService);
+
+  private readonly _userSearch$ = new Subject<string>();
 
   readonly canListReports = computed(() =>
     this.userState.user()?.permissions.includes('LIST_REPORTS') ?? false
@@ -141,11 +150,12 @@ export class ChatOptionsDrawer {
 
   readonly documentSelected = output<File>();
   readonly chatAction = output<{ chatId: number; action: string; tags?: readonly string[] }>();
-  readonly chatMetaUpdated = output<{ chatId: number; name: string }>();
+  readonly chatMetaUpdated = output<{ chatId: number; name?: string; system_prompt?: string | null; response_style?: string | null }>();
 
   readonly panelView = signal<PanelView>('root');
   readonly members = signal<MembershipDto[]>([]);
   readonly membersLoading = signal(false);
+  readonly memberUserMap = signal<Map<number, UserLookupDto>>(new Map());
   readonly roleUpdatingId = signal<number | null>(null);
   readonly documentsLoading = signal(false);
   readonly fetchedDocuments = signal<readonly DocumentItem[]>([]);
@@ -179,11 +189,17 @@ export class ChatOptionsDrawer {
   private readonly checklistsPageSize = 8;
   readonly renameValue = signal('');
   readonly renameSubmitting = signal(false);
+  readonly promptSystemPrompt = signal('');
+  readonly promptResponseStyle = signal('');
+  readonly promptSubmitting = signal(false);
   readonly tagsInput = signal('');
   readonly tagsDraft = signal<string[]>([]);
   readonly tagsSubmitting = signal(false);
-  readonly inviteInput = signal('');
-  readonly inviteIds = signal<number[]>([]);
+  readonly userSearchQuery = signal('');
+  readonly userSearchResults = signal<UserLookupDto[]>([]);
+  readonly userSearchLoading = signal(false);
+  readonly userSearchOpen = signal(false);
+  readonly selectedUsers = signal<UserLookupDto[]>([]);
   readonly inviting = signal(false);
 
   readonly headerTitle = computed(() => {
@@ -202,6 +218,7 @@ export class ChatOptionsDrawer {
       case 'checklists': return 'Checklists';
       case 'rename': return 'Cambiar nombre';
       case 'tags': return 'Etiquetas';
+      case 'prompts': return 'Prompts';
       default: return this.panelTitle();
     }
   });
@@ -242,6 +259,29 @@ export class ChatOptionsDrawer {
           this.pendingConfirm.set(null);
         });
       }
+    });
+
+    this._userSearch$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap((q) => {
+        if (q.trim().length < 2) {
+          this.userSearchResults.set([]);
+          this.userSearchLoading.set(false);
+          return [];
+        }
+        this.userSearchLoading.set(true);
+        return this.authHttp.lookupUsers(q.trim());
+      }),
+    ).subscribe({
+      next: (res) => {
+        this.userSearchResults.set([...res.results]);
+        this.userSearchLoading.set(false);
+        this.userSearchOpen.set(true);
+      },
+      error: () => {
+        this.userSearchLoading.set(false);
+      },
     });
   }
 
@@ -285,8 +325,10 @@ export class ChatOptionsDrawer {
       this.renameSubmitting.set(false);
     }
     if (view === 'add-participants') {
-      this.inviteInput.set('');
-      this.inviteIds.set([]);
+      this.userSearchQuery.set('');
+      this.userSearchResults.set([]);
+      this.userSearchOpen.set(false);
+      this.selectedUsers.set([]);
       this.inviting.set(false);
     }
     if (view === 'tags') {
@@ -302,6 +344,12 @@ export class ChatOptionsDrawer {
     }
     if (view === 'export') {
       this.exportingAs.set(null);
+    }
+    if (view === 'prompts') {
+      const chat = this.contextChat();
+      this.promptSystemPrompt.set(chat?.system_prompt ?? '');
+      this.promptResponseStyle.set(chat?.response_style ?? '');
+      this.promptSubmitting.set(false);
     }
     if (view === 'artifacts') {
       const firstTab = this.availableArtifactTabs()[0];
@@ -429,6 +477,29 @@ export class ChatOptionsDrawer {
       error: () => {
         this.toastService.show('No se pudieron guardar las etiquetas.', 'error');
         this.tagsSubmitting.set(false);
+      },
+    });
+  }
+
+  submitPrompts(): void {
+    const cid = this.contextChatId();
+    if (cid == null || this.promptSubmitting()) return;
+    this.promptSubmitting.set(true);
+    this.chatHttp.patchChat(cid, {
+      system_prompt: this.promptSystemPrompt().trim() || null,
+      response_style: this.promptResponseStyle().trim() || null,
+    }).subscribe({
+      next: () => {
+        this.toastService.show('Prompts actualizados.', 'success');
+        const sp = this.promptSystemPrompt().trim() || null;
+        const rs = this.promptResponseStyle().trim() || null;
+        this.chatMetaUpdated.emit({ chatId: cid, system_prompt: sp, response_style: rs });
+        this.promptSubmitting.set(false);
+        this.goRoot();
+      },
+      error: () => {
+        this.toastService.show('No se pudieron guardar los prompts.', 'error');
+        this.promptSubmitting.set(false);
       },
     });
   }
@@ -679,34 +750,49 @@ export class ChatOptionsDrawer {
     });
   }
 
-  addInviteId(): void {
-    const raw = this.inviteInput().trim();
-    if (!raw) return;
-    const id = parseInt(raw, 10);
-    if (!Number.isFinite(id) || id <= 0) {
-      this.toastService.show('ID inválido. Ingresá un número positivo.', 'error');
-      return;
+  onSearchInput(query: string): void {
+    this.userSearchQuery.set(query);
+    if (query.trim().length < 2) {
+      this.userSearchResults.set([]);
+      this.userSearchOpen.set(false);
     }
-    if (this.inviteIds().includes(id)) {
-      this.toastService.show('Ese ID ya está en la lista.', 'error');
-      return;
-    }
-    this.inviteIds.update((ids) => [...ids, id]);
-    this.inviteInput.set('');
+    this._userSearch$.next(query);
   }
 
-  removeInviteId(id: number): void {
-    this.inviteIds.update((ids) => ids.filter((i) => i !== id));
+  isUserSelected(userId: number): boolean {
+    return this.selectedUsers().some((u) => u.id === userId);
+  }
+
+  selectUser(user: UserLookupDto): void {
+    if (this.isUserSelected(user.id)) return;
+    this.selectedUsers.update((list) => [...list, user]);
+    this.userSearchQuery.set('');
+    this.userSearchResults.set([]);
+    this.userSearchOpen.set(false);
+  }
+
+  removeSelectedUser(userId: number): void {
+    this.selectedUsers.update((list) => list.filter((u) => u.id !== userId));
+  }
+
+  userInitials(name: string): string {
+    return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  }
+
+  closeUserSearch(): void {
+    this.userSearchOpen.set(false);
   }
 
   submitInvite(): void {
     const cid = this.contextChatId();
-    if (cid == null || this.inviteIds().length === 0) return;
+    const users = this.selectedUsers();
+    if (cid == null || users.length === 0) return;
     this.inviting.set(true);
-    this.chatHttp.addMembers(cid, { member_ids: this.inviteIds() }).subscribe({
+    this.chatHttp.addMembers(cid, { member_ids: users.map((u) => u.id) }).subscribe({
       next: (added) => {
         this.toastService.show(`${added.length} participante(s) invitado(s).`, 'success');
         this.inviting.set(false);
+        this.selectedUsers.set([]);
         this.panelView.set('participants');
         this.reloadMembers(cid);
       },
@@ -867,18 +953,47 @@ export class ChatOptionsDrawer {
   reloadMembers(chatId: number): void {
     this.membersLoading.set(true);
     this.chatHttp
-      .listMembers(chatId, { page_size: 100 })
+      .listMembers(chatId, { page_size: 100, status: 'all' })
       .pipe(take(1))
       .subscribe({
         next: (page) => {
-          this.members.set([...page.results]);
+          const list = [...page.results];
+          this.members.set(list);
           this.membersLoading.set(false);
+          const ids = [...new Set(list.map((m) => m.member_id))];
+          if (ids.length > 0) {
+            this.userCache.resolve(ids).pipe(take(1)).subscribe({
+              next: (userMap) => this.memberUserMap.set(userMap),
+            });
+          }
         },
         error: () => {
           this.membersLoading.set(false);
           this.toastService.show('No se pudieron cargar los participantes.', 'error');
         },
       });
+  }
+
+  memberDisplayName(member: MembershipDto): string {
+    const u = this.memberUserMap().get(member.member_id);
+    if (u) {
+      const name = u.name?.trim();
+      return name ? `${name} · @${u.username}` : `@${u.username}`;
+    }
+    return `@usuario ${member.member_id}`;
+  }
+
+  memberInitials(member: MembershipDto): string {
+    const u = this.memberUserMap().get(member.member_id);
+    if (u) {
+      const name = (u.name?.trim() || u.username).toUpperCase();
+      const parts = name.split(/\s+/);
+      if (parts.length >= 2) return parts[0][0] + parts[parts.length - 1][0];
+      return name.slice(0, 2);
+    }
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const id = member.member_id;
+    return alphabet[id % alphabet.length] + alphabet[(id * 17) % alphabet.length];
   }
 
   // ── Artifacts tab ────────────────────────────────────────────────────────
@@ -1117,13 +1232,24 @@ export class ChatOptionsDrawer {
     });
   }
 
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.userSearchOpen()) this.userSearchOpen.set(false);
+  }
+
   @HostListener('document:keydown', ['$event'])
   onDocumentKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && this.isOpen()) {
-      if (this.panelView() !== 'root') {
-        this.goRoot();
-      } else {
-        this.close();
+    if (event.key === 'Escape') {
+      if (this.userSearchOpen()) {
+        this.userSearchOpen.set(false);
+        return;
+      }
+      if (this.isOpen()) {
+        if (this.panelView() !== 'root') {
+          this.goRoot();
+        } else {
+          this.close();
+        }
       }
     }
   }

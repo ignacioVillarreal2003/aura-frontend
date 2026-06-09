@@ -78,6 +78,14 @@
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
+              <button type="button" class="drawer-section-tile" (click)="openSub('prompts')">
+                <span class="drawer-section-tile__icon drawer-section-tile__icon--prompts" aria-hidden="true"><i class="pi pi-sliders-h"></i></span>
+                <span class="drawer-section-tile__text">
+                  <span class="drawer-section-tile__title">Prompts</span>
+                  <span class="drawer-section-tile__hint">System prompt y estilo de respuesta</span>
+                </span>
+                <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+              </button>
               @if (canSeeArtifacts()) {
                 <button type="button" class="drawer-section-tile" (click)="openSub('artifacts')">
                   <span class="drawer-section-tile__icon drawer-section-tile__icon--artifacts" aria-hidden="true"><i class="pi pi-objects-column"></i></span>
@@ -168,7 +176,13 @@
                 @for (m of members(); track m.id) {
                   <li class="drawer-member-card">
                     <div class="drawer-member-card__header">
-                      <span class="drawer-member-card__title">Usuario {{ m.member_id }}</span>
+                      <div class="drawer-member-avatar" aria-hidden="true">{{ memberInitials(m) }}</div>
+                      <div class="drawer-member-card__info">
+                        <span class="drawer-member-card__title">{{ memberDisplayName(m) }}</span>
+                        @if (memberUserMap().get(m.member_id)?.email) {
+                          <span class="drawer-member-card__email">{{ memberUserMap().get(m.member_id)?.email }}</span>
+                        }
+                      </div>
                       <button type="button" class="drawer-member-remove" title="Quitar participante" (click)="removeMember(m)">
                         <i class="pi pi-user-minus" aria-hidden="true"></i>
                       </button>
@@ -205,31 +219,53 @@
           }
           @case ('add-participants') {
             <div class="drawer-invite-form">
-              <p class="drawer-invite-form__hint">Ingresá el ID del usuario para invitarlo al chat. Podés agregar varios antes de enviar.</p>
+              <div class="drawer-user-search-wrap" (click)="$event.stopPropagation()">
+                <div class="drawer-user-search-field">
+                  <i class="pi pi-search drawer-user-search-icon" aria-hidden="true"></i>
+                  <input
+                    type="text"
+                    class="drawer-user-search-input"
+                    placeholder="Buscar por nombre, usuario o email…"
+                    [value]="userSearchQuery()"
+                    (input)="onSearchInput($any($event.target).value)"
+                    (focus)="userSearchResults().length > 0 && userSearchOpen.set(true)"
+                    autocomplete="off"
+                    aria-label="Buscar usuario"
+                  />
+                  @if (userSearchLoading()) {
+                    <i class="pi pi-spin pi-spinner drawer-user-search-spin" aria-hidden="true"></i>
+                  }
+                </div>
 
-              <div class="drawer-invite-form__row">
-                <input
-                  type="number"
-                  class="drawer-invite-form__input"
-                  placeholder="ID de usuario"
-                  [value]="inviteInput()"
-                  (input)="inviteInput.set($any($event.target).value)"
-                  (keydown.enter)="addInviteId()"
-                  min="1"
-                  aria-label="ID de usuario a invitar"
-                />
-                <button type="button" class="drawer-invite-form__add-btn" (click)="addInviteId()" [disabled]="!inviteInput().trim()">
-                  <i class="pi pi-plus" aria-hidden="true"></i>
-                </button>
+                @if (userSearchOpen() && userSearchResults().length > 0) {
+                  <div class="drawer-user-search-results">
+                    @for (user of userSearchResults(); track user.id) {
+                      <button
+                        type="button"
+                        class="drawer-user-result"
+                        [class.drawer-user-result--selected]="isUserSelected(user.id)"
+                        (click)="selectUser(user)">
+                        <span class="drawer-user-avatar">{{ userInitials(user.name || user.username) }}</span>
+                        <span class="drawer-user-info">
+                          <span class="drawer-user-info__name">{{ user.name || user.username }}</span>
+                          <span class="drawer-user-info__sub">{{ '@' + user.username }}{{ user.email ? ' · ' + user.email : '' }}</span>
+                        </span>
+                        @if (isUserSelected(user.id)) {
+                          <i class="pi pi-check drawer-user-result__check" aria-hidden="true"></i>
+                        }
+                      </button>
+                    }
+                  </div>
+                }
               </div>
 
-              @if (inviteIds().length > 0) {
+              @if (selectedUsers().length > 0) {
                 <div class="drawer-invite-tags">
-                  @for (id of inviteIds(); track id) {
+                  @for (user of selectedUsers(); track user.id) {
                     <span class="drawer-invite-tag">
-                      <i class="pi pi-user" aria-hidden="true"></i>
-                      {{ id }}
-                      <button type="button" class="drawer-invite-tag__remove" (click)="removeInviteId(id)" aria-label="Quitar">
+                      <span class="drawer-user-avatar drawer-user-avatar--xs">{{ userInitials(user.name || user.username) }}</span>
+                      {{ user.name || user.username }}
+                      <button type="button" class="drawer-invite-tag__remove" (click)="removeSelectedUser(user.id)" aria-label="Quitar">
                         <i class="pi pi-times" aria-hidden="true"></i>
                       </button>
                     </span>
@@ -240,7 +276,7 @@
               <button
                 type="button"
                 class="drawer-btn drawer-btn--primary drawer-btn--full"
-                [disabled]="inviteIds().length === 0 || inviting()"
+                [disabled]="selectedUsers().length === 0 || inviting()"
                 (click)="submitInvite()"
               >
                 @if (inviting()) {
@@ -248,7 +284,7 @@
                 } @else {
                   <i class="pi pi-send" aria-hidden="true"></i>
                 }
-                Invitar {{ inviteIds().length > 0 ? '(' + inviteIds().length + ')' : '' }}
+                Invitar {{ selectedUsers().length > 0 ? '(' + selectedUsers().length + ')' : '' }}
               </button>
 
               <button type="button" class="drawer-rename-form__cancel" (click)="openSub('participants')">
@@ -273,17 +309,9 @@
                 <i class="pi pi-share-alt drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Compartir</span>
               </button>
-              <button type="button" class="drawer-pin-toggle" [class.drawer-pin-toggle--pinned]="isChatPinned()" (click)="togglePin()">
-                <div class="drawer-pin-toggle__icon-wrap">
-                  <i class="pi pi-thumbtack drawer-pin-toggle__icon" aria-hidden="true"></i>
-                </div>
-                <div class="drawer-pin-toggle__content">
-                  <span class="drawer-pin-toggle__label">{{ isChatPinned() ? 'Desfijar chat' : 'Fijar chat' }}</span>
-                  <span class="drawer-pin-toggle__hint">{{ isChatPinned() ? 'Este chat está fijado en tu lista' : 'Fijalo para acceso rápido' }}</span>
-                </div>
-                <span class="drawer-pin-toggle__badge" [class.drawer-pin-toggle__badge--on]="isChatPinned()">
-                  {{ isChatPinned() ? 'Fijado' : 'No fijado' }}
-                </span>
+              <button type="button" class="drawer-action-item" [class.drawer-action-item--pinned]="isChatPinned()" (click)="togglePin()">
+                <i class="pi pi-thumbtack drawer-action-item__icon" aria-hidden="true"></i>
+                <span class="drawer-action-item__label">{{ isChatPinned() ? 'Desfijar' : 'Fijar' }}</span>
               </button>
               <button type="button" class="drawer-action-item" (click)="archiveChat()">
                 <i class="pi pi-inbox drawer-action-item__icon" aria-hidden="true"></i>
@@ -517,7 +545,7 @@
                     <i class="pi pi-thumbtack drawer-pinned-card__icon" aria-hidden="true"></i>
                     <div class="drawer-pinned-card__body">
                       <p class="drawer-pinned-card__text">{{ pm.artifact.message?.message ?? pm.artifact.title }}</p>
-                      <span class="drawer-pinned-card__date">{{ pm.pinned_at | date: 'short' }}</span>
+                      <span class="drawer-pinned-card__date">{{ pm.created_at | date: 'short' }}</span>
                     </div>
                   </li>
                 }
@@ -804,6 +832,53 @@
                 </div>
               }
             }
+          }
+          @case ('prompts') {
+            <form class="drawer-prompts-form" (submit)="$event.preventDefault(); submitPrompts()">
+              <div class="drawer-prompts-form__field">
+                <label class="drawer-prompts-form__label" for="system-prompt-input">
+                  System prompt
+                  <span class="drawer-prompts-form__hint">Instrucciones base que recibe el modelo en cada mensaje</span>
+                </label>
+                <textarea
+                  id="system-prompt-input"
+                  class="drawer-prompts-form__textarea"
+                  [value]="promptSystemPrompt()"
+                  (input)="promptSystemPrompt.set($any($event.target).value)"
+                  placeholder="Ej: Sos un asistente especializado en análisis legal…"
+                  rows="6"
+                  autofocus
+                ></textarea>
+              </div>
+              <div class="drawer-prompts-form__field">
+                <label class="drawer-prompts-form__label" for="response-style-input">
+                  Estilo de respuesta
+                  <span class="drawer-prompts-form__hint">Cómo debe formatear y redactar las respuestas</span>
+                </label>
+                <textarea
+                  id="response-style-input"
+                  class="drawer-prompts-form__textarea"
+                  [value]="promptResponseStyle()"
+                  (input)="promptResponseStyle.set($any($event.target).value)"
+                  placeholder="Ej: Respondé siempre con listas numeradas y un resumen al final…"
+                  rows="5"
+                ></textarea>
+              </div>
+              <button
+                type="submit"
+                class="drawer-btn drawer-btn--primary drawer-btn--full"
+                [disabled]="promptSubmitting()">
+                @if (promptSubmitting()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-check" aria-hidden="true"></i>
+                }
+                Guardar
+              </button>
+              <button type="button" class="drawer-rename-form__cancel" (click)="goRoot()">
+                Cancelar
+              </button>
+            </form>
           }
         }
       }

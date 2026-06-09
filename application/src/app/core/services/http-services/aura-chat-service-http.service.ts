@@ -62,6 +62,7 @@ import type {
   SendMessageTextJsonBody,
   SendThreadReplyBody,
   SetFeedbackBody,
+  UpdateThreadReplyBody,
   ShareLinkCreateBody,
   ShareLinkDto,
   ThreadReplyDto,
@@ -336,14 +337,29 @@ export class AuraChatServiceHttp {
     return this.http.delete<void>(`${this.artifactsBase()}${artifactId}/pin/`);
   }
 
-  listArtifactThreadReplies(artifactId: number): Observable<PageNumberResult<ThreadReplyDto>> {
+  listArtifactThreadReplies(
+    artifactId: number,
+    query: PageFollowQuery = {},
+  ): Observable<PageNumberResult<ThreadReplyDto>> {
+    if (query.url) {
+      return this.http.get<PageNumberResult<ThreadReplyDto>>(query.url);
+    }
     return this.http.get<PageNumberResult<ThreadReplyDto>>(
       `${this.artifactsBase()}${artifactId}/thread/`,
+      { params: this.paramsForPaging(query) },
     );
   }
 
   addArtifactThreadReply(artifactId: number, body: SendThreadReplyBody): Observable<ThreadReplyDto> {
     return this.http.post<ThreadReplyDto>(`${this.artifactsBase()}${artifactId}/thread/`, body);
+  }
+
+  updateArtifactThreadReply(artifactId: number, replyId: number, body: UpdateThreadReplyBody): Observable<ThreadReplyDto> {
+    return this.http.patch<ThreadReplyDto>(`${this.artifactsBase()}${artifactId}/thread/${replyId}/`, body);
+  }
+
+  deleteArtifactThreadReply(artifactId: number, replyId: number): Observable<void> {
+    return this.http.delete<void>(`${this.artifactsBase()}${artifactId}/thread/${replyId}/`);
   }
 
   setArtifactFeedback(artifactId: number, body: SetFeedbackBody): Observable<void> {
@@ -367,17 +383,11 @@ export class AuraChatServiceHttp {
   }
 
   exportArtifactMessagePdf(messageId: number): Observable<Blob> {
-    return this.http.get(
-      `${this.base}/messages/${messageId}/export/pdf/`,
-      { responseType: 'blob' },
-    );
+    return this.http.get(`${this.base}/messages/${messageId}/export/pdf/`, { responseType: 'blob' });
   }
 
   exportArtifactMessageMarkdown(messageId: number): Observable<Blob> {
-    return this.http.get(
-      `${this.base}/messages/${messageId}/export/markdown/`,
-      { responseType: 'blob' },
-    );
+    return this.http.get(`${this.base}/messages/${messageId}/export/markdown/`, { responseType: 'blob' });
   }
 
   getArtifact(artifactId: number): Observable<ArtifactDetailDto> {

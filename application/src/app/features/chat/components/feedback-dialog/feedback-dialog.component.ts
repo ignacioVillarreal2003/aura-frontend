@@ -1,8 +1,6 @@
 import { Component, EventEmitter, Output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { Modal } from '../../../../shared/components/modals/modal/modal';
 import type { FeedbackReason } from '../../../../core/types/aura-chat-service.types';
 
 export interface DislikeFeedbackResult {
@@ -10,14 +8,14 @@ export interface DislikeFeedbackResult {
   readonly comment: string | null;
 }
 
-const REASON_OPTIONS: readonly { value: FeedbackReason; label: string }[] = [
-  { value: 'incorrect', label: 'Información incorrecta' },
-  { value: 'incomplete', label: 'Respuesta incompleta' },
-  { value: 'off_topic', label: 'No responde lo que pregunté' },
-  { value: 'tone', label: 'Tono o estilo inadecuado' },
-  { value: 'too_long', label: 'Demasiado larga o verbosa' },
-  { value: 'hallucination', label: 'Inventó datos' },
-  { value: 'other', label: 'Otro' },
+const REASON_OPTIONS: readonly { value: FeedbackReason; label: string; icon: string }[] = [
+  { value: 'incorrect',    label: 'Información incorrecta',        icon: 'pi-exclamation-circle' },
+  { value: 'incomplete',   label: 'Respuesta incompleta',          icon: 'pi-minus-circle'       },
+  { value: 'off_topic',    label: 'No responde lo que pregunté',   icon: 'pi-compass'            },
+  { value: 'tone',         label: 'Tono o estilo inadecuado',      icon: 'pi-volume-off'         },
+  { value: 'too_long',     label: 'Demasiado larga o verbosa',     icon: 'pi-list'               },
+  { value: 'hallucination',label: 'Inventó datos',                 icon: 'pi-eye-slash'          },
+  { value: 'other',        label: 'Otro',                          icon: 'pi-ellipsis-h'         },
 ];
 
 const COMMENT_MAX = 500;
@@ -25,7 +23,7 @@ const COMMENT_MAX = 500;
 @Component({
   selector: 'app-feedback-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, Modal],
+  imports: [FormsModule],
   templateUrl: './feedback-dialog.component.html',
   styleUrl: './feedback-dialog.component.css',
 })

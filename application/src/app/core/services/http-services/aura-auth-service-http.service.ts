@@ -9,6 +9,7 @@ import type {
   AuthRefreshBody,
   AuthTokenPairDto,
   AuthValidateUserDto,
+  UserLookupResponseDto,
 } from '@aura-types/aura-auth-service.types';
 
 @Injectable({ providedIn: 'root' })
@@ -30,5 +31,17 @@ export class AuraAuthServiceHttp {
 
   validate(): Observable<AuthValidateUserDto> {
     return this.http.get<AuthValidateUserDto>(`${this.base}/auth/validate`);
+  }
+
+  lookupUsers(query: string): Observable<UserLookupResponseDto> {
+    return this.http.get<UserLookupResponseDto>(`${this.base}/auth/users/lookup`, {
+      params: { q: query },
+    });
+  }
+
+  getUsersByIds(ids: number[]): Observable<UserLookupResponseDto> {
+    return this.http.get<UserLookupResponseDto>(`${this.base}/auth/users/by-ids`, {
+      params: { ids: ids.join(',') },
+    });
   }
 }

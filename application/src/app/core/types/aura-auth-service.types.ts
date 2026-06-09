@@ -32,3 +32,15 @@ export interface AuthValidateUserDto {
 export interface AuthErrorDetailDto {
   readonly detail: string;
 }
+
+export interface UserLookupDto {
+  readonly id: number;
+  readonly username: string;
+  readonly name: string;
+  readonly email: string;
+}
+
+export interface UserLookupResponseDto {
+  readonly count: number;
+  readonly results: readonly UserLookupDto[];
+}

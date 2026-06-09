@@ -92,6 +92,10 @@ export interface ArtifactSummaryDto {
   readonly status: ArtifactStatus;
   readonly version: number;
   readonly mode: ArtifactMode;
+  readonly fragments: readonly unknown[] | null;
+  readonly is_bookmarked: boolean;
+  readonly user_feedback: FeedbackValue | null;
+  readonly thread_reply_count: number;
   readonly source_chat_id: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
@@ -133,8 +137,8 @@ export interface PinnedArtifactDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly chat_id: number;
-  readonly pinned_by: number;
-  readonly pinned_at: IsoDateTimeString;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
   readonly artifact: ArtifactSummaryDto;
 }
 
@@ -213,10 +217,16 @@ export interface MessageDto {
 
 export interface ThreadReplyDto {
   readonly id: number;
-  readonly parent_message_id: number;
+  readonly parent_artifact_id: number;
   readonly message: string;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
+  readonly updated_by: number | null;
+  readonly updated_at: IsoDateTimeString | null;
+}
+
+export interface UpdateThreadReplyBody {
+  readonly message: string;
 }
 
 export interface MessageFeedbackDto {

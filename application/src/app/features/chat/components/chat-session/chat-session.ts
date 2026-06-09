@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  HostListener,
   NgZone,
   OnDestroy,
   computed,
@@ -19,11 +20,9 @@ import {
   Subscription,
   catchError,
   distinctUntilChanged,
-  expand,
   firstValueFrom,
   forkJoin,
   map,
-  reduce,
   switchMap,
   takeUntil,
   tap,
@@ -67,6 +66,7 @@ import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
 import { TokenMaterializeDirective } from '../../../../shared/directives/token-materialize.directive';
 import { UserState } from '@core/state/user.state';
+import { UserCacheService } from '@core/services/user-cache.service';
 import {
   FeedbackDialogComponent,
   type DislikeFeedbackResult,
@@ -135,6 +135,7 @@ export class ChatSessionComponent implements OnDestroy {
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly userState = inject(UserState);
+  private readonly userCache = inject(UserCacheService);
 
   readonly canUseTools = computed(() => {
     const perms = this.userState.user()?.permissions ?? [];
@@ -179,31 +180,43 @@ export class ChatSessionComponent implements OnDestroy {
   readonly peerTypingIds = signal<Set<number>>(new Set());
   readonly activeThreadMessageId = signal<number | null>(null);
   readonly threadReplies = signal<ThreadReplyDto[]>([]);
+  readonly threadHasMore = signal(false);
+  readonly threadPage = signal(1);
+  readonly threadEditingReplyId = signal<number | null>(null);
+  readonly threadEditText = signal('');
+  readonly updatingReply = signal(false);
+  readonly deletingReplyIds = signal<Set<number>>(new Set());
+  readonly currentUserId = computed(() => this.userState.user()?.id ?? null);
+  readonly threadScrollBodyRef = viewChild<ElementRef<HTMLDivElement>>('threadScrollBody');
+  private _threadObserver: IntersectionObserver | null = null;
   readonly feedbackDialogMessageId = signal<number | null>(null);
+  readonly pendingDeleteMessage = signal<ChatMessage | null>(null);
+  readonly exportingMessageId = signal<number | null>(null);
+  readonly exportDropdownId = signal<number | null>(null);
+
+  readonly hasMoreMessages = signal(false);
+  readonly loadingOlderMessages = signal(false);
+  private _olderMessagesUrl: string | null = null;
+  private _messagesTopObserver: IntersectionObserver | null = null;
+  readonly messagesContainerRef = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.exportDropdownId() !== null) {
+      this.exportDropdownId.set(null);
+    }
+  }
   readonly threadLoading = signal(false);
   readonly threadReplyText = signal('');
   readonly submittingReply = signal(false);
-  readonly exportingMessageId = signal<number | null>(null);
   readonly resolvingLinkedId = signal<number | null>(null);
-  readonly regenerating = signal(false);
-  readonly canRegenerate = computed(() => {
-    const msgs = this.messages();
-    if (msgs.length === 0) return false;
-    const last = msgs[msgs.length - 1];
-    return (
-      last.sender_type === 'assistant' &&
-      !this.isTyping() &&
-      this.streamingAssistantId() === null &&
-      !this.regenerating()
-    );
-  });
-
   readonly aiProgressStep = signal<string | null>(null);
   readonly messageFragments = signal<Map<number, readonly ChatFragment[]>>(new Map());
   readonly expandedFragmentIds = signal<Set<number>>(new Set());
 
   chat: ChatDetailDto | null = null;
   messages = signal<ChatMessage[]>([]);
+  readonly messageUserMap = signal<Map<number, { username: string; name: string }>>(new Map());
   newMessage = '';
   loading = true;
   isTyping = signal(false);
@@ -319,9 +332,14 @@ export class ChatSessionComponent implements OnDestroy {
             this.aiMode.set(pendingAiMode);
           }
 
+          this._olderMessagesUrl = null;
+          this.hasMoreMessages.set(false);
+          this.loadingOlderMessages.set(false);
+          this._messagesTopObserver?.disconnect();
+
           return forkJoin({
             detail: this.http.getChat(id),
-            messages: this.loadAllMessagesChronological(id),
+            messages: this.loadInitialMessages(id),
             pinned: this.http.listPinnedArtifacts(id, { page_size: 100 }),
           }).pipe(
             catchError(() => {
@@ -333,12 +351,16 @@ export class ChatSessionComponent implements OnDestroy {
               this.chat = detail;
               this.chatShell.setCurrentChat(detail);
               this.messages.set(msgs);
+              this._resolveMessageUsers(msgs);
               this._loadFragmentsFromMessages(msgs);
               this.pinnedMessageIds.set(new Set(pinned.results.map((p: PinnedArtifactDto) => p.artifact_id)));
               this.loading = false;
               this.http.markChatAsRead(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
               void this.openWebSocketAfterLoad(id, sessionId, pending);
-              setTimeout(() => this.scrollToBottom(), 100);
+              setTimeout(() => {
+                this.scrollToBottom();
+                this._setupMessagesTopObserver();
+              }, 100);
               queueMicrotask(() => this.autosizeTextarea());
 
               const gen = this.consumePendingGenerationFromHistory();
@@ -357,21 +379,65 @@ export class ChatSessionComponent implements OnDestroy {
       .subscribe();
   }
 
-  private loadAllMessagesChronological(chatId: number): Observable<ChatMessage[]> {
-    return this.http.listChatArtifacts(chatId, { page_size: 100 }).pipe(
-      expand((page: PageNumberResult<ArtifactSummaryDto>) =>
-        page.next ? this.http.listChatArtifacts(chatId, { url: page.next }) : EMPTY
-      ),
-      map((page: PageNumberResult<ArtifactSummaryDto>) =>
-        page.results.map((a) => this._artifactToMessage(a))
-      ),
-      reduce<ChatMessage[], ChatMessage[]>((acc, curr) => [...acc, ...curr], []),
-      map((msgs) =>
-        [...msgs].sort(
-          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        )
-      ),
+  private loadInitialMessages(chatId: number): Observable<ChatMessage[]> {
+    return this.http.listChatArtifacts(chatId, { page_size: 30 }).pipe(
+      map((page: PageNumberResult<ArtifactSummaryDto>) => {
+        this._olderMessagesUrl = page.next ?? null;
+        this.hasMoreMessages.set(page.next != null);
+        return [...page.results]
+          .map((a) => this._artifactToMessage(a))
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      }),
     );
+  }
+
+  loadOlderMessages(): void {
+    if (!this._olderMessagesUrl || this.loadingOlderMessages()) return;
+    const url = this._olderMessagesUrl;
+    this.loadingOlderMessages.set(true);
+
+    const container = this.messagesContainerRef()?.nativeElement;
+    const scrollHeightBefore = container?.scrollHeight ?? 0;
+
+    this.http.listChatArtifacts(0, { url }).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (page) => {
+        this._olderMessagesUrl = page.next ?? null;
+        this.hasMoreMessages.set(page.next != null);
+        const older = [...page.results]
+          .map((a) => this._artifactToMessage(a))
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        this._resolveMessageUsers(older);
+        this._loadFragmentsFromMessages(older);
+        this.messages.update((curr) => [...older, ...curr]);
+        this.loadingOlderMessages.set(false);
+        // Restore scroll position so the viewport stays at the same message
+        if (container) {
+          requestAnimationFrame(() => {
+            container.scrollTop = container.scrollHeight - scrollHeightBefore;
+          });
+        }
+      },
+      error: () => {
+        this.loadingOlderMessages.set(false);
+      },
+    });
+  }
+
+  private _setupMessagesTopObserver(): void {
+    this._messagesTopObserver?.disconnect();
+    const sentinel = document.getElementById('messages-top-sentinel');
+    if (!sentinel) return;
+    this._messagesTopObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && this.hasMoreMessages() && !this.loadingOlderMessages()) {
+          this.loadOlderMessages();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    this._messagesTopObserver.observe(sentinel);
   }
 
   private _artifactToMessage(artifact: ArtifactSummaryDto): ChatMessage {
@@ -383,9 +449,9 @@ export class ChatSessionComponent implements OnDestroy {
         sender_type: artifact.message.sender_type,
         created_by: artifact.created_by,
         created_at: artifact.message.created_at,
-        is_bookmarked: false,
-        user_feedback: null,
-        thread_reply_count: 0,
+        is_bookmarked: artifact.is_bookmarked,
+        user_feedback: artifact.user_feedback,
+        thread_reply_count: artifact.thread_reply_count,
         artifactType: 'MESSAGE',
         messageId: artifact.message.id,
       };
@@ -397,15 +463,16 @@ export class ChatSessionComponent implements OnDestroy {
       sender_type: 'assistant' as MessageSenderType,
       created_by: artifact.created_by,
       created_at: artifact.created_at,
-      is_bookmarked: false,
-      user_feedback: null,
-      thread_reply_count: 0,
+      is_bookmarked: artifact.is_bookmarked,
+      user_feedback: artifact.user_feedback,
+      thread_reply_count: artifact.thread_reply_count,
       artifactType: artifact.type,
       artifactTitle: artifact.title,
       artifactDescription: artifact.description,
       artifactStatus: artifact.status,
       artifactMode: artifact.mode,
       artifactLinkedId: artifact.linked_id ?? null,
+      fragments: artifact.fragments as ChatFragment[] | null,
     };
   }
 
@@ -455,11 +522,12 @@ export class ChatSessionComponent implements OnDestroy {
       resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
       type: ArtifactType,
       toastMsg: string,
+      fragments?: readonly ChatFragment[] | null,
     ) => {
       this.genLoading.set(false);
       this.genMessage.set('');
       this.composerMode.set('chat');
-      this._pushGeneratedArtifact(resource, type);
+      this._pushGeneratedArtifact(resource, type, fragments);
       this.toast.show(toastMsg, 'success');
     };
 
@@ -472,7 +540,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateChecklist({ mode: mode as ChecklistMode, message, chat_id: chatId })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => onSuccess(res.checklist, 'CHECKLIST', 'Checklist generada.'),
+          next: (res) => onSuccess(res.checklist, 'CHECKLIST', 'Checklist generada.', res.fragments as unknown as ChatFragment[]),
           error: () => onError('No se pudo generar la checklist.'),
         });
       return;
@@ -482,7 +550,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateQuiz({ mode: mode as QuizMode, message, chat_id: chatId })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => onSuccess(res.quiz, 'QUIZ', 'Quiz generado.'),
+          next: (res) => onSuccess(res.quiz, 'QUIZ', 'Quiz generado.', res.fragments as unknown as ChatFragment[]),
           error: () => onError('No se pudo generar el quiz.'),
         });
       return;
@@ -492,7 +560,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateTimeline({ mode: mode as TimelineMode, message, chat_id: chatId })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => onSuccess(res.timeline, 'TIMELINE', 'Línea de tiempo generada.'),
+          next: (res) => onSuccess(res.timeline, 'TIMELINE', 'Línea de tiempo generada.', res.fragments as unknown as ChatFragment[]),
           error: () => onError('No se pudo generar la línea de tiempo.'),
         });
       return;
@@ -502,7 +570,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateLessonsLearned({ mode: mode as LessonsLearnedMode, message, chat_id: chatId })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => onSuccess(res.lessons_learned, 'LESSONS_LEARNED', 'Lecciones aprendidas generadas.'),
+          next: (res) => onSuccess(res.lessons_learned, 'LESSONS_LEARNED', 'Lecciones aprendidas generadas.', res.fragments as unknown as ChatFragment[]),
           error: () => onError('No se pudo generar las lecciones aprendidas.'),
         });
       return;
@@ -512,7 +580,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateDecisionBrief({ mode: mode as DecisionBriefMode, message, chat_id: chatId })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => onSuccess(res.decision_brief, 'DECISION_BRIEF', 'Brief de decisión generado.'),
+          next: (res) => onSuccess(res.decision_brief, 'DECISION_BRIEF', 'Brief de decisión generado.', res.fragments as unknown as ChatFragment[]),
           error: () => onError('No se pudo generar el brief de decisión.'),
         });
       return;
@@ -526,7 +594,7 @@ export class ChatSessionComponent implements OnDestroy {
         .subscribe({
           next: (res) => {
             this.sessionDocuments.set([]);
-            onSuccess(res.document_summary as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_SUMMARY', 'Resumen generado.');
+            onSuccess(res.document_summary as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_SUMMARY', 'Resumen generado.', res.fragments as unknown as ChatFragment[]);
           },
           error: () => onError('No se pudo generar el resumen.'),
         });
@@ -547,7 +615,7 @@ export class ChatSessionComponent implements OnDestroy {
         .subscribe({
           next: (res) => {
             this.sessionDocuments.set([]);
-            onSuccess(res.document_action as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_ACTION', 'Acción generada.');
+            onSuccess(res.document_action as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_ACTION', 'Acción generada.', res.fragments as unknown as ChatFragment[]);
           },
           error: () => onError('No se pudo generar la acción.'),
         });
@@ -558,7 +626,7 @@ export class ChatSessionComponent implements OnDestroy {
     this.http.generateReport({ type: this.genReportType(), mode: mode as ReportMode, message, chat_id: chatId })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res) => onSuccess(res.report, 'REPORT', 'Informe generado.'),
+        next: (res) => onSuccess(res.report, 'REPORT', 'Informe generado.', res.fragments as unknown as ChatFragment[]),
         error: () => onError('No se pudo generar el informe.'),
       });
   }
@@ -566,11 +634,13 @@ export class ChatSessionComponent implements OnDestroy {
   private _pushGeneratedArtifact(
     resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
     type: ArtifactType,
+    fragments?: readonly ChatFragment[] | null,
   ): void {
+    const tempId = -Date.now();
     this.messages.update((msgs) => [
       ...msgs,
       {
-        id: -Date.now(),
+        id: tempId,
         chat_id: resource.source_chat_id ?? this.chatId ?? 0,
         message: resource.title,
         sender_type: 'assistant' as MessageSenderType,
@@ -584,8 +654,16 @@ export class ChatSessionComponent implements OnDestroy {
         artifactStatus: 'draft' as ArtifactStatus,
         artifactMode: resource.mode as ArtifactMode,
         artifactLinkedId: resource.id,
+        fragments: fragments ?? null,
       },
     ]);
+    if (fragments?.length) {
+      this.messageFragments.update((m) => {
+        const n = new Map(m);
+        n.set(tempId, fragments);
+        return n;
+      });
+    }
     setTimeout(() => this.scrollToBottom(), 50);
   }
 
@@ -769,10 +847,15 @@ export class ChatSessionComponent implements OnDestroy {
     }
   }
 
-  onChatMetaUpdated(e: { chatId: number; name: string }): void {
+  onChatMetaUpdated(e: { chatId: number; name?: string; system_prompt?: string | null; response_style?: string | null }): void {
     if (this.chat && this.chat.id === e.chatId) {
-      this.chat = { ...this.chat, name: e.name };
-      this.chatShell.updateActiveChatName(e.name);
+      this.chat = {
+        ...this.chat,
+        ...(e.name != null ? { name: e.name } : {}),
+        ...('system_prompt' in e ? { system_prompt: e.system_prompt ?? null } : {}),
+        ...('response_style' in e ? { response_style: e.response_style ?? null } : {}),
+      };
+      if (e.name != null) this.chatShell.updateActiveChatName(e.name);
     }
   }
 
@@ -847,11 +930,12 @@ export class ChatSessionComponent implements OnDestroy {
       resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
       type: ArtifactType,
       toastMsg: string,
+      fragments?: readonly ChatFragment[] | null,
     ) => {
       done();
       this.genMessage.set('');
       this.composerMode.set('chat');
-      this._pushGeneratedArtifact(resource, type);
+      this._pushGeneratedArtifact(resource, type, fragments);
       this.toast.show(toastMsg, 'success');
     };
 
@@ -862,7 +946,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateReport(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => voiceSuccess(res.report, 'REPORT', 'Informe generado.'),
+          next: (res) => voiceSuccess(res.report, 'REPORT', 'Informe generado.', res.fragments as unknown as ChatFragment[]),
           error: () => { done(); this.toast.show('No se pudo generar el informe.', 'error'); },
         });
       return;
@@ -874,7 +958,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateChecklist(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => voiceSuccess(res.checklist, 'CHECKLIST', 'Checklist generada.'),
+          next: (res) => voiceSuccess(res.checklist, 'CHECKLIST', 'Checklist generada.', res.fragments as unknown as ChatFragment[]),
           error: () => { done(); this.toast.show('No se pudo generar la checklist.', 'error'); },
         });
       return;
@@ -886,7 +970,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateQuiz(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => voiceSuccess(res.quiz, 'QUIZ', 'Quiz generado.'),
+          next: (res) => voiceSuccess(res.quiz, 'QUIZ', 'Quiz generado.', res.fragments as unknown as ChatFragment[]),
           error: () => { done(); this.toast.show('No se pudo generar el quiz.', 'error'); },
         });
       return;
@@ -898,7 +982,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateTimeline(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => voiceSuccess(res.timeline, 'TIMELINE', 'Línea de tiempo generada.'),
+          next: (res) => voiceSuccess(res.timeline, 'TIMELINE', 'Línea de tiempo generada.', res.fragments as unknown as ChatFragment[]),
           error: () => { done(); this.toast.show('No se pudo generar la línea de tiempo.', 'error'); },
         });
       return;
@@ -910,7 +994,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateLessonsLearned(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => voiceSuccess(res.lessons_learned, 'LESSONS_LEARNED', 'Lecciones aprendidas generadas.'),
+          next: (res) => voiceSuccess(res.lessons_learned, 'LESSONS_LEARNED', 'Lecciones aprendidas generadas.', res.fragments as unknown as ChatFragment[]),
           error: () => { done(); this.toast.show('No se pudo generar las lecciones aprendidas.', 'error'); },
         });
       return;
@@ -922,7 +1006,7 @@ export class ChatSessionComponent implements OnDestroy {
       this.http.generateDecisionBrief(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (res) => voiceSuccess(res.decision_brief, 'DECISION_BRIEF', 'Brief de decisión generado.'),
+          next: (res) => voiceSuccess(res.decision_brief, 'DECISION_BRIEF', 'Brief de decisión generado.', res.fragments as unknown as ChatFragment[]),
           error: () => { done(); this.toast.show('No se pudo generar el brief de decisión.', 'error'); },
         });
       return;
@@ -961,6 +1045,7 @@ export class ChatSessionComponent implements OnDestroy {
     this.teardownSocket();
     this.clearDeltaScheduling();
     this.chatShell.clearCurrentChat();
+    this._messagesTopObserver?.disconnect();
   }
 
   private clearTypingTimers(): void {
@@ -976,42 +1061,6 @@ export class ChatSessionComponent implements OnDestroy {
   sendBlocked(): boolean {
     return this.isTyping() || this.streamingAssistantId() !== null
       || this.sessionDocuments().some(d => d.status === 'uploaded');
-  }
-
-  regenerateResponse(): void {
-    if (!this.chatId || !this.canRegenerate() || this.regenerating()) return;
-
-    // Streaming path (preferred): same pipeline as a normal send, so the reply
-    // is regenerated under identical conditions (prompt, mode, context) and the
-    // user sees the same progress states. Remove the old answer immediately.
-    if (this.socket) {
-      this.removeLastAiMessage();
-      this.regenerating.set(true);
-      this.isTyping.set(true);
-      this.socket.sendRegenerate(this.aiMode());
-      return;
-    }
-
-    this.toast.show('Reconectá el chat para regenerar la respuesta.', 'error');
-  }
-
-  private removeLastAiMessage(): void {
-    let removedId: number | null = null;
-    this.messages.update((msgs) => {
-      const lastSystemIdx = [...msgs].reverse().findIndex((m) => m.sender_type === 'assistant');
-      if (lastSystemIdx === -1) return msgs;
-      const realIdx = msgs.length - 1 - lastSystemIdx;
-      removedId = msgs[realIdx].id;
-      return msgs.filter((_, i) => i !== realIdx);
-    });
-    if (removedId != null) {
-      this.messageFragments.update((m) => {
-        if (!m.has(removedId!)) return m;
-        const n = new Map(m);
-        n.delete(removedId!);
-        return n;
-      });
-    }
   }
 
   sendMessage(): void {
@@ -1136,7 +1185,17 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   deleteMessage(message: ChatMessage): void {
-    if (!window.confirm('¿Eliminar este artefacto?')) return;
+    this.pendingDeleteMessage.set(message);
+  }
+
+  cancelDelete(): void {
+    this.pendingDeleteMessage.set(null);
+  }
+
+  confirmDelete(): void {
+    const message = this.pendingDeleteMessage();
+    if (!message) return;
+    this.pendingDeleteMessage.set(null);
     this.setProcessing(message.id, true);
     this.http.deleteArtifact(message.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -1150,6 +1209,75 @@ export class ChatSessionComponent implements OnDestroy {
           this.setProcessing(message.id, false);
         },
       });
+  }
+
+  canExport(message: ChatMessage): boolean {
+    if (message.artifactType === 'MESSAGE') {
+      return message.sender_type === 'assistant';
+    }
+    return true;
+  }
+
+  exportArtifact(message: ChatMessage, format: 'pdf' | 'markdown'): void {
+    if (this.exportingMessageId() !== null) return;
+    this.exportDropdownId.set(null);
+    this.exportingMessageId.set(message.id);
+    const lid = message.artifactLinkedId;
+    let obs$: Observable<Blob> | null = null;
+    switch (message.artifactType) {
+      case 'MESSAGE': {
+        const msgId = message.messageId ?? message.id;
+        obs$ = format === 'pdf'
+          ? this.http.exportArtifactMessagePdf(msgId)
+          : this.http.exportArtifactMessageMarkdown(msgId);
+        break;
+      }
+      case 'REPORT':
+        if (lid) obs$ = format === 'pdf' ? this.http.exportReportPdf(lid) : this.http.exportReportMarkdown(lid);
+        break;
+      case 'CHECKLIST':
+        if (lid) obs$ = format === 'pdf' ? this.http.exportChecklistPdf(lid) : this.http.exportChecklistMarkdown(lid);
+        break;
+      case 'QUIZ':
+        if (lid) obs$ = format === 'pdf' ? this.http.exportQuizPdf(lid) : this.http.exportQuizMarkdown(lid);
+        break;
+      case 'TIMELINE':
+        if (lid) obs$ = format === 'pdf' ? this.http.exportTimelinePdf(lid) : this.http.exportTimelineMarkdown(lid);
+        break;
+      case 'LESSONS_LEARNED':
+        if (lid) obs$ = format === 'pdf' ? this.http.exportLessonsLearnedPdf(lid) : this.http.exportLessonsLearnedMarkdown(lid);
+        break;
+      case 'DECISION_BRIEF':
+        if (lid) obs$ = format === 'pdf' ? this.http.exportDecisionBriefPdf(lid) : this.http.exportDecisionBriefMarkdown(lid);
+        break;
+      case 'DOCUMENT_SUMMARY':
+        if (lid) obs$ = format === 'pdf' ? this.http.exportDocumentSummaryPdf(lid) : this.http.exportDocumentSummaryMarkdown(lid);
+        break;
+      case 'DOCUMENT_ACTION':
+        if (lid) obs$ = format === 'pdf' ? this.http.exportDocumentActionPdf(lid) : this.http.exportDocumentActionMarkdown(lid);
+        break;
+    }
+    if (!obs$) {
+      this.exportingMessageId.set(null);
+      this.toast.show('No se puede exportar este artefacto.', 'error');
+      return;
+    }
+    const ext = format === 'pdf' ? 'pdf' : 'md';
+    const slug = (message.artifactTitle || message.message || 'export').slice(0, 50).replace(/\s+/g, '-');
+    obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${slug}.${ext}`;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+        this.exportingMessageId.set(null);
+      },
+      error: () => {
+        this.toast.show('No se pudo exportar.', 'error');
+        this.exportingMessageId.set(null);
+      },
+    });
   }
 
   toggleBookmark(message: ChatMessage): void {
@@ -1198,30 +1326,181 @@ export class ChatSessionComponent implements OnDestroy {
 
   toggleThread(message: ChatMessage): void {
     if (this.activeThreadMessageId() === message.id) {
-      this.activeThreadMessageId.set(null);
-      this.threadReplies.set([]);
-      this.threadReplyText.set('');
-      return;
+      this.closeThreadModal();
+    } else {
+      this.openThreadModal(message);
     }
+  }
+
+  openThreadModal(message: ChatMessage): void {
+    this._disconnectThreadObserver();
     this.activeThreadMessageId.set(message.id);
     this.threadReplies.set([]);
     this.threadReplyText.set('');
-    this.loadThreadReplies(message.id);
+    this.threadPage.set(1);
+    this.threadHasMore.set(false);
+    this.threadEditingReplyId.set(null);
+    this.threadEditText.set('');
+    this.loadThreadReplies(message.id, 1);
   }
 
-  private loadThreadReplies(messageId: number): void {
+  closeThreadModal(): void {
+    this._disconnectThreadObserver();
+    this.activeThreadMessageId.set(null);
+    this.threadReplies.set([]);
+    this.threadReplyText.set('');
+    this.threadEditingReplyId.set(null);
+    this.threadEditText.set('');
+  }
+
+  private _connectThreadObserver(): void {
+    this._disconnectThreadObserver();
+    const artifactId = this.activeThreadMessageId();
+    if (artifactId == null) return;
+    const body = this.threadScrollBodyRef()?.nativeElement;
+    if (!body) return;
+    const sentinel = body.querySelector('.thread-top-sentinel') as HTMLElement | null;
+    if (!sentinel) return;
+    // Use a short delay before connecting so the browser has time to apply the
+    // scrollTop change and repaint. Without this, the observer may see the sentinel
+    // as "intersecting" at the old (top) scroll position and immediately fire.
+    requestAnimationFrame(() => {
+      this._disconnectThreadObserver();
+      const currentArtifactId = this.activeThreadMessageId();
+      if (currentArtifactId == null) return;
+      const currentBody = this.threadScrollBodyRef()?.nativeElement;
+      if (!currentBody) return;
+      const currentSentinel = currentBody.querySelector('.thread-top-sentinel') as HTMLElement | null;
+      if (!currentSentinel) return;
+      this._threadObserver = new IntersectionObserver(
+        (entries) => {
+          if (entries[0]?.isIntersecting && this.threadHasMore() && !this.threadLoading()) {
+            this._loadMoreOlderReplies(currentArtifactId);
+          }
+        },
+        { root: currentBody, threshold: 0 },
+      );
+      this._threadObserver.observe(currentSentinel);
+    });
+  }
+
+  private _disconnectThreadObserver(): void {
+    this._threadObserver?.disconnect();
+    this._threadObserver = null;
+  }
+
+  private _loadMoreOlderReplies(artifactId: number): void {
+    const nextPage = this.threadPage() + 1;
+    this.threadPage.set(nextPage);
+    const body = this.threadScrollBodyRef()?.nativeElement;
+    const savedScrollHeight = body?.scrollHeight ?? 0;
+    this._disconnectThreadObserver();
     this.threadLoading.set(true);
     this.http
-      .listArtifactThreadReplies(messageId)
+      .listArtifactThreadReplies(artifactId, { page: nextPage, page_size: 20 })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (page) => {
-          this.threadReplies.set([...page.results]);
+        next: (result) => {
+          const older = [...result.results].reverse();
+          this.threadReplies.update((r) => [...older, ...r]);
+          this.threadHasMore.set(result.next != null);
           this.threadLoading.set(false);
+          setTimeout(() => {
+            if (body) body.scrollTop = body.scrollHeight - savedScrollHeight;
+            this._connectThreadObserver();
+          }, 50);
+        },
+        error: () => {
+          this.toast.show('No se pudieron cargar las respuestas anteriores.', 'error');
+          this.threadLoading.set(false);
+          this._connectThreadObserver();
+        },
+      });
+  }
+
+  private loadThreadReplies(messageId: number, page = 1): void {
+    this.threadLoading.set(true);
+    this.http
+      .listArtifactThreadReplies(messageId, { page, page_size: 20 })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.threadReplies.set([...result.results].reverse());
+          this.threadHasMore.set(result.next != null);
+          this.threadLoading.set(false);
+          // Wait for Angular CD to render replies, then scroll to bottom before
+          // connecting the observer (avoids immediate spurious trigger at top).
+          setTimeout(() => {
+            const body = this.threadScrollBodyRef()?.nativeElement;
+            if (body) body.scrollTop = body.scrollHeight;
+            this._connectThreadObserver();
+          }, 50);
         },
         error: () => {
           this.toast.show('No se pudieron cargar las respuestas del hilo.', 'error');
           this.threadLoading.set(false);
+        },
+      });
+  }
+
+  threadReplyAvatarColor(userId: number): string {
+    const palette = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'];
+    return palette[userId % palette.length];
+  }
+
+  startEditReply(reply: ThreadReplyDto): void {
+    this.threadEditingReplyId.set(reply.id);
+    this.threadEditText.set(reply.message);
+  }
+
+  cancelEditReply(): void {
+    this.threadEditingReplyId.set(null);
+    this.threadEditText.set('');
+  }
+
+  submitEditReply(artifactId: number, replyId: number): void {
+    const text = this.threadEditText().trim();
+    if (!text || this.updatingReply()) return;
+    this.updatingReply.set(true);
+    this.http
+      .updateArtifactThreadReply(artifactId, replyId, { message: text })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.threadReplies.update((rs) => rs.map((r) => (r.id === replyId ? updated : r)));
+          this.threadEditingReplyId.set(null);
+          this.threadEditText.set('');
+          this.updatingReply.set(false);
+        },
+        error: () => {
+          this.toast.show('No se pudo actualizar la respuesta.', 'error');
+          this.updatingReply.set(false);
+        },
+      });
+  }
+
+  deleteThreadReply(artifactId: number, replyId: number): void {
+    if (this.deletingReplyIds().has(replyId)) return;
+    this.deletingReplyIds.update((s) => new Set([...s, replyId]));
+    this.http
+      .deleteArtifactThreadReply(artifactId, replyId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.threadReplies.update((rs) => rs.filter((r) => r.id !== replyId));
+          const id = this.activeThreadMessageId();
+          if (id != null) {
+            this.messages.update((msgs) =>
+              msgs.map((m) =>
+                m.id === id ? { ...m, thread_reply_count: Math.max(0, m.thread_reply_count - 1) } : m
+              )
+            );
+          }
+          this.deletingReplyIds.update((s) => { const n = new Set(s); n.delete(replyId); return n; });
+        },
+        error: () => {
+          this.toast.show('No se pudo eliminar la respuesta.', 'error');
+          this.deletingReplyIds.update((s) => { const n = new Set(s); n.delete(replyId); return n; });
         },
       });
   }
@@ -1243,6 +1522,10 @@ export class ChatSessionComponent implements OnDestroy {
           );
           this.threadReplyText.set('');
           this.submittingReply.set(false);
+          setTimeout(() => {
+            const body = this.threadScrollBodyRef()?.nativeElement;
+            if (body) body.scrollTop = body.scrollHeight;
+          }, 50);
         },
         error: () => {
           this.toast.show('No se pudo enviar la respuesta.', 'error');
@@ -1339,31 +1622,6 @@ export class ChatSessionComponent implements OnDestroy {
       });
   }
 
-  exportMessageAsPdf(message: ChatMessage): void {
-    const exportId = message.messageId ?? message.id;
-    if (this.exportingMessageId() !== null) return;
-    this.exportingMessageId.set(message.id);
-    this.http
-      .exportArtifactMessagePdf(exportId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (blob) => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `mensaje-${exportId}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          this.exportingMessageId.set(null);
-        },
-        error: () => {
-          this.toast.show('No se pudo exportar el mensaje.', 'error');
-          this.exportingMessageId.set(null);
-        },
-      });
-  }
 
   userBubbleInitials(message: ChatMessage): string {
     const sessionName = this.chatShell.sessionViewerDisplayName();
@@ -1373,6 +1631,10 @@ export class ChatSessionComponent implements OnDestroy {
     }
     if (sessionName && this.chat && message.created_by != null && message.created_by === this.chat.created_by) {
       return this.initialsFromDisplayName(sessionName);
+    }
+    if (message.created_by != null) {
+      const u = this.messageUserMap().get(message.created_by);
+      if (u) return this.initialsFromDisplayName(u.name?.trim() || u.username);
     }
     return this.initialsFromUserId(message.created_by);
   }
@@ -1385,6 +1647,13 @@ export class ChatSessionComponent implements OnDestroy {
     }
     if (sessionName && this.chat && message.created_by != null && message.created_by === this.chat.created_by) {
       return `${sessionName} · creador del chat`;
+    }
+    if (message.created_by != null) {
+      const u = this.messageUserMap().get(message.created_by);
+      if (u) {
+        const display = u.name?.trim() ? u.name.trim() : `@${u.username}`;
+        return display;
+      }
     }
     return message.created_by != null ? `Participante · id ${message.created_by}` : 'Usuario';
   }
@@ -1554,6 +1823,20 @@ export class ChatSessionComponent implements OnDestroy {
     });
   }
 
+  private _resolveMessageUsers(msgs: readonly ChatMessage[]): void {
+    const ids = [...new Set(msgs.map((m) => m.created_by).filter((id): id is number => id != null))];
+    if (ids.length === 0) return;
+    this.userCache.resolve(ids).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (userMap) => {
+        this.messageUserMap.update((prev) => {
+          const next = new Map(prev);
+          userMap.forEach((u, id) => next.set(id, { username: u.username, name: u.name }));
+          return next;
+        });
+      },
+    });
+  }
+
   private _loadFragmentsFromMessages(msgs: readonly ChatMessage[]): void {
     const entries = msgs
       .filter((m) => m.fragments?.length)
@@ -1680,6 +1963,7 @@ export class ChatSessionComponent implements OnDestroy {
           artifactType: 'MESSAGE',
         };
         this.messages.update((list) => (list.some((m) => m.id === row.id) ? list : [...list, row]));
+        if (row.created_by != null) this._resolveMessageUsers([row]);
         setTimeout(() => this.scrollToBottom(), 50);
         break;
       }
@@ -1745,7 +2029,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
-        this.regenerating.set(false);
+
         if (msg.fragments?.length) {
           const fragId = msg.id ?? sid ?? Date.now();
           this.messageFragments.update((m) => {
@@ -1763,7 +2047,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
-        this.regenerating.set(false);
+
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
         break;
@@ -1772,7 +2056,7 @@ export class ChatSessionComponent implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
-        this.regenerating.set(false);
+
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
         break;
@@ -1897,9 +2181,7 @@ export class ChatSessionComponent implements OnDestroy {
   }
 
   private scrollToBottom(): void {
-    const messagesContainer = document.querySelector('.messages-container');
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
+    const el = this.messagesContainerRef()?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }
 }
