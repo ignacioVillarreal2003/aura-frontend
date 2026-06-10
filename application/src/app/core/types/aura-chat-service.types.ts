@@ -136,7 +136,6 @@ export interface ArtifactVersionDto {
 export interface PinnedArtifactDto {
   readonly id: number;
   readonly artifact_id: number;
-  readonly chat_id: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
   readonly artifact: ArtifactSummaryDto;
@@ -171,11 +170,9 @@ export interface ChatDetailDto {
   readonly system_prompt: string | null;
   readonly response_style: string | null;
   readonly tags: readonly string[];
-  readonly is_ephemeral: boolean;
   readonly is_locked: boolean;
   readonly is_pinned: boolean;
   readonly archived_at: IsoDateTimeString | null;
-  readonly is_muted: boolean;
   readonly last_message_at: IsoDateTimeString | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
@@ -187,7 +184,6 @@ export interface ChatListItemDto {
   readonly id: number;
   readonly name: string;
   readonly tags: readonly string[];
-  readonly is_ephemeral: boolean;
   readonly is_locked: boolean;
   readonly last_message_at: IsoDateTimeString | null;
   readonly created_by: number;
@@ -196,7 +192,6 @@ export interface ChatListItemDto {
   readonly unread_count: number;
   readonly is_pinned: boolean;
   readonly archived_at: IsoDateTimeString | null;
-  readonly is_muted: boolean;
 }
 
 export interface MessageDto {
@@ -231,8 +226,8 @@ export interface UpdateThreadReplyBody {
 
 export interface MessageFeedbackDto {
   readonly id: number;
-  readonly message_id: number;
-  readonly user_id: number;
+  readonly artifact_id: number;
+  readonly created_by: number;
   readonly value: FeedbackValue;
   readonly reason: FeedbackReason | null;
   readonly comment: string | null;
@@ -330,7 +325,6 @@ export interface CreateChatBody {
   readonly system_prompt?: string | null;
   readonly response_style?: string | null;
   readonly tags?: readonly string[];
-  readonly is_ephemeral?: boolean;
 }
 
 export interface UpdateChatBody {
@@ -338,11 +332,6 @@ export interface UpdateChatBody {
   readonly system_prompt?: string | null;
   readonly response_style?: string | null;
   readonly tags?: readonly string[];
-  readonly is_ephemeral?: boolean;
-}
-
-export interface MuteChatBody {
-  readonly muted_until: IsoDateTimeString;
 }
 
 export interface BulkChatIdsBody {
@@ -508,16 +497,16 @@ export type ReportMode = 'direct' | 'rag';
 
 export interface ReportDto {
   readonly id: number;
+  readonly artifact_id: number;
   readonly type: ReportType;
   readonly title: string;
+  readonly description: string;
+  readonly query: string;
   readonly content: string;
   readonly mode: ReportMode;
-  readonly metadata: Record<string, unknown>;
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
 }
 
 export interface ReportListItemDto {
@@ -553,11 +542,6 @@ export interface ReportGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
-export interface UpdateReportBody {
-  readonly title?: string;
-  readonly content?: string;
-}
-
 // ── Checklists ─────────────────────────────────────────────────────────────────
 
 export type ChecklistMode = 'direct' | 'rag';
@@ -579,14 +563,15 @@ export interface ChecklistSectionDto {
 
 export interface ChecklistDto {
   readonly id: number;
+  readonly artifact_id: number;
   readonly title: string;
+  readonly description: string;
+  readonly query: string;
   readonly sections: readonly ChecklistSectionDto[];
   readonly mode: ChecklistMode;
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
 }
 
 export interface ChecklistListItemDto {
@@ -612,28 +597,10 @@ export interface ChecklistGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
-export interface UpdateChecklistItemBody {
-  readonly text: string;
-  readonly is_checked: boolean;
-  readonly notes: string;
-  readonly position: number;
-}
-
-export interface UpdateChecklistSectionBody {
-  readonly title: string;
-  readonly position: number;
-  readonly items: readonly UpdateChecklistItemBody[];
-}
-
-export interface UpdateChecklistBody {
-  readonly title?: string;
-  readonly sections?: readonly UpdateChecklistSectionBody[];
-}
-
 // ── Quiz ───────────────────────────────────────────────────────────────────────
 
 export type QuizMode = 'direct' | 'rag';
-export type QuizQuestionKind = 'single' | 'multiple' | 'boolean' | 'open';
+export type QuizQuestionKind = 'single' | 'multiple' | 'boolean';
 
 export interface QuizOptionDto {
   readonly id: number;
@@ -654,6 +621,8 @@ export interface QuizDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
+  readonly description: string;
+  readonly query: string;
   readonly instructions: string;
   readonly pass_score: number | null;
   readonly mode: QuizMode;
@@ -661,8 +630,6 @@ export interface QuizDto {
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
 }
 
 export interface QuizListItemDto {
@@ -689,27 +656,6 @@ export interface QuizGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
-export interface UpdateQuizOptionBody {
-  readonly text: string;
-  readonly is_correct: boolean;
-  readonly position: number;
-}
-
-export interface UpdateQuizQuestionBody {
-  readonly text: string;
-  readonly kind: QuizQuestionKind;
-  readonly explanation?: string;
-  readonly position: number;
-  readonly options?: readonly UpdateQuizOptionBody[];
-}
-
-export interface UpdateQuizBody {
-  readonly title?: string;
-  readonly instructions?: string;
-  readonly pass_score?: number | null;
-  readonly questions?: readonly UpdateQuizQuestionBody[];
-}
-
 // ── Timeline ───────────────────────────────────────────────────────────────────
 
 export type TimelineMode = 'direct' | 'rag';
@@ -718,7 +664,6 @@ export interface TimelineEventDto {
   readonly id: number;
   readonly title: string;
   readonly description: string;
-  readonly occurred_at: IsoDateTimeString | null;
   readonly occurred_label: string;
   readonly position: number;
 }
@@ -727,14 +672,13 @@ export interface TimelineDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
+  readonly query: string;
   readonly summary: string;
   readonly mode: TimelineMode;
   readonly events: readonly TimelineEventDto[];
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
 }
 
 export interface TimelineListItemDto {
@@ -760,20 +704,6 @@ export interface TimelineGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
-export interface UpdateTimelineEventBody {
-  readonly title: string;
-  readonly description?: string;
-  readonly occurred_at?: IsoDateTimeString | null;
-  readonly occurred_label?: string;
-  readonly position: number;
-}
-
-export interface UpdateTimelineBody {
-  readonly title?: string;
-  readonly summary?: string;
-  readonly events?: readonly UpdateTimelineEventBody[];
-}
-
 // ── LessonsLearned ─────────────────────────────────────────────────────────────
 
 export type LessonsLearnedMode = 'direct' | 'rag';
@@ -792,14 +722,13 @@ export interface LessonsLearnedDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
+  readonly query: string;
   readonly context: string;
   readonly mode: LessonsLearnedMode;
   readonly items: readonly LessonsLearnedItemDto[];
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
 }
 
 export interface LessonsLearnedListItemDto {
@@ -825,20 +754,6 @@ export interface LessonsLearnedGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
-export interface UpdateLessonsLearnedItemBody {
-  readonly category: LessonsLearnedCategory;
-  readonly observation: string;
-  readonly discussion?: string;
-  readonly recommendation?: string;
-  readonly position: number;
-}
-
-export interface UpdateLessonsLearnedBody {
-  readonly title?: string;
-  readonly context?: string;
-  readonly items?: readonly UpdateLessonsLearnedItemBody[];
-}
-
 // ── DecisionBrief ──────────────────────────────────────────────────────────────
 
 export type DecisionBriefMode = 'direct' | 'rag';
@@ -846,7 +761,6 @@ export type DecisionBriefMode = 'direct' | 'rag';
 export interface DecisionBriefOptionDto {
   readonly id: number;
   readonly title: string;
-  readonly description: string;
   readonly pros: string;
   readonly cons: string;
   readonly is_recommended: boolean;
@@ -857,6 +771,7 @@ export interface DecisionBriefDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
+  readonly query: string;
   readonly problem: string;
   readonly context: string;
   readonly risks: string;
@@ -866,8 +781,6 @@ export interface DecisionBriefDto {
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
 }
 
 export interface DecisionBriefListItemDto {
@@ -893,24 +806,6 @@ export interface DecisionBriefGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
-export interface UpdateDecisionBriefOptionBody {
-  readonly title: string;
-  readonly description?: string;
-  readonly pros?: string;
-  readonly cons?: string;
-  readonly is_recommended: boolean;
-  readonly position: number;
-}
-
-export interface UpdateDecisionBriefBody {
-  readonly title?: string;
-  readonly problem?: string;
-  readonly context?: string;
-  readonly risks?: string;
-  readonly recommendation?: string;
-  readonly options?: readonly UpdateDecisionBriefOptionBody[];
-}
-
 // ── DocumentSummary ────────────────────────────────────────────────────────────
 
 export interface DocumentSummaryDto {
@@ -922,8 +817,6 @@ export interface DocumentSummaryDto {
   readonly source_chat_id: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
 }
 
 export interface DocumentSummaryListItemDto {
@@ -944,11 +837,6 @@ export interface GenerateDocumentSummaryBody {
 export interface DocumentSummaryGenerateResponseDto {
   readonly document_summary: DocumentSummaryDto;
   readonly fragments: readonly GenerateFragmentDto[];
-}
-
-export interface UpdateDocumentSummaryBody {
-  readonly title?: string;
-  readonly summary?: string;
 }
 
 // ── DocumentAction ─────────────────────────────────────────────────────────────
@@ -973,8 +861,6 @@ export interface DocumentActionDto {
   readonly source_chat_id: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
 }
 
 export interface DocumentActionListItemDto {
@@ -999,12 +885,6 @@ export interface GenerateDocumentActionBody {
 export interface DocumentActionGenerateResponseDto {
   readonly document_action: DocumentActionDto;
   readonly fragments: readonly GenerateFragmentDto[];
-}
-
-export interface UpdateDocumentActionBody {
-  readonly title?: string;
-  readonly result?: string;
-  readonly instruction?: string;
 }
 
 // ── Assistants ─────────────────────────────────────────────────────────────────

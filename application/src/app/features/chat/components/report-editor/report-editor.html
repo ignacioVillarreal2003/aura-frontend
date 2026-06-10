@@ -16,41 +16,10 @@
         </button>
         <div class="re-vdivider" aria-hidden="true"></div>
         <span class="re-type-badge re-type-badge--{{ r.type.toLowerCase() }}">{{ r.type }}</span>
-        <input
-          class="re-title"
-          type="text"
-          [value]="editTitle()"
-          (input)="editTitle.set($any($event.target).value)"
-          placeholder="Título del informe"
-          maxlength="255"
-          aria-label="Título del informe"
-        />
+        <span class="re-title">{{ r.title }}</span>
       </div>
 
       <div class="re-bar__right">
-        <div class="re-toggle" role="group" aria-label="Modo de visualización">
-          <button
-            type="button"
-            class="re-toggle__btn"
-            [class.active]="viewMode() === 'preview'"
-            (click)="viewMode.set('preview')"
-          >
-            <i class="pi pi-eye" aria-hidden="true"></i>
-            Vista previa
-          </button>
-          <button
-            type="button"
-            class="re-toggle__btn"
-            [class.active]="viewMode() === 'edit'"
-            (click)="viewMode.set('edit')"
-          >
-            <i class="pi pi-pencil" aria-hidden="true"></i>
-            Editar
-          </button>
-        </div>
-
-        <div class="re-vdivider" aria-hidden="true"></div>
-
         <button
           type="button"
           class="re-icon-btn"
@@ -71,19 +40,6 @@
           <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
           <span>.md</span>
         </button>
-
-        <div class="re-vdivider" aria-hidden="true"></div>
-
-        <button
-          type="button"
-          class="re-save-btn"
-          [class.re-save-btn--active]="hasChanges()"
-          [disabled]="saving() || !hasChanges()"
-          (click)="save()"
-        >
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-check']" aria-hidden="true"></i>
-          <span>{{ saving() ? 'Guardando…' : 'Guardar' }}</span>
-        </button>
       </div>
     </header>
 
@@ -98,40 +54,22 @@
         <i class="pi pi-bolt" aria-hidden="true"></i>
         {{ r.mode === 'rag' ? 'Con documentos' : 'Directo' }}
       </span>
-      @if (hasChanges()) {
-        <span class="re-meta__sep" aria-hidden="true">·</span>
-        <span class="re-meta__item re-meta__item--unsaved">
-          <i class="pi pi-circle-fill" style="font-size:6px" aria-hidden="true"></i>
-          Sin guardar
-        </span>
-      }
     </div>
 
     <!-- Main content -->
     <main class="re-body">
-      @if (viewMode() === 'edit') {
-        <textarea
-          class="re-textarea"
-          [value]="editContent()"
-          (input)="editContent.set($any($event.target).value)"
-          placeholder="Escribe el contenido en Markdown…"
-          spellcheck="false"
-          aria-label="Contenido del informe"
-        ></textarea>
-      } @else {
-        <div class="re-preview-wrap">
-          @if (editContent().trim()) {
-            <article class="re-doc">
-              <div class="re-doc__body" [innerHTML]="editContent() | markdown"></div>
-            </article>
-          } @else {
-            <div class="re-empty">
-              <i class="pi pi-file-edit" aria-hidden="true"></i>
-              <p>Sin contenido. Cambiá a modo edición para escribir.</p>
-            </div>
-          }
-        </div>
-      }
+      <div class="re-preview-wrap">
+        @if (r.content.trim()) {
+          <article class="re-doc">
+            <div class="re-doc__body" [innerHTML]="r.content | markdown"></div>
+          </article>
+        } @else {
+          <div class="re-empty">
+            <i class="pi pi-file-edit" aria-hidden="true"></i>
+            <p>Sin contenido.</p>
+          </div>
+        }
+      </div>
     </main>
 
   }

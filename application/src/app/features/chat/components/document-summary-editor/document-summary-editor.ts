@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs';
@@ -22,17 +22,7 @@ export class DocumentSummaryEditorComponent implements OnInit {
 
   readonly summary = signal<DocumentSummaryDto | null>(null);
   readonly loading = signal(true);
-  readonly saving = signal(false);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
-  readonly editTitle = signal('');
-  readonly editSummary = signal('');
-  readonly viewMode = signal<'edit' | 'preview'>('edit');
-
-  readonly hasChanges = computed(() => {
-    const s = this.summary();
-    if (!s) return false;
-    return this.editTitle().trim() !== s.title || this.editSummary() !== s.summary;
-  });
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -40,8 +30,6 @@ export class DocumentSummaryEditorComponent implements OnInit {
     this.http.getDocumentSummary(id).pipe(take(1)).subscribe({
       next: (s) => {
         this.summary.set(s);
-        this.editTitle.set(s.title);
-        this.editSummary.set(s.summary);
         this.loading.set(false);
       },
       error: () => {
@@ -55,27 +43,6 @@ export class DocumentSummaryEditorComponent implements OnInit {
     const chatId = this.summary()?.source_chat_id;
     if (chatId) void this.router.navigate(['/main-container', 'chat', chatId]);
     else void this.router.navigate(['/main-container', 'chat-home']);
-  }
-
-  save(): void {
-    const s = this.summary();
-    if (!s || this.saving()) return;
-    this.saving.set(true);
-    this.http.patchDocumentSummary(s.id, { title: this.editTitle(), summary: this.editSummary() })
-      .pipe(take(1))
-      .subscribe({
-        next: (updated) => {
-          this.summary.set(updated);
-          this.editTitle.set(updated.title);
-          this.editSummary.set(updated.summary);
-          this.saving.set(false);
-          this.toast.show('Resumen guardado.', 'success');
-        },
-        error: () => {
-          this.saving.set(false);
-          this.toast.show('No se pudo guardar.', 'error');
-        },
-      });
   }
 
   export(format: 'pdf' | 'markdown'): void {

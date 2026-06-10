@@ -9,14 +9,6 @@ import type {
   LessonsLearnedCategory,
 } from '@aura-types/aura-chat-service.types';
 
-interface EditItem {
-  uid: string;
-  category: LessonsLearnedCategory;
-  observation: string;
-  discussion: string;
-  recommendation: string;
-}
-
 @Component({
   selector: 'app-lessons-learned-editor',
   standalone: true,
@@ -32,12 +24,7 @@ export class LessonsLearnedEditorComponent implements OnInit {
 
   readonly doc = signal<LessonsLearnedDto | null>(null);
   readonly loading = signal(true);
-  readonly saving = signal(false);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
-
-  readonly editTitle = signal('');
-  readonly editContext = signal('');
-  readonly items = signal<EditItem[]>([]);
 
   readonly categories: { value: LessonsLearnedCategory; label: string; icon: string }[] = [
     { value: 'sustain', label: 'Sostener', icon: 'pi-check-circle' },
@@ -45,9 +32,15 @@ export class LessonsLearnedEditorComponent implements OnInit {
     { value: 'recommendation', label: 'Recomendación', icon: 'pi-star' },
   ];
 
-  readonly sustainCount = computed(() => this.items().filter((i) => i.category === 'sustain').length);
-  readonly improveCount = computed(() => this.items().filter((i) => i.category === 'improve').length);
-  readonly recCount = computed(() => this.items().filter((i) => i.category === 'recommendation').length);
+  readonly sortedItems = computed(() => {
+    const d = this.doc();
+    if (!d) return [];
+    return [...d.items].sort((a, b) => a.position - b.position);
+  });
+
+  readonly sustainCount = computed(() => this.sortedItems().filter((i) => i.category === 'sustain').length);
+  readonly improveCount = computed(() => this.sortedItems().filter((i) => i.category === 'improve').length);
+  readonly recCount = computed(() => this.sortedItems().filter((i) => i.category === 'recommendation').length);
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -55,7 +48,6 @@ export class LessonsLearnedEditorComponent implements OnInit {
     this.http.getLessonsLearned(id).pipe(take(1)).subscribe({
       next: (d) => {
         this.doc.set(d);
-        this._sync(d);
         this.loading.set(false);
       },
       error: () => {
@@ -65,78 +57,9 @@ export class LessonsLearnedEditorComponent implements OnInit {
     });
   }
 
-  private _sync(d: LessonsLearnedDto): void {
-    this.editTitle.set(d.title);
-    this.editContext.set(d.context);
-    this.items.set(
-      [...d.items]
-        .sort((a, b) => a.position - b.position)
-        .map((item) => ({
-          uid: item.id.toString(),
-          category: item.category,
-          observation: item.observation,
-          discussion: item.discussion,
-          recommendation: item.recommendation,
-        })),
-    );
-  }
-
   goBack(): void {
     const chatId = this.doc()?.source_chat_id;
     void this.router.navigate(chatId ? ['/main-container', 'chat', chatId] : ['/main-container', 'chat-home']);
-  }
-
-  addItem(category: LessonsLearnedCategory = 'sustain'): void {
-    this.items.update((items) => [
-      ...items,
-      { uid: crypto.randomUUID(), category, observation: '', discussion: '', recommendation: '' },
-    ]);
-  }
-
-  deleteItem(idx: number): void {
-    this.items.update((items) => items.filter((_, i) => i !== idx));
-  }
-
-  setCategory(idx: number, category: LessonsLearnedCategory): void {
-    this.items.update((items) => {
-      const arr = [...items];
-      arr[idx] = { ...arr[idx], category };
-      return arr;
-    });
-  }
-
-  updateField(idx: number, field: 'observation' | 'discussion' | 'recommendation', e: Event): void {
-    const value = (e.target as HTMLTextAreaElement).value;
-    this.items.update((items) => {
-      const arr = [...items];
-      arr[idx] = { ...arr[idx], [field]: value };
-      return arr;
-    });
-  }
-
-  save(): void {
-    const d = this.doc();
-    if (!d) return;
-    const title = this.editTitle().trim();
-    if (!title) { this.toast.show('El título no puede estar vacío.', 'error'); return; }
-    const items = this.items().map((item, i) => ({
-      category: item.category,
-      observation: item.observation,
-      discussion: item.discussion,
-      recommendation: item.recommendation,
-      position: i + 1,
-    }));
-    this.saving.set(true);
-    this.http.patchLessonsLearned(d.id, { title, context: this.editContext(), items })
-      .pipe(take(1)).subscribe({
-        next: (updated) => {
-          this.doc.set(updated);
-          this._sync(updated);
-          this.saving.set(false);
-          this.toast.show('Lecciones aprendidas guardadas.', 'success');
-        },
-        error: () => { this.saving.set(false); this.toast.show('No se pudo guardar.', 'error'); },
-      });
   }
 
   export(format: 'pdf' | 'markdown'): void {

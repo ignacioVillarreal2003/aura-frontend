@@ -12,37 +12,9 @@
       </button>
       <div class="da-bar__identity">
         <span class="da-type-badge">Acción</span>
-        <input
-          class="da-title"
-          type="text"
-          [value]="editTitle()"
-          (input)="editTitle.set($any($event.target).value)"
-          placeholder="Título de la acción"
-          maxlength="500"
-          aria-label="Título"
-        />
+        <span class="da-title">{{ a.title }}</span>
       </div>
       <div class="da-bar__actions">
-        <div class="da-view-toggle" role="group" aria-label="Modo de visualización">
-          <button
-            type="button"
-            class="da-view-btn"
-            [class.da-view-btn--active]="viewMode() === 'edit'"
-            (click)="viewMode.set('edit')"
-          >
-            <i class="pi pi-pencil" aria-hidden="true"></i>
-            Editar
-          </button>
-          <button
-            type="button"
-            class="da-view-btn"
-            [class.da-view-btn--active]="viewMode() === 'preview'"
-            (click)="viewMode.set('preview')"
-          >
-            <i class="pi pi-eye" aria-hidden="true"></i>
-            Vista previa
-          </button>
-        </div>
         <button type="button" class="da-action-btn" [disabled]="exportingAs() !== null" (click)="export('pdf')">
           <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
           PDF
@@ -50,10 +22,6 @@
         <button type="button" class="da-action-btn" [disabled]="exportingAs() !== null" (click)="export('markdown')">
           <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
           MD
-        </button>
-        <button type="button" class="da-action-btn da-action-btn--primary" [disabled]="saving()" (click)="save()">
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-          Guardar
         </button>
       </div>
     </header>
@@ -71,54 +39,34 @@
         <i class="pi pi-calendar" aria-hidden="true"></i>
         {{ a.created_at | date:'dd/MM/yyyy HH:mm' }}
       </span>
-      @if (hasChanges()) {
-        <span class="da-meta__chip da-meta__chip--unsaved">
-          <i class="pi pi-circle-fill" aria-hidden="true"></i>
-          Sin guardar
-        </span>
-      }
     </div>
 
     <div class="da-body">
-      <div class="da-section da-section--instruction">
-        <label class="da-section__label">
-          <i class="pi pi-send" aria-hidden="true"></i>
-          Instrucción
-        </label>
-        <textarea
-          class="da-textarea da-textarea--sm"
-          rows="3"
-          [value]="editInstruction()"
-          (input)="editInstruction.set($any($event.target).value)"
-          placeholder="Instrucción enviada…"
-        ></textarea>
-      </div>
+      @if (a.instruction) {
+        <div class="da-section da-section--instruction">
+          <span class="da-section__label">
+            <i class="pi pi-send" aria-hidden="true"></i>
+            Instrucción
+          </span>
+          <p class="da-instruction-text">{{ a.instruction }}</p>
+        </div>
+      }
 
       <div class="da-section da-section--result">
-        <label class="da-section__label">
+        <span class="da-section__label">
           <i class="pi pi-sparkles" aria-hidden="true"></i>
           Resultado
-        </label>
-        @if (viewMode() === 'edit') {
-          <textarea
-            class="da-textarea da-textarea--tall"
-            [value]="editResult()"
-            (input)="editResult.set($any($event.target).value)"
-            placeholder="Resultado generado…"
-            spellcheck="false"
-          ></textarea>
-        } @else {
-          <div class="da-preview">
-            @if (editResult().trim()) {
-              <div class="da-preview__body" [innerHTML]="editResult() | markdown"></div>
-            } @else {
-              <div class="da-preview__empty">
-                <i class="pi pi-file-edit" aria-hidden="true"></i>
-                <p>Sin resultado. Cambiá a modo edición para escribir.</p>
-              </div>
-            }
-          </div>
-        }
+        </span>
+        <div class="da-preview">
+          @if (a.result.trim()) {
+            <div class="da-preview__body" [innerHTML]="a.result | markdown"></div>
+          } @else {
+            <div class="da-preview__empty">
+              <i class="pi pi-file-edit" aria-hidden="true"></i>
+              <p>Sin resultado.</p>
+            </div>
+          }
+        </div>
       </div>
     </div>
   }

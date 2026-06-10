@@ -43,7 +43,6 @@ export interface ChatRef {
   readonly is_pinned: boolean;
   readonly archived_at: string | null;
   readonly is_locked: boolean;
-  readonly is_muted: boolean;
   readonly tags: readonly string[];
   readonly system_prompt?: string | null;
   readonly response_style?: string | null;
@@ -63,7 +62,7 @@ export interface DocumentItem {
   readonly created_at: string;
 }
 
-type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'mute' | 'pinned' | 'bookmarks' | 'export' | 'artifacts' | 'reports' | 'checklists' | 'rename' | 'tags' | 'prompts';
+type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'pinned' | 'bookmarks' | 'export' | 'artifacts' | 'reports' | 'checklists' | 'rename' | 'tags' | 'prompts';
 
 export type ArtifactTabKey = 'reports' | 'checklists' | 'quizzes' | 'timelines' | 'lessons-learned' | 'decision-briefs' | 'document-summaries' | 'document-actions';
 
@@ -209,7 +208,6 @@ export class ChatOptionsDrawer {
       case 'participants': return 'Participantes';
       case 'documents': return 'Documentos';
       case 'share': return 'Compartir';
-      case 'mute': return 'Silenciar chat';
       case 'pinned': return 'Mensajes fijados';
       case 'bookmarks': return 'Guardados';
       case 'export': return 'Exportar chat';
@@ -232,7 +230,6 @@ export class ChatOptionsDrawer {
 
   readonly isChatArchived = computed(() => this.contextChat()?.archived_at != null);
   readonly isChatLocked = computed(() => this.contextChat()?.is_locked ?? false);
-  readonly isChatMuted = computed(() => this.contextChat()?.is_muted ?? false);
 
   readonly mergedDocuments = computed((): DocumentItem[] => {
     const byId = new Map<number, DocumentItem>();
@@ -626,35 +623,6 @@ export class ChatOptionsDrawer {
         error: () => this.toastService.show('No se pudo bloquear el chat.', 'error'),
       });
     }
-  }
-
-  muteFor(hours: number): void {
-    const cid = this.contextChatId();
-    if (cid == null) return;
-    const muted_until = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-    this.chatHttp.muteChat(cid, { muted_until }).subscribe({
-      next: () => {
-        this.toastService.show('Chat silenciado.', 'success');
-        this.chatAction.emit({ chatId: cid, action: 'mute' });
-        if (this.contextChatId() !== cid) return;
-        this.close();
-      },
-      error: () => this.toastService.show('No se pudo silenciar el chat.', 'error'),
-    });
-  }
-
-  unmute(): void {
-    const cid = this.contextChatId();
-    if (cid == null) return;
-    this.chatHttp.unmuteChat(cid).subscribe({
-      next: () => {
-        this.toastService.show('Sonido activado.', 'success');
-        this.chatAction.emit({ chatId: cid, action: 'unmute' });
-        if (this.contextChatId() !== cid) return;
-        this.close();
-      },
-      error: () => this.toastService.show('No se pudo activar el sonido.', 'error'),
-    });
   }
 
   reloadShareLinks(): void {

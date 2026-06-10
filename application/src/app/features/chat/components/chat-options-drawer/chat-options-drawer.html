@@ -321,17 +321,6 @@
                 <i [ngClass]="['pi', 'drawer-action-item__icon', isChatLocked() ? 'pi-lock-open' : 'pi-lock']" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">{{ isChatLocked() ? 'Desbloquear' : 'Bloquear' }}</span>
               </button>
-              @if (isChatMuted()) {
-                <button type="button" class="drawer-action-item" (click)="unmute()">
-                  <i class="pi pi-volume-up drawer-action-item__icon" aria-hidden="true"></i>
-                  <span class="drawer-action-item__label">Activar sonido</span>
-                </button>
-              } @else {
-                <button type="button" class="drawer-action-item" (click)="openSub('mute')">
-                  <i class="pi pi-volume-off drawer-action-item__icon" aria-hidden="true"></i>
-                  <span class="drawer-action-item__label">Silenciar</span>
-                </button>
-              }
               <button type="button" class="drawer-action-item" (click)="openSub('export')">
                 <i class="pi pi-download drawer-action-item__icon" aria-hidden="true"></i>
                 <span class="drawer-action-item__label">Exportar</span>
@@ -497,38 +486,6 @@
                 }
               </ul>
             }
-          }
-          @case ('mute') {
-            <p class="drawer-panel__intro">Elige por cuánto tiempo silenciar las notificaciones de este chat.</p>
-            @if (isChatMuted()) {
-              <button type="button" class="drawer-action-item drawer-action-item--unmute" (click)="unmute()">
-                <i class="pi pi-volume-up drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">Desilenciar ahora</span>
-              </button>
-              <div class="drawer-mute-divider">o silenciar por</div>
-            }
-            <nav class="drawer-action-list" aria-label="Duración del silencio">
-              <button type="button" class="drawer-action-item" (click)="muteFor(1)">
-                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">1 hora</span>
-              </button>
-              <button type="button" class="drawer-action-item" (click)="muteFor(8)">
-                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">8 horas</span>
-              </button>
-              <button type="button" class="drawer-action-item" (click)="muteFor(24)">
-                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">24 horas</span>
-              </button>
-              <button type="button" class="drawer-action-item" (click)="muteFor(168)">
-                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">1 semana</span>
-              </button>
-              <button type="button" class="drawer-action-item" (click)="muteFor(8760)">
-                <i class="pi pi-clock drawer-action-item__icon" aria-hidden="true"></i>
-                <span class="drawer-action-item__label">1 año</span>
-              </button>
-            </nav>
           }
           @case ('pinned') {
             @if (pinnedLoading() && pinnedMessages().length === 0) {

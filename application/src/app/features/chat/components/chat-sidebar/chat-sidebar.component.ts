@@ -102,7 +102,6 @@ export class ChatSidebarComponent implements OnInit {
       is_pinned: row.is_pinned,
       archived_at: row.archived_at,
       is_locked: row.is_locked,
-      is_muted: row.is_muted,
       tags: row.tags ?? [],
     });
     this.chatActionsDrawerOpen.set(true);
@@ -126,8 +125,6 @@ export class ChatSidebarComponent implements OnInit {
     this.drawerContextChat.update((c) => {
       if (!c || c.id !== data.chatId) return c;
       switch (data.action) {
-        case 'mute':      return { ...c, is_muted: true };
-        case 'unmute':    return { ...c, is_muted: false };
         case 'pin':       return { ...c, is_pinned: true };
         case 'unpin':     return { ...c, is_pinned: false };
         case 'lock':      return { ...c, is_locked: true };
@@ -140,7 +137,7 @@ export class ChatSidebarComponent implements OnInit {
     });
 
     const navigateAwayActions = new Set(['leave', 'archive']);
-    const reloadActions = new Set(['leave', 'archive', 'unarchive', 'pin', 'unpin', 'lock', 'unlock', 'mute', 'unmute', 'tags-updated']);
+    const reloadActions = new Set(['leave', 'archive', 'unarchive', 'pin', 'unpin', 'lock', 'unlock', 'tags-updated']);
 
     if (reloadActions.has(data.action)) {
       this.reloadChats();

@@ -12,15 +12,7 @@
         <i class="pi pi-arrow-left" aria-hidden="true"></i>
         Volver
       </button>
-      <input
-        class="db-title"
-        type="text"
-        [value]="editTitle()"
-        (input)="editTitle.set($any($event.target).value)"
-        placeholder="Título de la decisión"
-        maxlength="255"
-        aria-label="Título"
-      />
+      <span class="db-title">{{ b.title }}</span>
       <div class="db-bar__actions">
         <button type="button" class="db-action-btn" [disabled]="exportingAs() !== null" (click)="export('pdf')">
           <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
@@ -29,10 +21,6 @@
         <button type="button" class="db-action-btn" [disabled]="exportingAs() !== null" (click)="export('markdown')">
           <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
           MD
-        </button>
-        <button type="button" class="db-action-btn db-action-btn--primary" [disabled]="saving()" (click)="save()">
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-          Guardar
         </button>
       </div>
     </header>
@@ -49,7 +37,7 @@
       </span>
       <span class="db-meta__chip">
         <i class="pi pi-list" aria-hidden="true"></i>
-        {{ options().length }} opción{{ options().length !== 1 ? 'es' : '' }}
+        {{ sortedOptions().length }} opción{{ sortedOptions().length !== 1 ? 'es' : '' }}
       </span>
     </div>
 
@@ -57,47 +45,35 @@
     <div class="db-body">
 
       <!-- Problem & Context -->
-      <div class="db-section">
-        <div class="db-section__label">
-          <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-          Problema
+      @if (b.problem) {
+        <div class="db-section">
+          <div class="db-section__label">
+            <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+            Problema
+          </div>
+          <p class="db-section__text">{{ b.problem }}</p>
         </div>
-        <textarea
-          class="db-textarea"
-          rows="3"
-          placeholder="Descripción del problema o situación que requiere una decisión…"
-          [value]="editProblem()"
-          (input)="editProblem.set($any($event.target).value)"
-        ></textarea>
-      </div>
+      }
 
-      <div class="db-section">
-        <div class="db-section__label">
-          <i class="pi pi-info-circle" aria-hidden="true"></i>
-          Contexto
+      @if (b.context) {
+        <div class="db-section">
+          <div class="db-section__label">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Contexto
+          </div>
+          <p class="db-section__text">{{ b.context }}</p>
         </div>
-        <textarea
-          class="db-textarea"
-          rows="3"
-          placeholder="Información contextual relevante para tomar la decisión…"
-          [value]="editContext()"
-          (input)="editContext.set($any($event.target).value)"
-        ></textarea>
-      </div>
+      }
 
-      <div class="db-section">
-        <div class="db-section__label db-section__label--risk">
-          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-          Riesgos
+      @if (b.risks) {
+        <div class="db-section">
+          <div class="db-section__label db-section__label--risk">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            Riesgos
+          </div>
+          <p class="db-section__text">{{ b.risks }}</p>
         </div>
-        <textarea
-          class="db-textarea"
-          rows="3"
-          placeholder="Riesgos e incertidumbres identificados…"
-          [value]="editRisks()"
-          (input)="editRisks.set($any($event.target).value)"
-        ></textarea>
-      </div>
+      }
 
       <!-- Options -->
       <div class="db-section">
@@ -106,15 +82,15 @@
           Opciones evaluadas
         </div>
 
-        @if (options().length === 0) {
+        @if (sortedOptions().length === 0) {
           <div class="db-empty">
             <i class="pi pi-list db-empty__icon" aria-hidden="true"></i>
-            <p>Sin opciones. Añadí la primera con el botón de abajo.</p>
+            <p>Sin opciones.</p>
           </div>
         }
 
         <div class="db-options-grid">
-          @for (opt of options(); track opt.uid; let oi = $index) {
+          @for (opt of sortedOptions(); track opt.id; let oi = $index) {
             <div class="db-option" [class.db-option--recommended]="opt.is_recommended">
               <div class="db-option__header">
                 <span class="db-option__num">{{ oi + 1 }}</span>
@@ -124,93 +100,48 @@
                     Recomendada
                   </span>
                 }
-                <button
-                  type="button"
-                  class="db-option__star"
-                  [class.db-option__star--active]="opt.is_recommended"
-                  (click)="toggleRecommended(oi)"
-                  [title]="opt.is_recommended ? 'Quitar recomendación' : 'Marcar como recomendada'">
-                  <i [ngClass]="['pi', opt.is_recommended ? 'pi-star-fill' : 'pi-star']" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="db-option__del" (click)="deleteOption(oi)" title="Eliminar opción">
-                  <i class="pi pi-trash" aria-hidden="true"></i>
-                </button>
               </div>
 
               <div class="db-field">
-                <label class="db-label">Título</label>
-                <input
-                  type="text"
-                  class="db-input"
-                  [value]="opt.title"
-                  (input)="updateOptionField(oi, 'title', $event)"
-                  placeholder="Nombre de la opción…"
-                />
-              </div>
-
-              <div class="db-field">
-                <label class="db-label">Descripción</label>
-                <textarea
-                  class="db-textarea db-textarea--sm"
-                  rows="2"
-                  [value]="opt.description"
-                  (input)="updateOptionField(oi, 'description', $event)"
-                  placeholder="Descripción de la opción…"
-                ></textarea>
+                <span class="db-label">Título</span>
+                <p class="db-option__text">{{ opt.title }}</p>
               </div>
 
               <div class="db-option__pros-cons">
-                <div class="db-pros-panel">
-                  <div class="db-pros-panel__header db-pros-panel__header--pros">
-                    <i class="pi pi-plus-circle" aria-hidden="true"></i>
-                    Ventajas
+                @if (opt.pros) {
+                  <div class="db-pros-panel">
+                    <div class="db-pros-panel__header db-pros-panel__header--pros">
+                      <i class="pi pi-plus-circle" aria-hidden="true"></i>
+                      Ventajas
+                    </div>
+                    <p class="db-option__text">{{ opt.pros }}</p>
                   </div>
-                  <textarea
-                    class="db-textarea db-textarea--sm db-textarea--borderless"
-                    rows="3"
-                    [value]="opt.pros"
-                    (input)="updateOptionField(oi, 'pros', $event)"
-                    placeholder="Ventajas y beneficios…"
-                  ></textarea>
-                </div>
-                <div class="db-pros-panel">
-                  <div class="db-pros-panel__header db-pros-panel__header--cons">
-                    <i class="pi pi-minus-circle" aria-hidden="true"></i>
-                    Desventajas
+                }
+                @if (opt.cons) {
+                  <div class="db-pros-panel">
+                    <div class="db-pros-panel__header db-pros-panel__header--cons">
+                      <i class="pi pi-minus-circle" aria-hidden="true"></i>
+                      Desventajas
+                    </div>
+                    <p class="db-option__text">{{ opt.cons }}</p>
                   </div>
-                  <textarea
-                    class="db-textarea db-textarea--sm db-textarea--borderless"
-                    rows="3"
-                    [value]="opt.cons"
-                    (input)="updateOptionField(oi, 'cons', $event)"
-                    placeholder="Desventajas y limitaciones…"
-                  ></textarea>
-                </div>
+                }
               </div>
             </div>
           }
         </div>
-
-        <button type="button" class="db-add-btn" (click)="addOption()">
-          <i class="pi pi-plus" aria-hidden="true"></i>
-          Añadir opción
-        </button>
       </div>
 
       <!-- Final recommendation -->
-      <div class="db-section db-section--final">
-        <div class="db-section__label db-section__label--final">
-          <i class="pi pi-check-circle" aria-hidden="true"></i>
-          Recomendación final
+      @if (b.recommendation) {
+        <div class="db-section db-section--final">
+          <div class="db-section__label db-section__label--final">
+            <i class="pi pi-check-circle" aria-hidden="true"></i>
+            Recomendación final
+          </div>
+          <p class="db-section__text">{{ b.recommendation }}</p>
         </div>
-        <textarea
-          class="db-textarea"
-          rows="4"
-          placeholder="Recomendación final y justificación de la decisión…"
-          [value]="editRecommendation()"
-          (input)="editRecommendation.set($any($event.target).value)"
-        ></textarea>
-      </div>
+      }
 
     </div>
   }

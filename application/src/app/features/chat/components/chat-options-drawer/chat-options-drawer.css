@@ -1587,29 +1587,6 @@
   border-color: rgba(99, 102, 241, 0.55);
 }
 
-/* ── Unmute option ───────────────────────────────────────────── */
-.drawer-action-item--unmute {
-  color: #4ade80;
-  margin-bottom: 4px;
-}
-
-.drawer-action-item--unmute:hover {
-  background: rgba(74, 222, 128, 0.1);
-  color: #86efac;
-}
-
-.drawer-action-item--unmute .drawer-action-item__icon {
-  color: #4ade80;
-}
-
-.drawer-mute-divider {
-  font-size: 11px;
-  color: var(--text-secondary, #9a9aa3);
-  text-align: center;
-  padding: 8px 0 4px;
-  letter-spacing: 0.03em;
-}
-
 /* ── Tags ─────────────────────────────────────────────────────── */
 .drawer-action-tags-badge {
   margin-left: auto;

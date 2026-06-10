@@ -817,7 +817,7 @@ export class ChatSessionComponent implements OnDestroy {
     if (e.action === 'tags-updated' && this.chat && this.chat.id === e.chatId && e.tags != null) {
       this.chat = { ...this.chat, tags: e.tags };
     }
-    const sidebarReloadActions = new Set(['pin', 'unpin', 'lock', 'unlock', 'mute', 'unmute', 'tags-updated']);
+    const sidebarReloadActions = new Set(['pin', 'unpin', 'lock', 'unlock', 'tags-updated']);
     if (sidebarReloadActions.has(e.action)) {
       this.chatShell.triggerSidebarReload();
     }
@@ -835,14 +835,6 @@ export class ChatSessionComponent implements OnDestroy {
     }
     if (e.action === 'unpin' && this.chat && this.chat.id === e.chatId) {
       this.chat = { ...this.chat, is_pinned: false };
-      return;
-    }
-    if (e.action === 'mute' && this.chat && this.chat.id === e.chatId) {
-      this.chat = { ...this.chat, is_muted: true };
-      return;
-    }
-    if (e.action === 'unmute' && this.chat && this.chat.id === e.chatId) {
-      this.chat = { ...this.chat, is_muted: false };
       return;
     }
   }
