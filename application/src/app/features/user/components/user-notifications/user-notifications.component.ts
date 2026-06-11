@@ -6,7 +6,7 @@ import { NotificationSseService } from '@core/services/notification/notification
 import { NotificationState } from '@core/state/notification.state';
 import { ToastService } from '@core/components/toast-service';
 import type {
-  EventPreferenceEntryDto,
+  EventTypeCatalogueEntryDto,
   NotificationDto,
   NotificationPreferenceDto,
   NotificationStatus,
@@ -47,11 +47,10 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
 
   // ── Preferences state ──────────────────────────────────────────────────────
   readonly preferences = signal<NotificationPreferenceDto | null>(null);
-  readonly eventPrefs = signal<EventPreferenceEntryDto[]>([]);
+  readonly eventCatalogue = signal<EventTypeCatalogueEntryDto[]>([]);
   readonly loadingPrefs = signal(false);
   readonly muteInput = signal('');
   readonly savingMute = signal(false);
-  readonly savingEventTypes = signal<Set<string>>(new Set());
 
   readonly minDatetime = this.toDatetimeLocalValue(new Date().toISOString());
 
@@ -134,22 +133,15 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
     });
   }
 
-  archive(id: number): void {
-    this.http.updateNotificationStatus(id, { status: 'archived' }).subscribe({
-      next: updated => {
-        if (this.statusFilter() !== null && this.statusFilter() !== 'archived') {
-          this.removeNotification(id);
-        } else {
-          this.replaceNotification(updated);
-        }
-      },
-      error: () => this.toast.show('No se pudo archivar la notificación.', 'error'),
-    });
-  }
-
   deleteNotification(id: number): void {
     this.http.deleteNotification(id).subscribe({
-      next: () => this.removeNotification(id),
+      next: () => {
+        // The SSE `notification.deleted` event may have already removed it; only
+        // decrement if the item is still present so the badge isn't decremented twice.
+        const item = this.notifications().find(n => n.id === id);
+        if (item?.status === 'unread') this.notifState.decrement();
+        this.removeNotification(id);
+      },
       error: () => this.toast.show('No se pudo eliminar la notificación.', 'error'),
     });
   }
@@ -180,13 +172,13 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
       },
       error: () => this.toast.show('No se pudieron cargar las preferencias.', 'error'),
     });
-    this.http.getEventPreferences().subscribe({
+    this.http.getEventTypeCatalogue().subscribe({
       next: list => {
-        this.eventPrefs.set(list);
+        this.eventCatalogue.set(list);
         this.loadingPrefs.set(false);
       },
       error: () => {
-        this.toast.show('No se pudieron cargar las preferencias por evento.', 'error');
+        this.toast.show('No se pudo cargar el catálogo de eventos.', 'error');
         this.loadingPrefs.set(false);
       },
     });
@@ -235,46 +227,6 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleEventInapp(entry: EventPreferenceEntryDto, enabled: boolean): void {
-    if (!entry.is_silenceable && !enabled) {
-      this.toast.show('Este tipo de notificación no se puede silenciar.', 'error');
-      return;
-    }
-    this.markEventSaving(entry.event_type, true);
-    this.http.updateEventPreference(entry.event_type, { inapp_enabled: enabled }).subscribe({
-      next: updated => {
-        this.eventPrefs.update(list => list.map(e => e.event_type === updated.event_type ? updated : e));
-        this.markEventSaving(entry.event_type, false);
-      },
-      error: () => {
-        this.markEventSaving(entry.event_type, false);
-        this.toast.show('No se pudo actualizar la preferencia.', 'error');
-      },
-    });
-  }
-
-  toggleEventEmail(entry: EventPreferenceEntryDto, enabled: boolean): void {
-    if (!entry.is_silenceable && !enabled) {
-      this.toast.show('Este tipo de notificación no se puede silenciar.', 'error');
-      return;
-    }
-    this.markEventSaving(entry.event_type, true);
-    this.http.updateEventPreference(entry.event_type, { email_enabled: enabled }).subscribe({
-      next: updated => {
-        this.eventPrefs.update(list => list.map(e => e.event_type === updated.event_type ? updated : e));
-        this.markEventSaving(entry.event_type, false);
-      },
-      error: () => {
-        this.markEventSaving(entry.event_type, false);
-        this.toast.show('No se pudo actualizar la preferencia.', 'error');
-      },
-    });
-  }
-
-  isEventSaving(eventType: string): boolean {
-    return this.savingEventTypes().has(eventType);
-  }
-
   // ── SSE ────────────────────────────────────────────────────────────────────
 
   private handleSseEvent(event: { type: string; data: unknown }): void {
@@ -314,10 +266,10 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   getSenderDisplay(n: NotificationDto): string {
-    if (n.sender_name) return n.sender_name;
-    if (n.type === 'system') return 'Sistema';
-    if (n.type === 'admin') return 'Administrador';
-    return 'Usuario';
+    if (n.actor_name) return n.actor_name;
+    const category = this.getEventCategory(n.event_type);
+    if (category === 'admin') return 'Administrador';
+    return 'Sistema';
   }
 
   getSenderInitials(n: NotificationDto): string {
@@ -327,6 +279,11 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  }
+
+  /** First segment of the event type (`chat`, `auth`, `document`, `admin`, `system`) — used for avatar styling. */
+  getEventCategory(eventType: string): string {
+    return eventType.split('.')[0] || 'system';
   }
 
   getTimeAgo(dateStr: string): string {
@@ -345,8 +302,8 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
     return new Date(iso).toLocaleString('es', { dateStyle: 'medium', timeStyle: 'short' });
   }
 
-  hasChannel(entry: EventPreferenceEntryDto, channel: 'inapp' | 'email'): boolean {
-    return entry.available_channels.includes(channel);
+  hasChannel(entry: EventTypeCatalogueEntryDto, channel: 'inapp' | 'email'): boolean {
+    return entry.default_channels.includes(channel);
   }
 
   private replaceNotification(updated: NotificationDto): void {
@@ -363,14 +320,6 @@ export class UserNotificationsComponent implements OnInit, OnDestroy {
   private loadUnreadCount(): void {
     this.http.getUnreadCount().subscribe({
       next: res => this.notifState.setUnreadCount(res.count),
-    });
-  }
-
-  private markEventSaving(eventType: string, saving: boolean): void {
-    this.savingEventTypes.update(set => {
-      const next = new Set(set);
-      saving ? next.add(eventType) : next.delete(eventType);
-      return next;
     });
   }
 

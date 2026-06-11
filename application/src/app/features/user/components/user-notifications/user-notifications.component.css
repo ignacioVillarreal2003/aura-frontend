@@ -214,10 +214,11 @@
   background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
 }
 
-.notif-avatar[data-type="system"]  { background: linear-gradient(135deg, #64748b, #475569); }
-.notif-avatar[data-type="admin"]   { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
-.notif-avatar[data-type="event"]   { background: linear-gradient(135deg, #6366f1, #7c3aed); }
-.notif-avatar[data-type="user"]    { background: linear-gradient(135deg, #10b981, #059669); }
+.notif-avatar[data-type="system"]   { background: linear-gradient(135deg, #64748b, #475569); }
+.notif-avatar[data-type="admin"]    { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+.notif-avatar[data-type="chat"]     { background: linear-gradient(135deg, #6366f1, #7c3aed); }
+.notif-avatar[data-type="auth"]     { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.notif-avatar[data-type="document"] { background: linear-gradient(135deg, #10b981, #059669); }
 
 /* Body */
 .notif-body {
@@ -255,13 +256,6 @@
   font-size: 0.78rem;
   color: var(--text-tertiary);
   margin-left: auto;
-}
-
-.notif-title {
-  margin: 0;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--text-primary);
 }
 
 .notif-message {
@@ -482,7 +476,6 @@ input:disabled + .toggle-slider { opacity: 0.4; cursor: not-allowed; }
 }
 
 .event-pref-item:hover { border-color: var(--border-strong); }
-.event-pref-item.saving { opacity: 0.6; pointer-events: none; }
 
 .event-pref-info {
   flex: 1;
@@ -539,22 +532,23 @@ input:disabled + .toggle-slider { opacity: 0.4; cursor: not-allowed; }
 
 .badge.locked { background: var(--border-color); color: var(--text-secondary); font-size: 0.75rem; }
 
-/* Event channel toggles */
+/* Event delivery channels (read-only chips) */
 .event-pref-channels {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
-.channel-group {
-  display: flex;
-  flex-direction: column;
+.channel-chip {
+  display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-}
-
-.channel-label {
-  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--overlay-subtle);
   color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
 }

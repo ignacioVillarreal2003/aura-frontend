@@ -56,7 +56,7 @@ export class ChatPageComponent {
     this.sse.events$.pipe(takeUntilDestroyed()).subscribe(event => {
       if (event.type === 'notification.created') {
         const n = event.data as NotificationDto;
-        const text = n.title ? `${n.title}: ${n.message}` : n.message;
+        const text = n.message;
         this.toast.show(text.length > 80 ? text.slice(0, 80) + '…' : text, 'success');
         this.notifState.increment();
       }
@@ -79,6 +79,10 @@ export class ChatPageComponent {
     }
     if (url.includes('/main-container/assistants')) {
       this.activeId.set('assistants');
+      return;
+    }
+    if (url.includes('/main-container/document-search')) {
+      this.activeId.set('document-search');
       return;
     }
     if (url.includes('/main-container/chat-home')) {

@@ -3,8 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import type { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import type {
-  EventPreferenceEntryDto,
-  EventPreferenceUpdateBody,
+  EventTypeCatalogueEntryDto,
   MarkAllReadBody,
   MarkAllReadResponseDto,
   NotificationDto,
@@ -28,7 +27,6 @@ export class AuraNotificationServiceHttp {
       statuses.forEach(s => { httpParams = httpParams.append('status', s); });
     }
     if (params?.event_type) httpParams = httpParams.set('event_type', params.event_type);
-    if (params?.type) httpParams = httpParams.set('type', params.type);
     if (params?.since) httpParams = httpParams.set('since', params.since);
     if (params?.page != null) httpParams = httpParams.set('page', String(params.page));
     if (params?.page_size != null) httpParams = httpParams.set('page_size', String(params.page_size));
@@ -63,14 +61,7 @@ export class AuraNotificationServiceHttp {
     return this.http.put<NotificationPreferenceDto>(`${this.base}/me/notification-preferences/`, body);
   }
 
-  getEventPreferences(): Observable<EventPreferenceEntryDto[]> {
-    return this.http.get<EventPreferenceEntryDto[]>(`${this.base}/me/notification-preferences/event-types/`);
-  }
-
-  updateEventPreference(eventType: string, body: EventPreferenceUpdateBody): Observable<EventPreferenceEntryDto> {
-    return this.http.put<EventPreferenceEntryDto>(
-      `${this.base}/me/notification-preferences/event-types/${encodeURIComponent(eventType)}/`,
-      body,
-    );
+  getEventTypeCatalogue(): Observable<EventTypeCatalogueEntryDto[]> {
+    return this.http.get<EventTypeCatalogueEntryDto[]>(`${this.base}/event-types/`);
   }
 }

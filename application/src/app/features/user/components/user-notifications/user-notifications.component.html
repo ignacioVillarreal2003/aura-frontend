@@ -30,13 +30,6 @@
             (click)="setFilter('read')">
             Leídas
           </button>
-          <button
-            type="button"
-            class="filter-btn"
-            [class.active]="statusFilter() === 'archived'"
-            (click)="setFilter('archived')">
-            Archivadas
-          </button>
         </div>
 
         <div class="inbox-actions">
@@ -76,7 +69,7 @@
               <span class="severity-dot" [attr.data-severity]="n.severity"></span>
 
               <!-- Icon -->
-              <div class="notif-avatar" [attr.data-type]="n.type">
+              <div class="notif-avatar" [attr.data-type]="getEventCategory(n.event_type)">
                 {{ getSenderInitials(n) }}
               </div>
 
@@ -84,14 +77,9 @@
               <div class="notif-body">
                 <div class="notif-meta-top">
                   <span class="notif-sender">{{ getSenderDisplay(n) }}</span>
-                  @if (n.event_type) {
-                    <span class="event-tag">{{ n.event_type }}</span>
-                  }
+                  <span class="event-tag">{{ n.event_type }}</span>
                   <span class="notif-time">{{ getTimeAgo(n.created_at) }}</span>
                 </div>
-                @if (n.title) {
-                  <p class="notif-title">{{ n.title }}</p>
-                }
                 <p class="notif-message">{{ n.message }}</p>
                 @if (n.link_url) {
                   <a class="notif-link" [href]="n.link_url" target="_blank" rel="noopener">
@@ -106,14 +94,9 @@
                   <button type="button" class="pill-btn" (click)="markAsRead(n.id)" title="Marcar como leída">
                     <i class="pi pi-eye"></i>
                   </button>
-                } @else if (n.status === 'read') {
+                } @else {
                   <button type="button" class="pill-btn" (click)="markAsUnread(n.id)" title="Marcar como no leída">
                     <i class="pi pi-eye-slash"></i>
-                  </button>
-                }
-                @if (n.status !== 'archived') {
-                  <button type="button" class="pill-btn" (click)="archive(n.id)" title="Archivar">
-                    <i class="pi pi-inbox"></i>
                   </button>
                 }
                 <button type="button" class="pill-btn danger" (click)="deleteNotification(n.id)" title="Eliminar">
@@ -223,22 +206,25 @@
           }
         </section>
 
-        <!-- Per-event preferences -->
-        @if (eventPrefs().length > 0) {
+        <!-- Event type catalogue (informative) -->
+        @if (eventCatalogue().length > 0) {
           <section class="pref-group" aria-labelledby="event-prefs-title">
-            <h2 id="event-prefs-title" class="pref-group-title">Por tipo de evento</h2>
-            <p class="pref-group-subtitle">Ajusta cada tipo de notificación por separado.</p>
+            <h2 id="event-prefs-title" class="pref-group-title">Tipos de notificación</h2>
+            <p class="pref-group-subtitle">
+              Estos son los eventos que pueden generar notificaciones y sus canales de entrega.
+              Los eventos marcados con candado se entregan siempre, incluso con las notificaciones silenciadas.
+            </p>
 
             <div class="event-prefs-list">
-              @for (entry of eventPrefs(); track entry.event_type) {
-                <div class="event-pref-item" [class.saving]="isEventSaving(entry.event_type)">
+              @for (entry of eventCatalogue(); track entry.event_type) {
+                <div class="event-pref-item">
                   <div class="event-pref-info">
                     <div class="event-pref-name-row">
                       <span class="event-pref-name">{{ entry.event_type }}</span>
                       <span class="badge" [attr.data-type]="entry.type">{{ entry.type }}</span>
                       <span class="badge" [attr.data-severity]="entry.severity">{{ entry.severity }}</span>
                       @if (!entry.is_silenceable) {
-                        <span class="badge locked" title="No se puede silenciar">
+                        <span class="badge locked" title="Se entrega siempre, no se puede silenciar">
                           <i class="pi pi-lock"></i>
                         </span>
                       }
@@ -248,30 +234,14 @@
 
                   <div class="event-pref-channels">
                     @if (hasChannel(entry, 'inapp')) {
-                      <div class="channel-group">
-                        <span class="channel-label"><i class="pi pi-bell"></i></span>
-                        <label class="toggle-switch">
-                          <input
-                            type="checkbox"
-                            [checked]="entry.channels.inapp"
-                            [disabled]="!entry.is_silenceable || isEventSaving(entry.event_type)"
-                            (change)="toggleEventInapp(entry, $any($event.target).checked)" />
-                          <span class="toggle-slider"></span>
-                        </label>
-                      </div>
+                      <span class="channel-chip" title="Notificación en la app">
+                        <i class="pi pi-bell"></i> App
+                      </span>
                     }
                     @if (hasChannel(entry, 'email')) {
-                      <div class="channel-group">
-                        <span class="channel-label"><i class="pi pi-envelope"></i></span>
-                        <label class="toggle-switch">
-                          <input
-                            type="checkbox"
-                            [checked]="entry.channels.email"
-                            [disabled]="!entry.is_silenceable || isEventSaving(entry.event_type)"
-                            (change)="toggleEventEmail(entry, $any($event.target).checked)" />
-                          <span class="toggle-slider"></span>
-                        </label>
-                      </div>
+                      <span class="channel-chip" title="Notificación por email">
+                        <i class="pi pi-envelope"></i> Email
+                      </span>
                     }
                   </div>
                 </div>

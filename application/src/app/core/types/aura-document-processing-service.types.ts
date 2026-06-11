@@ -44,6 +44,28 @@ export interface DocumentProcessingCreateDocumentMultipartInput {
   readonly prefer_docling?: boolean;
 }
 
+export const DOCUMENT_SEARCH_MAX_QUERY_CHARS = 1_000 as const;
+
+export const DOCUMENT_SEARCH_MAX_RESULTS = 50 as const;
+
+export const DOCUMENT_SEARCH_DEFAULT_RESULTS = 10 as const;
+
+export interface DocumentSearchRequestDto {
+  readonly query: string;
+  readonly max_documents?: number;
+}
+
+export interface DocumentSearchResultDto {
+  readonly document: DocumentQueryChatDocumentDto;
+  readonly similarity: number;
+  readonly matched_fragments: number;
+  readonly best_fragment_snippet: string | null;
+}
+
+export interface DocumentSearchResponseDto {
+  readonly results: readonly DocumentSearchResultDto[];
+}
+
 export interface DocumentProcessingValidationErrorItem {
   readonly loc: readonly (string | number)[];
   readonly msg: string;

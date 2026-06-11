@@ -32,6 +32,13 @@ export const chatShellRoutes: Routes = [
           ),
       },
       {
+        path: 'document-search',
+        loadComponent: () =>
+          import('./components/document-search/document-search.component').then(
+            (m) => m.DocumentSearchComponent
+          ),
+      },
+      {
         path: 'feedback-analytics',
         loadComponent: () =>
           import('./components/feedback-analytics/feedback-analytics.component').then(

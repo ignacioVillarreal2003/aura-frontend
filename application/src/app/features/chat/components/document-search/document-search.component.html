@@ -1,0 +1,126 @@
+<div class="ds-page">
+
+  <header class="ds-header">
+    <h1 class="ds-title">Documentos</h1>
+    <p class="ds-subtitle">
+      Buscá por contenido: escribí palabras clave o una frase y AURA encuentra los documentos
+      cuyo contenido más se parece.
+    </p>
+  </header>
+
+  <div class="ds-search-row">
+    <i class="pi pi-search ds-search-icon" aria-hidden="true"></i>
+    <input
+      type="text"
+      class="ds-search-input"
+      placeholder="Buscar en el contenido de los documentos…"
+      [attr.maxlength]="maxQueryChars"
+      [value]="query()"
+      (input)="onQueryInput($any($event.target).value)"
+      (keydown.escape)="clearQuery()"
+      aria-label="Buscar documentos por contenido"
+    />
+    @if (query().length > 0) {
+      <button
+        type="button"
+        class="ds-search-clear"
+        aria-label="Limpiar búsqueda"
+        (click)="clearQuery()">
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="ds-results" aria-hidden="true">
+      @for (_ of [1, 2, 3, 4]; track $index) {
+        <div class="ds-row ds-row--skeleton"></div>
+      }
+    </div>
+  } @else if (outcome(); as out) {
+
+    @if (out.failed) {
+      <div class="ds-alert" role="alert">
+        <span>No se pudo completar la búsqueda.</span>
+        <button type="button" class="ds-alert__retry" (click)="retry()">
+          Reintentar búsqueda
+        </button>
+      </div>
+    } @else if (out.results.length === 0) {
+      <div class="ds-empty">
+        <i class="pi pi-inbox ds-empty__icon" aria-hidden="true"></i>
+        <p class="ds-empty__title">Sin coincidencias para "{{ out.query }}"</p>
+        <p class="ds-empty__text">
+          Probá con otras palabras o una frase más general. La búsqueda compara el
+          significado del texto, no solo palabras exactas.
+        </p>
+      </div>
+    } @else {
+      <p class="ds-results-count" role="status">
+        {{ out.results.length }}
+        {{ out.results.length === 1 ? 'documento encontrado' : 'documentos encontrados' }}
+      </p>
+
+      <div class="ds-results" role="list">
+        @for (r of out.results; track r.document.id) {
+          <article class="ds-row" role="listitem">
+            <i class="pi ds-row__icon" [ngClass]="documentIcon(r)" aria-hidden="true"></i>
+
+            <div class="ds-row__main">
+              <div class="ds-row__top">
+                <h2 class="ds-row__name" [title]="r.document.name">{{ r.document.name }}</h2>
+                <span
+                  class="ds-row__match"
+                  [title]="r.matched_fragments === 1
+                    ? '1 fragmento coincide con la búsqueda'
+                    : r.matched_fragments + ' fragmentos coinciden con la búsqueda'">
+                  {{ similarityPercent(r) }}% similar
+                </span>
+              </div>
+
+              @if (r.best_fragment_snippet) {
+                <p class="ds-row__snippet">{{ r.best_fragment_snippet }}</p>
+              }
+
+              <p class="ds-row__meta">
+                @if (r.document.category) {
+                  <span>{{ r.document.category }}</span>
+                }
+                @if (formatFileSize(r.document.file_size_bytes)) {
+                  <span>{{ formatFileSize(r.document.file_size_bytes) }}</span>
+                }
+                <span>{{ r.document.created_at | date: 'dd/MM/yyyy' }}</span>
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="ds-row__download"
+              [disabled]="downloadingId() !== null"
+              [attr.aria-label]="'Descargar ' + r.document.name"
+              (click)="downloadDocument(r)">
+              @if (downloadingId() === r.document.id) {
+                <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              } @else {
+                <i class="pi pi-download" aria-hidden="true"></i>
+              }
+              <span class="ds-row__download-text">Descargar</span>
+            </button>
+          </article>
+        }
+      </div>
+    }
+
+  } @else {
+    <div class="ds-empty">
+      <i class="pi pi-search ds-empty__icon" aria-hidden="true"></i>
+      <p class="ds-empty__title">Buscador de documentos por contenido</p>
+      <p class="ds-empty__text">
+        No hace falta recordar el nombre del archivo. Escribí de qué trata
+        ("informe de riesgos del tercer trimestre", "protocolo de seguridad")
+        y aparecerán los documentos más parecidos, listos para descargar.
+      </p>
+    </div>
+  }
+
+</div>
