@@ -54,7 +54,7 @@
 }
 
 .tab-badge {
-  background: #dc2626;
+  background: var(--accent-color); /* count badge = Thought Violet (igual que el sidebar) */
   color: #fff;
   border-radius: 10px;
   padding: 0 0.45rem;
@@ -551,4 +551,20 @@ input:disabled + .toggle-slider { opacity: 0.4; cursor: not-allowed; }
   color: var(--text-secondary);
   font-size: 0.78rem;
   font-weight: 500;
+}
+
+/* ── Foco visible (teclado) — DESIGN.md ──────────────────────── */
+.tab-btn:focus-visible,
+.filter-btn:focus-visible,
+.pill-btn:focus-visible,
+.icon-btn:focus-visible,
+.action-btn-sm:focus-visible,
+.load-more-btn:focus-visible,
+.notif-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+  box-shadow: var(--focus-ring);
 }

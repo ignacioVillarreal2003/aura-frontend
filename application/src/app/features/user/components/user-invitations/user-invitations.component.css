@@ -35,7 +35,7 @@
 
 .inv-subtitle {
   font-size: 13px;
-  color: rgba(255,255,255,0.4);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -54,7 +54,7 @@
   border-radius: 7px;
   border: none;
   background: transparent;
-  color: rgba(255,255,255,0.45);
+  color: var(--text-secondary);
   font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 13px;
   font-weight: 500;
@@ -74,7 +74,7 @@
   justify-content: center;
   gap: 12px;
   padding: 60px 0;
-  color: rgba(255,255,255,0.35);
+  color: var(--text-secondary);
   font-size: 14px;
 }
 .inv-loading__icon { font-size: 22px; color: #6366f1; }
@@ -87,9 +87,9 @@
   gap: 10px;
   text-align: center;
 }
-.inv-empty__icon  { font-size: 40px; color: rgba(255,255,255,0.12); }
-.inv-empty__title { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.5); margin: 0; }
-.inv-empty__hint  { font-size: 13px; color: rgba(255,255,255,0.28); margin: 0; max-width: 340px; }
+.inv-empty__icon  { font-size: 40px; color: var(--border-strong); }
+.inv-empty__title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.inv-empty__hint  { font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 340px; }
 
 /* ── List ───────────────────────────────────────────────── */
 .inv-list {
@@ -168,7 +168,7 @@
 }
 .inv-card__status--pending  { background: rgba(99,102,241,0.2);  color: #a5b4fc; }
 .inv-card__status--active   { background: rgba(16,185,129,0.18); color: #6ee7b7; }
-.inv-card__status--inactive { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
+.inv-card__status--inactive { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
 
 .inv-card__meta {
   display: flex;
@@ -181,7 +181,7 @@
   align-items: center;
   gap: 5px;
   font-size: 12px;
-  color: rgba(255,255,255,0.38);
+  color: var(--text-secondary);
 }
 .inv-card__meta-chip .pi { font-size: 11px; }
 
@@ -237,4 +237,11 @@
 .inv-btn--goto:hover {
   background: rgba(99,102,241,0.25);
   border-color: rgba(99,102,241,0.5);
+}
+
+/* ── Foco visible (teclado) — DESIGN.md ──────────────────────── */
+.inv-tab:focus-visible,
+.inv-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }

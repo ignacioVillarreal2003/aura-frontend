@@ -1,9 +1,12 @@
-<div class="modal">
-  <div class="modal__container">
+<div class="modal" role="presentation">
+  <div class="modal__container"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="modal-title">
     <header class="modal__header">
-      <h1 class="modal__title">{{title}}</h1>
+      <h2 id="modal-title" class="modal__title">{{title}}</h2>
       <app-btn-icon [icon]="'close'"
-                    [style]="'danger'"
+                    [style]="'transparent'"
                     [rounded]="'radius-circle'"
                     (click)="close()"></app-btn-icon>
     </header>

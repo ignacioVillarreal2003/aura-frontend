@@ -19,6 +19,11 @@
   opacity: 0.6;
 }
 
+.btn-text:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .sm {
   font-size: 14px;
   padding: 6px 12px;
@@ -51,18 +56,22 @@
   color: inherit;
 }
 
+/* violet = acción primaria (Thought Violet), por defecto — DESIGN.md */
+.solid.violet { background-color: var(--accent-color); }
 .solid.blue { background-color: var(--color-blue-ribbon-500); }
 .solid.red { background-color: var(--color-coral-red-500); }
 .solid.auto { background-color: var(--card); color: var(--foreground) }
 .solid.dark { background-color: black; }
 .solid.light { background-color: white; }
 
+.outline.violet { border-color: var(--accent-color); color: var(--accent-color); }
 .outline.blue { border-color: var(--color-blue-ribbon-500); color: var(--color-blue-ribbon-500); }
 .outline.red { border-color: var(--color-coral-red-500); color: var(--color-coral-red-500); }
 .outline.auto { border-color: var(--card); color: var(--foreground); }
 .outline.dark { border-color: black; color: black; }
 .outline.light { border-color: white; color: white; }
 
+.ghost.violet { color: var(--accent-color); }
 .ghost.blue { color: var(--color-blue-ribbon-500); }
 .ghost.red { color: var(--color-coral-red-500); }
 .ghost.auto { color: var(--foreground); }

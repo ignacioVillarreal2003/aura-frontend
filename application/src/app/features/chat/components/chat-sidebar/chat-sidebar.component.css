@@ -114,7 +114,7 @@
 
 .sidebar-header__toggle-btn:focus-visible {
   outline: none;
-  box-shadow: var(--chat-focus-ring);
+  box-shadow: var(--focus-ring);
 }
 
 /* DIVISOR */
@@ -249,9 +249,14 @@
   color: var(--text-primary);
 }
 
+.sidebar-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* DESIGN.md: active nav = accent-surface fill + accent-fg icon, no border */
 .sidebar-link.is-active {
-  background: rgba(99, 102, 241, 0.16);
-  border: 1px solid rgba(99, 102, 241, 0.28);
+  background: var(--accent-surface);
   color: var(--text-primary);
   font-weight: 500;
 }
@@ -332,6 +337,8 @@
 .sidebar-nav[data-state="closed"] .sidebar-link {
   justify-content: center;
   padding: 0.65rem 0.6rem;
+  /* sin gap: el span colapsado (ancho 0) ya no descentra el ícono */
+  gap: 0;
 }
 
 .sidebar-chat-item {
@@ -377,6 +384,13 @@
 .sidebar-link-more:hover {
   background: var(--overlay-hover);
   color: var(--text-primary);
+}
+
+.sidebar-link-more:focus-visible {
+  outline: none;
+  opacity: 1;
+  visibility: visible;
+  box-shadow: var(--focus-ring);
 }
 
 .sidebar-chat-badge {
@@ -463,7 +477,7 @@
   min-width: var(--sidebar-avatar-size);
   min-height: var(--sidebar-avatar-size);
   border-radius: 50%;
-  background: #6366f1;
+  background: var(--accent-color);
   color: #fff;
   display: grid;
   place-items: center;
@@ -489,8 +503,7 @@
 .icon-swap .icon-open { position: absolute; inset: 0; opacity: 0; }
 
 .sidebar-nav[data-state="closed"] .sidebar-link.is-active {
-  background: rgba(99, 102, 241, 0.14);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: var(--accent-surface);
 }
 
 /* Notification bell badge */
@@ -512,7 +525,7 @@
   position: absolute;
   top: -6px;
   right: -8px;
-  background: #dc2626;
+  background: var(--accent-color);
   color: #fff;
   border-radius: 10px;
   font-size: 0.58rem;
@@ -527,9 +540,9 @@
 .sidebar-rename-input {
   flex: 1;
   min-width: 0;
-  background: var(--surface-02, #2a2a2a);
+  background: var(--surface-raised);
   color: var(--text-primary);
-  border: 1px solid var(--accent-primary, #6366f1);
+  border: 1px solid var(--accent-color);
   border-radius: 6px;
   padding: 0.25rem 0.5rem;
   font-size: inherit;
@@ -537,6 +550,10 @@
   line-height: 1.4;
   outline: none;
   width: 100%;
+}
+
+.sidebar-rename-input:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 .sidebar-chat-item.is-renaming {

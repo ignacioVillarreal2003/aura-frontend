@@ -162,3 +162,11 @@
 .logout-button:hover {
   filter: brightness(1.06);
 }
+
+/* ── Foco visible (teclado) — DESIGN.md ──────────────────────── */
+.close-button:focus-visible,
+.cancel-button:focus-visible,
+.logout-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

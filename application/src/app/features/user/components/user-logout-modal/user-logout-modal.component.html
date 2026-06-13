@@ -1,7 +1,11 @@
-<div class="modal-overlay" (click)="onClose()">
-  <div class="modal-container" (click)="$event.stopPropagation()">
+<div class="modal-overlay" (click)="onClose()" role="presentation">
+  <div class="modal-container"
+       (click)="$event.stopPropagation()"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="logout-modal-title">
     <div class="modal-header">
-      <h2 class="modal-title">
+      <h2 class="modal-title" id="logout-modal-title">
         <i class="pi pi-sign-out"></i>
         Cerrar sesión
       </h2>

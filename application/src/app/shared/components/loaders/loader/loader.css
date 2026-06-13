@@ -2,38 +2,30 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
+  gap: 8px;
 }
 
 .loader__ball {
-  --size: 16px;
+  --size: 10px;
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
-  animation: 2s bounce ease infinite;
+  background-color: var(--accent-color); /* Thought Violet — única señal */
+  animation: loader-pulse 1.2s ease-in-out infinite;
 }
 
-.blue {
-  background-color: #1149ff;
+.loader__ball:nth-child(1) { animation-delay: 0s; }
+.loader__ball:nth-child(2) { animation-delay: 0.16s; }
+.loader__ball:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes loader-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.8); }
+  40%      { opacity: 1;    transform: scale(1); }
 }
 
-.red {
-  background-color: #e42a2a;
-  animation-delay: 0.25s;
-}
-
-.yellow {
-  background-color: #f3da2b;
-  animation-delay: 0.5s;
-}
-
-.green {
-  background-color: #1da81d;
-  animation-delay: 0.75s;
-}
-
-@keyframes bounce {
-  50% {
-    transform: translateY(25px);
+@media (prefers-reduced-motion: reduce) {
+  .loader__ball {
+    animation: none;
+    opacity: 0.7;
   }
 }

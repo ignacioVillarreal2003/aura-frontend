@@ -328,7 +328,8 @@
 }
 
 .user-message .message-bubble {
-  background: #6366f1;
+  /* DESIGN.md: gradiente Thought Violet → Deep a 135° (igual que el botón send) */
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 2px 12px rgba(99, 102, 241, 0.18);

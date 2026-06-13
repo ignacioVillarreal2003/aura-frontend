@@ -189,7 +189,7 @@ The palette is restrained by design. One saturated color signals action; everyth
 
 **Character:** Chillax is the brand voice — geometric, confident, used sparingly for identity moments. Sora handles all UI chrome: the tool's own language (labels, buttons, mode selectors, sidebar nav). Manrope takes over for reading: AI output, markdown-rendered prose, and long-form document content. The pairing works because Sora is decisively geometric-neutral and Manrope is humanist-warm — they contrast without competing.
 
-**Note on current state:** Sora is referenced throughout component CSS but has no `@font-face` declaration in `fonts.css`. It currently falls back to the browser's default sans-serif. Adding a self-hosted or Google-served Sora variable font would close this gap.
+**Note on current state:** Sora is now self-hosted (`public/fonts/Sora-Variable.ttf`, variable 200–800) with an `@font-face` declaration in `fonts.css`, exposed via the `--font-ui` token. The "Sora-in-Chrome Rule" is in effect across the UI.
 
 ### Hierarchy
 

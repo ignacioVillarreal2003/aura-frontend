@@ -92,6 +92,14 @@
   color: var(--accent-fg);
 }
 
+/* ── Foco visible (teclado) — DESIGN.md ──────────────────────── */
+.user-nav__back:focus-visible,
+.user-nav__link:focus-visible,
+.user-nav__logout:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .user-nav__logout {
   display: flex;
   align-items: center;

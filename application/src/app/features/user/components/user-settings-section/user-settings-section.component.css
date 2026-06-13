@@ -350,8 +350,8 @@ input:checked + .toggle-slider:before {
 
 .danger-btn {
   background: transparent;
-  border: 1px solid #dc2626;
-  color: #dc2626;
+  border: 1px solid var(--destructive);
+  color: var(--destructive);
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
@@ -362,7 +362,7 @@ input:checked + .toggle-slider:before {
 }
 
 .danger-btn:hover {
-  background: #dc2626;
+  background: var(--destructive);
   color: #fff;
 }
 
@@ -382,4 +382,18 @@ input:checked + .toggle-slider:before {
 .export-btn:hover {
   background: var(--accent-color);
   color: #fff;
+}
+
+/* ── Foco visible (teclado) — DESIGN.md ──────────────────────── */
+.change-password-btn:focus-visible,
+.manage-btn:focus-visible,
+.danger-btn:focus-visible,
+.export-btn:focus-visible,
+.password-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+  box-shadow: var(--focus-ring);
 }

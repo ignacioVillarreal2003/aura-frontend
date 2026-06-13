@@ -128,22 +128,20 @@
 .info-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 
+/* Lista plana dentro de la card de sección — sin cards anidadas.
+   Filas separadas por divisores sutiles, ancladas por el icon-tile. */
 .info-row {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.9rem 1rem;
-  border-radius: 10px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.info-row:hover {
-  border-color: var(--border-strong);
+.info-row:last-child {
+  border-bottom: none;
 }
 
 .info-row__icon {
@@ -223,7 +221,7 @@
 }
 
 .save-button {
-  background: #10b981;
+  background: var(--color-malachite-500);
   border: none;
   color: #fff;
   padding: 0.75rem 1.5rem;
@@ -239,7 +237,7 @@
 }
 
 .save-button:hover {
-  background: #059669;
+  background: var(--color-malachite-600);
 }
 
 .cancel-button {

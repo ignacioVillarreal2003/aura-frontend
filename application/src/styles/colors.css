@@ -205,6 +205,8 @@ body.theme-light {
   --overlay-active: rgba(0, 0, 0, 0.1);
   --scrollbar-thumb: rgba(0, 0, 0, 0.15);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+  /* Focus ring — Thought Violet @ 18% (DESIGN.md system rule) */
+  --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.18);
   /* Shared with drawer / older components */
   --bg-primary: rgb(231, 229, 228);
   --text-primary: rgb(28, 25, 23);
@@ -268,6 +270,8 @@ body.theme-dark {
   --overlay-active: rgba(255, 255, 255, 0.12);
   --scrollbar-thumb: rgba(255, 255, 255, 0.2);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+  /* Focus ring — Thought Violet @ 18% (DESIGN.md system rule) */
+  --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.18);
   /* Shared with drawer / older components */
   --bg-primary: rgb(44, 40, 37);
   --text-primary: rgb(255, 255, 255);
