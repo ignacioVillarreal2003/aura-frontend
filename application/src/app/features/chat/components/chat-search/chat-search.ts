@@ -14,10 +14,10 @@ type ChatListItem = { id: string; title: string; sortKey: number; tags: readonly
   selector: 'app-chat-search',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './chat-search.component.html',
-  styleUrls: ['./chat-search.component.css'],
+  templateUrl: './chat-search.html',
+  styleUrls: ['./chat-search.css'],
 })
-export class ChatSearchComponent implements OnInit {
+export class ChatSearch implements OnInit {
   private readonly api = inject(AuraChatServiceHttp);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);

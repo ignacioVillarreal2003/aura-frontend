@@ -20,10 +20,10 @@ type ActiveTab = 'inbox' | 'preferences';
   selector: 'app-user-notifications',
   standalone: true,
   imports: [],
-  templateUrl: './user-notifications.component.html',
-  styleUrls: ['./user-notifications.component.css'],
+  templateUrl: './user-notifications.html',
+  styleUrls: ['./user-notifications.css'],
 })
-export class UserNotificationsComponent implements OnInit, OnDestroy {
+export class UserNotifications implements OnInit, OnDestroy {
   private readonly http = inject(AuraNotificationServiceHttp);
   private readonly sse = inject(NotificationSseService);
   private readonly notifState = inject(NotificationState);

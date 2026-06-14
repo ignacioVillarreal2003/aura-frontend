@@ -1,42 +1,42 @@
 import { Routes } from '@angular/router';
-import { UserPageComponent } from './user-page/user-page';
+import { UserPage } from './user-page/user-page';
 
 const settingsSectionLoader = () =>
-  import('./components/user-settings-section/user-settings-section.component').then(
+  import('./components/user-settings-section/user-settings-section').then(
     (m) => m.UserSettingsSectionComponent,
   );
 
 export const USER_ROUTES: Routes = [
   {
     path: '',
-    component: UserPageComponent,
+    component: UserPage,
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'profile' },
       {
         path: 'profile',
         loadComponent: () =>
-          import('./components/user-profile/user-profile.component').then((m) => m.UserProfileComponent),
+          import('./components/user-profile/user-profile').then((m) => m.UserProfile),
       },
       {
         path: 'invitations',
         loadComponent: () =>
-          import('./components/user-invitations/user-invitations.component').then(
-            (m) => m.UserInvitationsComponent,
+          import('./components/user-invitations/user-invitations').then(
+            (m) => m.UserInvitations,
           ),
       },
       {
         path: 'notifications',
         loadComponent: () =>
-          import('./components/user-notifications/user-notifications.component').then(
-            (m) => m.UserNotificationsComponent,
+          import('./components/user-notifications/user-notifications').then(
+            (m) => m.UserNotifications,
           ),
         data: { tab: 'inbox' },
       },
       {
         path: 'notifications/preferences',
         loadComponent: () =>
-          import('./components/user-notifications/user-notifications.component').then(
-            (m) => m.UserNotificationsComponent,
+          import('./components/user-notifications/user-notifications').then(
+            (m) => m.UserNotifications,
           ),
         data: { tab: 'preferences' },
       },

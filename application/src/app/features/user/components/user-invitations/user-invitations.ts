@@ -10,10 +10,10 @@ import type { MembershipDto } from '@aura-types/aura-chat-service.types';
   selector: 'app-user-invitations',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './user-invitations.component.html',
-  styleUrl: './user-invitations.component.css',
+  templateUrl: './user-invitations.html',
+  styleUrl: './user-invitations.css',
 })
-export class UserInvitationsComponent implements OnInit {
+export class UserInvitations implements OnInit {
   private readonly http = inject(AuraChatServiceHttp);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);

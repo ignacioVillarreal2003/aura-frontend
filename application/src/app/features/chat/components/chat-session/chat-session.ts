@@ -68,9 +68,9 @@ import { TokenMaterializeDirective } from '../../../../shared/directives/token-m
 import { UserState } from '@core/state/user.state';
 import { UserCacheService } from '@core/services/user-cache.service';
 import {
-  FeedbackDialogComponent,
+  FeedbackDialog,
   type DislikeFeedbackResult,
-} from '../feedback-dialog/feedback-dialog.component';
+} from '../feedback-dialog/feedback-dialog';
 
 interface ChatMessage {
   readonly id: number;
@@ -118,11 +118,11 @@ const AI_MODES: readonly AiModeOption[] = [
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, TokenMaterializeDirective, FeedbackDialogComponent],
+  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, TokenMaterializeDirective, FeedbackDialog],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
 })
-export class ChatSessionComponent implements OnDestroy {
+export class ChatSession implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly chatShell = inject(ChatService);

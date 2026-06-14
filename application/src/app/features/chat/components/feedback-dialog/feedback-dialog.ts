@@ -24,10 +24,10 @@ const COMMENT_MAX = 500;
   selector: 'app-feedback-dialog',
   standalone: true,
   imports: [FormsModule],
-  templateUrl: './feedback-dialog.component.html',
-  styleUrl: './feedback-dialog.component.css',
+  templateUrl: './feedback-dialog.html',
+  styleUrl: './feedback-dialog.css',
 })
-export class FeedbackDialogComponent {
+export class FeedbackDialog {
   @Output() readonly submitFeedback = new EventEmitter<DislikeFeedbackResult>();
   @Output() readonly cancel = new EventEmitter<void>();
 

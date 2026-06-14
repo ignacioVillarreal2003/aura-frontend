@@ -10,10 +10,10 @@ import type { AssistantDto } from '../../../../core/types/aura-chat-service.type
   selector: 'app-asistentes-hub',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './asistentes-hub.component.html',
-  styleUrl: './asistentes-hub.component.css',
+  templateUrl: './asistentes-hub.html',
+  styleUrl: './asistentes-hub.css',
 })
-export class AsistentesHubComponent implements OnInit {
+export class AsistentesHub implements OnInit {
   private readonly chatHttp = inject(AuraChatServiceHttp);
   private readonly router = inject(Router);
   private readonly userState = inject(UserState);

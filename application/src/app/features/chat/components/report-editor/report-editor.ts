@@ -14,7 +14,7 @@ import type { ReportDto } from '@aura-types/aura-chat-service.types';
   templateUrl: './report-editor.html',
   styleUrl: './report-editor.css',
 })
-export class ReportEditorComponent implements OnInit {
+export class ReportEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);

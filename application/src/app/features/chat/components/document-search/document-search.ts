@@ -23,10 +23,10 @@ interface SearchOutcome {
   selector: 'app-document-search',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './document-search.component.html',
-  styleUrl: './document-search.component.css',
+  templateUrl: './document-search.html',
+  styleUrl: './document-search.css',
 })
-export class DocumentSearchComponent {
+export class DocumentSearch {
   private readonly docHttp = inject(AuraDocumentProcessingServiceHttp);
   private readonly toastService = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);

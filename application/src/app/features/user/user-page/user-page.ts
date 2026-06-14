@@ -2,7 +2,7 @@ import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { USER_AREA_NAV_LINKS } from '@core/config/user-area.nav';
-import { UserLogoutModalComponent } from '../components/user-logout-modal/user-logout-modal.component';
+import { UserLogoutModal } from '../components/user-logout-modal/user-logout-modal';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 
 @Component({
@@ -13,12 +13,12 @@ import { AuthenticationService } from '@core/services/authentication/authenticat
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    UserLogoutModalComponent,
+    UserLogoutModal,
   ],
   templateUrl: './user-page.html',
   styleUrls: ['./user-page.css'],
 })
-export class UserPageComponent {
+export class UserPage {
   private router = inject(Router);
   private authService = inject(AuthenticationService);
 

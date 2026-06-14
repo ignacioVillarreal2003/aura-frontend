@@ -14,7 +14,7 @@ import type { DocumentSummaryDto } from '@aura-types/aura-chat-service.types';
   templateUrl: './document-summary-editor.html',
   styleUrl: './document-summary-editor.css',
 })
-export class DocumentSummaryEditorComponent implements OnInit {
+export class DocumentSummaryEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);

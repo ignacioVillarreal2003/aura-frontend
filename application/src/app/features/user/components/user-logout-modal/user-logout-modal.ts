@@ -5,10 +5,10 @@ import { CommonModule } from '@angular/common';
   selector: 'app-user-logout-modal',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './user-logout-modal.component.html',
-  styleUrls: ['./user-logout-modal.component.css'],
+  templateUrl: './user-logout-modal.html',
+  styleUrls: ['./user-logout-modal.css'],
 })
-export class UserLogoutModalComponent {
+export class UserLogoutModal {
   @Output() close = new EventEmitter<void>();
   @Output() confirm = new EventEmitter<void>();
 

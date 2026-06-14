@@ -13,7 +13,7 @@ import type { DecisionBriefDto } from '@aura-types/aura-chat-service.types';
   templateUrl: './decision-brief-editor.html',
   styleUrl: './decision-brief-editor.css',
 })
-export class DecisionBriefEditorComponent implements OnInit {
+export class DecisionBriefEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);

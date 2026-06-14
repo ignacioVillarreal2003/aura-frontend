@@ -30,10 +30,10 @@ const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   selector: 'app-feedback-analytics',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './feedback-analytics.component.html',
-  styleUrl: './feedback-analytics.component.css',
+  templateUrl: './feedback-analytics.html',
+  styleUrl: './feedback-analytics.css',
 })
-export class FeedbackAnalyticsComponent implements OnInit {
+export class FeedbackAnalytics implements OnInit {
   private readonly chatHttp = inject(AuraChatServiceHttp);
   private readonly userState = inject(UserState);
 

@@ -12,7 +12,7 @@ import type { MessageDto } from '@aura-types/aura-chat-service.types';
   templateUrl: './public-share.html',
   styleUrl: './public-share.css',
 })
-export class PublicShareComponent implements OnInit {
+export class PublicShare implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(AuraChatServiceHttp);
 

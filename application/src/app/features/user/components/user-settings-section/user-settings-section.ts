@@ -11,8 +11,8 @@ import { UserSettingsState } from '@core/state/user-settings.state';
   selector: 'app-user-settings-section',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './user-settings-section.component.html',
-  styleUrls: ['./user-settings-section.component.css'],
+  templateUrl: './user-settings-section.html',
+  styleUrls: ['./user-settings-section.css'],
 })
 export class UserSettingsSectionComponent {
   private readonly route = inject(ActivatedRoute);

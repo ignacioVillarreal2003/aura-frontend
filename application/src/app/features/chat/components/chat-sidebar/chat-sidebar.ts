@@ -25,10 +25,10 @@ import type { ChatListItemDto } from '@aura-types/aura-chat-service.types';
   selector: 'app-chat-sidebar',
   standalone: true,
   imports: [CommonModule, ChatOptionsDrawer, RouterLink],
-  templateUrl: './chat-sidebar.component.html',
-  styleUrls: ['./chat-sidebar.component.css'],
+  templateUrl: './chat-sidebar.html',
+  styleUrls: ['./chat-sidebar.css'],
 })
-export class ChatSidebarComponent implements OnInit {
+export class ChatSidebar implements OnInit {
   private readonly chatHttp = inject(AuraChatServiceHttp);
   private readonly auth = inject(AuthenticationService);
   private readonly router = inject(Router);

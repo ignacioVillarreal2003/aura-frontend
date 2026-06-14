@@ -13,7 +13,7 @@ import type { TimelineDto } from '@aura-types/aura-chat-service.types';
   templateUrl: './timeline-editor.html',
   styleUrl: './timeline-editor.css',
 })
-export class TimelineEditorComponent implements OnInit {
+export class TimelineEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);

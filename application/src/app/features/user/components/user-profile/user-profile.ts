@@ -6,10 +6,10 @@ import { UserState } from '@core/state/user.state';
   selector: 'app-user-profile',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './user-profile.component.html',
-  styleUrls: ['./user-profile.component.css'],
+  templateUrl: './user-profile.html',
+  styleUrls: ['./user-profile.css'],
 })
-export class UserProfileComponent {
+export class UserProfile {
   private readonly userState = inject(UserState);
 
   readonly displayName = computed(() => this.userState.user()?.username ?? '—');

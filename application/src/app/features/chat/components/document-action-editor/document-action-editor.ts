@@ -24,7 +24,7 @@ const ACTION_LABELS: Record<DocumentActionType, string> = {
   templateUrl: './document-action-editor.html',
   styleUrl: './document-action-editor.css',
 })
-export class DocumentActionEditorComponent implements OnInit {
+export class DocumentActionEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);

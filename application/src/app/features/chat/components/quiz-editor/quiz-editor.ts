@@ -16,7 +16,7 @@ import type {
   templateUrl: './quiz-editor.html',
   styleUrl: './quiz-editor.css',
 })
-export class QuizEditorComponent implements OnInit {
+export class QuizEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);

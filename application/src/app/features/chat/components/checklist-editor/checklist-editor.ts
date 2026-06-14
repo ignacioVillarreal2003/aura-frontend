@@ -13,7 +13,7 @@ import type { ChecklistDto } from '@aura-types/aura-chat-service.types';
   templateUrl: './checklist-editor.html',
   styleUrl: './checklist-editor.css',
 })
-export class ChecklistEditorComponent implements OnInit {
+export class ChecklistEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);

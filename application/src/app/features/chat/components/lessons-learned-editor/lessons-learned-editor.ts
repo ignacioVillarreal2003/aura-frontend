@@ -16,7 +16,7 @@ import type {
   templateUrl: './lessons-learned-editor.html',
   styleUrl: './lessons-learned-editor.css',
 })
-export class LessonsLearnedEditorComponent implements OnInit {
+export class LessonsLearnedEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);
