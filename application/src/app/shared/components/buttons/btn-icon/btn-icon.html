@@ -1,8 +1,8 @@
-@if (icon) {
+@if (icon()) {
   <button class="btn-icon"
-          [ngClass]="[size, style, rounded]">
+          [ngClass]="[size(), variant(), rounded()]">
     <mat-icon class="material-symbols-rounded filled">
-      {{icon}}
+      {{icon()}}
     </mat-icon>
   </button>
 }

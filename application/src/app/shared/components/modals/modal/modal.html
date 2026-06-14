@@ -4,9 +4,9 @@
        aria-modal="true"
        aria-labelledby="modal-title">
     <header class="modal__header">
-      <h2 id="modal-title" class="modal__title">{{title}}</h2>
+      <h2 id="modal-title" class="modal__title">{{heading()}}</h2>
       <app-btn-icon [icon]="'close'"
-                    [style]="'transparent'"
+                    [variant]="'transparent'"
                     [rounded]="'radius-circle'"
                     (click)="close()"></app-btn-icon>
     </header>

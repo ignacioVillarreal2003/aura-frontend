@@ -1,11 +1,9 @@
 import {
   Directive,
   ElementRef,
-  Input,
-  OnChanges,
   OnDestroy,
-  OnInit,
-  SimpleChanges,
+  effect,
+  input,
 } from '@angular/core';
 
 /**
@@ -21,8 +19,8 @@ import {
   selector: '[tokenMaterialize]',
   standalone: true,
 })
-export class TokenMaterializeDirective implements OnInit, OnChanges, OnDestroy {
-  @Input('tokenMaterialize') active = false;
+export class TokenMaterializeDirective implements OnDestroy {
+  readonly active = input(false, { alias: 'tokenMaterialize' });
 
   private readonly el: HTMLElement;
   private observer: MutationObserver | null = null;
@@ -31,21 +29,17 @@ export class TokenMaterializeDirective implements OnInit, OnChanges, OnDestroy {
 
   constructor(elRef: ElementRef<HTMLElement>) {
     this.el = elRef.nativeElement;
-  }
 
-  ngOnInit(): void {
-    if (this.active) this._attach();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (!changes['active']) return;
-    if (this.active) {
+    // React to `active` toggling: signal inputs don't fire ngOnChanges, so an
+    // effect plays the role of the previous ngOnInit + ngOnChanges logic.
+    effect(() => {
       this.prevLen = 0;
-      this._attach();
-    } else {
-      this.prevLen = 0;
-      this._detach();
-    }
+      if (this.active()) {
+        this._attach();
+      } else {
+        this._detach();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -83,7 +77,7 @@ export class TokenMaterializeDirective implements OnInit, OnChanges, OnDestroy {
       this._annotateNewContent(newStart);
     } finally {
       this.busy = false;
-      if (this.active) {
+      if (this.active()) {
         this.observer ??= new MutationObserver(() => {
           if (this.busy) return;
           this._onMutation();

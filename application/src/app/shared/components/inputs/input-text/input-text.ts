@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, input} from '@angular/core';
 
 @Component({
   selector: 'app-input-text',
@@ -8,11 +8,11 @@ import {Component, Input} from '@angular/core';
 })
 export class InputText {
   id: any;
-  @Input() placeholder: string | undefined;
-  @Input() label: string | undefined;
-  @Input() error: string | undefined;
-  @Input() disabled: boolean = false;
-  @Input() type: 'text' | 'password' = 'text';
+  readonly placeholder = input<string>();
+  readonly label = input<string>();
+  readonly error = input<string>();
+  readonly disabled = input<boolean>(false);
+  readonly inputType = input<'text' | 'password'>('text');
 
   ngOnInit(): void {
     this.id = crypto.randomUUID();

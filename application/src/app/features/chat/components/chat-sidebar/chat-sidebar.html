@@ -25,37 +25,37 @@
       <button
         type="button"
         class="sidebar-link"
-        [class.is-active]="activeId === 'chat-home'"
+        [class.is-active]="activeId() === 'chat-home'"
         [routerLink]="['/main-container', 'chat-home']">
         <i class="pi pi-plus" aria-hidden="true"></i>
-        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Nuevo chat</span>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Nuevo chat</span>
       </button>
 
       <button
         type="button"
         class="sidebar-link"
-        [class.is-active]="activeId === 'chats' || activeId === 'search'"
+        [class.is-active]="activeId() === 'chats' || activeId() === 'search'"
         [routerLink]="['/main-container', 'chats']">
         <i class="pi pi-comments" aria-hidden="true"></i>
-        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Chats</span>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Chats</span>
       </button>
 
       <button
         type="button"
         class="sidebar-link"
-        [class.is-active]="activeId === 'assistants'"
+        [class.is-active]="activeId() === 'assistants'"
         [routerLink]="['/main-container', 'assistants']">
         <i class="pi pi-android" aria-hidden="true"></i>
-        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Asistentes</span>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Asistentes</span>
       </button>
 
       <button
         type="button"
         class="sidebar-link"
-        [class.is-active]="activeId === 'document-search'"
+        [class.is-active]="activeId() === 'document-search'"
         [routerLink]="['/main-container', 'document-search']">
         <i class="pi pi-file" aria-hidden="true"></i>
-        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Documentos</span>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Documentos</span>
       </button>
 
     </nav>
@@ -78,7 +78,7 @@
                       <button
                         type="button"
                         class="sidebar-link sidebar-link--chat"
-                        [class.is-active]="activeId === '' + c.id"
+                        [class.is-active]="activeId() === '' + c.id"
                         [routerLink]="['/main-container', 'chat', c.id]">
                         <i [ngClass]="['pi', c.is_pinned ? 'pi-thumbtack' : 'pi-comments']" aria-hidden="true"></i>
                         <span class="sidebar-link__text">{{ c.name }}</span>
@@ -118,16 +118,16 @@
             <span class="notif-badge">{{ notifState.unreadCount() > 99 ? '99+' : notifState.unreadCount() }}</span>
           }
         </span>
-        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed ? true : null">Notificaciones</span>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Notificaciones</span>
       </button>
 
       <button
         type="button"
         class="sidebar-link"
-        [class.is-active]="activeId === 'profile'"
+        [class.is-active]="activeId() === 'profile'"
         routerLink="/user">
         <span class="avatar-fallback" aria-hidden="true">{{ initials() }}</span>
-        <span class="sidebar-link__stack sidebar-link__stack--collapsible" [attr.aria-hidden]="collapsed ? true : null">
+        <span class="sidebar-link__stack sidebar-link__stack--collapsible" [attr.aria-hidden]="collapsed() ? true : null">
           <span class="user-email">{{ username() }}</span>
         </span>
       </button>

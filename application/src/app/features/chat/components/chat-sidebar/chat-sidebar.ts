@@ -2,11 +2,11 @@ import {
   Component,
   DestroyRef,
   EventEmitter,
-  Input,
   OnInit,
   Output,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -37,8 +37,8 @@ export class ChatSidebar implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   readonly notifState = inject(NotificationState);
 
-  @Input() collapsed = false;
-  @Input() activeId: string | null = null;
+  readonly collapsed = input(false);
+  readonly activeId = input<string | null>(null);
 
   @Output() toggle = new EventEmitter<boolean>();
   @Output() chatAction = new EventEmitter<{ chatId: string; action: string }>();
@@ -76,11 +76,11 @@ export class ChatSidebar implements OnInit {
   }
 
   isOpen() {
-    return !this.collapsed;
+    return !this.collapsed();
   }
 
   onOpenClose() {
-    this.toggle.emit(!this.collapsed);
+    this.toggle.emit(!this.collapsed());
   }
 
   initials() {

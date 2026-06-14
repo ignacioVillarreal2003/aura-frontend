@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Output, input} from '@angular/core';
 import {BtnIcon} from '../../buttons/btn-icon/btn-icon';
 
 @Component({
@@ -10,7 +10,7 @@ import {BtnIcon} from '../../buttons/btn-icon/btn-icon';
   styleUrl: './modal.css'
 })
 export class Modal {
-  @Input() title: string = 'Title';
+  readonly heading = input<string>('Title');
   @Output() onClose: EventEmitter<void> = new EventEmitter<void>();
 
   close(): void {
