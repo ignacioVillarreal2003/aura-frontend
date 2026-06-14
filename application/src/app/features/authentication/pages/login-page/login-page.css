@@ -34,8 +34,10 @@
 
 .auth-page__title {
   font-family: Chillax, sans-serif;
-  font-weight: 200;
+  font-weight: 300;
   color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .auth-page__title span {
