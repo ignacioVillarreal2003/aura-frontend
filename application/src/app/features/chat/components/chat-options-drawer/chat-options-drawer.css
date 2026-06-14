@@ -516,8 +516,8 @@
 }
 
 .drawer-member-status--active {
-  background: rgba(16, 185, 129, 0.18);
-  color: #6ee7b7;
+  background: rgba(48, 209, 88, 0.18);
+  color: var(--color-malachite-400);
 }
 
 .drawer-member-status--inactive {
@@ -968,7 +968,7 @@
 }
 
 .drawer-share-badge--active {
-  color: #4ade80;
+  color: var(--color-malachite-500);
 }
 
 .drawer-share-badge--inactive {
@@ -1015,8 +1015,8 @@
 }
 
 .drawer-share-card__status-dot--active {
-  background: #4ade80;
-  box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+  background: var(--color-malachite-500);
+  box-shadow: 0 0 6px rgba(48, 209, 88, 0.5);
 }
 
 .drawer-share-card__token {
@@ -1075,7 +1075,7 @@
 }
 
 .drawer-share-card__badge--active {
-  color: #4ade80;
+  color: var(--color-malachite-500);
 }
 
 .drawer-share-card__badge--inactive {
@@ -1299,9 +1299,9 @@
 
 /* ── Checklist mini progress ────────────────────────────────── */
 .drawer-tag--checklist {
-  background: rgba(16, 185, 129, 0.15);
-  color: #6ee7b7;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: rgba(48, 209, 88, 0.15);
+  color: var(--color-malachite-400);
+  border: 1px solid rgba(48, 209, 88, 0.2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1326,7 +1326,7 @@
 .drawer-checklist-progress__bar {
   display: block;
   height: 100%;
-  background: #10b981;
+  background: var(--color-malachite-500);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -1470,7 +1470,7 @@
 .drawer-user-result__check {
   flex-shrink: 0;
   font-size: 12px;
-  color: #6ee7b7;
+  color: var(--color-malachite-400);
 }
 
 /* ── Selected user chips ───────────────────────────────────── */

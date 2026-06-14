@@ -280,6 +280,16 @@
   font-size: 11px;
 }
 
+/* ── Foco visible (teclado) — DESIGN.md ───────────────────────────── */
+
+.fd-close:focus-visible,
+.fd-reason:focus-visible,
+.fd-btn:focus-visible,
+.fd-field__textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 /* ── Reduced motion ───────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
