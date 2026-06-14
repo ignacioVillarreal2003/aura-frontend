@@ -32,6 +32,10 @@ export class Background2 {
     this.layer = this.elRef.nativeElement.querySelector('.background-2__layer');
 
     this.generateNewTarget();
+    this.applyStyles();
+
+    // Respeta prefers-reduced-motion: deja el gradiente estático, sin loop.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
 
     this.animationIntervalId = window.setInterval(() => {
       this.updateCurrentValues();
