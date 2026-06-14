@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   ElementRef,
-  HostListener,
   NgZone,
   OnDestroy,
   computed,
@@ -121,6 +120,9 @@ const AI_MODES: readonly AiModeOption[] = [
   imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, TokenMaterializeDirective, FeedbackDialog],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
+  host: {
+    '(document:click)': 'onDocumentClick()',
+  },
 })
 export class ChatSession implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
@@ -200,7 +202,6 @@ export class ChatSession implements OnDestroy {
   private _messagesTopObserver: IntersectionObserver | null = null;
   readonly messagesContainerRef = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
 
-  @HostListener('document:click')
   onDocumentClick(): void {
     if (this.exportDropdownId() !== null) {
       this.exportDropdownId.set(null);

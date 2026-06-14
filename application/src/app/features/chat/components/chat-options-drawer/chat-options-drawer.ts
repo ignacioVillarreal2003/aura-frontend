@@ -1,6 +1,5 @@
 import {
   Component,
-  HostListener,
   computed,
   effect,
   inject,
@@ -93,6 +92,8 @@ const ARTIFACT_TAB_META: Record<ArtifactTabKey, { label: string; icon: string; p
   styleUrl: './chat-options-drawer.css',
   host: {
     '[class.open]': 'isOpen()',
+    '(document:click)': 'onDocumentClick()',
+    '(document:keydown)': 'onDocumentKeydown($event)',
   },
 })
 export class ChatOptionsDrawer {
@@ -1200,12 +1201,10 @@ export class ChatOptionsDrawer {
     });
   }
 
-  @HostListener('document:click')
   onDocumentClick(): void {
     if (this.userSearchOpen()) this.userSearchOpen.set(false);
   }
 
-  @HostListener('document:keydown', ['$event'])
   onDocumentKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       if (this.userSearchOpen()) {
