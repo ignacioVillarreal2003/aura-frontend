@@ -609,3 +609,9 @@
   background: rgba(99, 102, 241, 0.04);
   border-radius: 0 0 12px 12px;
 }
+
+/* Foco visible (teclado) — DESIGN.md */
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

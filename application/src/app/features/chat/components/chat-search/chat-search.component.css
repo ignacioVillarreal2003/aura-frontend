@@ -64,7 +64,8 @@
 }
 
 .search-field:focus {
-  border-color: var(--border-strong);
+  border-color: var(--accent-color);
+  box-shadow: var(--focus-ring);
 }
 
 .search-field::placeholder {
@@ -82,7 +83,7 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--overlay-hover);
   color: var(--text-secondary);
   font-size: 10px;
   cursor: pointer;
@@ -90,7 +91,7 @@
 }
 
 .search-clear-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--overlay-active);
   color: var(--text-primary);
 }
 
@@ -109,8 +110,8 @@
   gap: 3px;
   padding: 3px 10px 3px 7px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  background: var(--overlay-subtle);
   color: var(--text-secondary);
   font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 12px;
@@ -123,13 +124,13 @@
 .tag-filter-pill:hover {
   background: rgba(99, 102, 241, 0.12);
   border-color: rgba(99, 102, 241, 0.3);
-  color: #a5b4fc;
+  color: var(--accent-fg);
 }
 
 .tag-filter-pill--active {
   background: rgba(99, 102, 241, 0.18);
   border-color: rgba(99, 102, 241, 0.4);
-  color: #a5b4fc;
+  color: var(--accent-fg);
 }
 
 .tag-filter-pill--active:hover {
@@ -168,7 +169,7 @@
   border-radius: 20px;
   background: rgba(99, 102, 241, 0.18);
   border: 1px solid rgba(99, 102, 241, 0.35);
-  color: #a5b4fc;
+  color: var(--accent-fg);
   font-size: 12px;
   font-weight: 500;
 }
@@ -319,13 +320,13 @@
 .chat-item-tag:hover {
   background: rgba(99, 102, 241, 0.2);
   border-color: rgba(99, 102, 241, 0.4);
-  color: #a5b4fc;
+  color: var(--accent-fg);
 }
 
 .chat-item-tag--active {
   background: rgba(99, 102, 241, 0.22);
   border-color: rgba(99, 102, 241, 0.45);
-  color: #a5b4fc;
+  color: var(--accent-fg);
 }
 
 /* ── Loading state ───────────────────────────────────────────── */
@@ -382,7 +383,7 @@
 
 .empty-state__icon {
   font-size: 2rem;
-  color: rgba(255, 255, 255, 0.12);
+  color: var(--border-strong);
 }
 
 .empty-state__text {
@@ -406,4 +407,16 @@
 
 .chat-history::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Foco visible (teclado) — DESIGN.md ─────────────────────── */
+.search-clear-btn:focus-visible,
+.tag-filter-pill:focus-visible,
+.active-filter-chip__remove:focus-visible,
+.chat-home-nav-button:focus-visible,
+.chat-item:focus-visible,
+.chat-item-tag:focus-visible,
+.load-more-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }

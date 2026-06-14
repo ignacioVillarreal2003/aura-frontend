@@ -12,8 +12,8 @@
   width: 100%;
   padding: 1.5rem 2rem 1.5rem;
   box-sizing: border-box;
-  background-color: #151515;
-  color: #fafaf9;
+  background-color: var(--surface-page);
+  color: var(--text-primary);
   font-family: var(--font-ui, 'Sora', sans-serif);
   overflow-y: auto;
   display: flex;
@@ -37,30 +37,32 @@
   gap: 0.4rem;
   padding: 0.5rem 0.9rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--border-subtle);
   background: transparent;
-  color: #e7e5e4;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 0.85rem;
   white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .as-btn--analytics:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--border-strong);
+  background: var(--overlay-hover);
 }
 
 .as-title {
   margin: 0 0 0.35rem;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #e7e5e4;
+  color: var(--text-primary);
 }
 
 .as-subtitle {
   margin: 0;
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: #78716c;
+  color: var(--text-secondary);
 }
 
 /* ── Search ─────────────────────────────────────────────────── */
@@ -75,7 +77,7 @@
   position: absolute;
   left: 0.75rem;
   font-size: 0.8rem;
-  color: #57534e;
+  color: var(--text-tertiary);
   pointer-events: none;
 }
 
@@ -83,23 +85,24 @@
   width: 100%;
   max-width: 28rem;
   padding: 0.5rem 0.875rem 0.5rem 2.25rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: var(--overlay-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  color: #fafaf9;
+  color: var(--text-primary);
   font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .as-search-input::placeholder {
-  color: #57534e;
+  color: var(--text-secondary);
 }
 
 .as-search-input:focus {
-  border-color: rgba(99, 102, 241, 0.5);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--accent-color);
+  background: var(--overlay-hover);
+  box-shadow: var(--focus-ring);
 }
 
 /* ── Alert ──────────────────────────────────────────────────── */
@@ -125,9 +128,9 @@
 /* ── Card ───────────────────────────────────────────────────── */
 .as-card {
   height: 4.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--overlay-subtle);
   padding: 0 1.25rem;
   display: flex;
   align-items: center;
@@ -142,7 +145,7 @@
 }
 
 .as-card--skeleton {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--overlay-subtle);
   animation: as-pulse 1.4s ease-in-out infinite;
 }
 
@@ -176,7 +179,7 @@
   margin: 0 0 0.2rem;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #e7e5e4;
+  color: var(--text-primary);
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -186,7 +189,7 @@
 .as-card__desc {
   margin: 0;
   font-size: 0.775rem;
-  color: #78716c;
+  color: var(--text-secondary);
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -210,18 +213,17 @@
   font-weight: 500;
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  border: none;
   cursor: pointer;
   white-space: nowrap;
   background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
+  color: var(--accent-fg);
   border: 1px solid rgba(99, 102, 241, 0.25);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
 .as-btn--start:hover:not(:disabled) {
   background: rgba(99, 102, 241, 0.28);
-  color: #eef2ff;
+  color: var(--accent-fg);
   border-color: rgba(99, 102, 241, 0.5);
   transform: translateX(2px);
 }
@@ -239,6 +241,13 @@
   font-size: 0.75rem;
 }
 
+/* ── Foco visible (teclado) — DESIGN.md ─────────────────────── */
+.as-btn--start:focus-visible,
+.as-btn--analytics:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 /* ── Empty ──────────────────────────────────────────────────── */
 .as-empty {
   display: flex;
@@ -251,12 +260,24 @@
 
 .as-empty__icon {
   font-size: 3rem;
-  opacity: 0.35;
+  opacity: 0.5;
 }
 
 .as-empty__text {
   margin: 0;
   font-size: 0.875rem;
-  color: #57534e;
+  color: var(--text-secondary);
   max-width: 28rem;
+}
+
+/* ── Motion ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .as-card--skeleton {
+    animation: none;
+    opacity: 0.6;
+  }
+  .as-btn--start:hover:not(:disabled),
+  .as-btn--start:active:not(:disabled) {
+    transform: none;
+  }
 }
