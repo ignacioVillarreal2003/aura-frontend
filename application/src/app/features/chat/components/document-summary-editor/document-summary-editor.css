@@ -291,3 +291,9 @@
 :host ::ng-deep .ds-preview__body th { padding: 8px 12px; background: rgba(45,212,191,0.12); border: 1px solid rgba(255,255,255,0.1); color: #5eead4; font-weight: 600; text-align: left; }
 :host ::ng-deep .ds-preview__body td { padding: 7px 12px; border: 1px solid rgba(255,255,255,0.07); color: #d4d4d8; }
 :host ::ng-deep .ds-preview__body tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+/* Foco visible (teclado) — DESIGN.md */
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

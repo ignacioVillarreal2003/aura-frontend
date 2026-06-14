@@ -1,27 +1,21 @@
-export type NotificationStatus = 'unread' | 'read' | 'archived';
-export type NotificationType = 'system' | 'admin' | 'user' | 'event';
+export type NotificationStatus = 'unread' | 'read';
+export type NotificationType = 'system' | 'admin' | 'event';
 export type NotificationSeverity = 'info' | 'success' | 'warning' | 'critical';
 export type NotificationChannel = 'inapp' | 'email';
 
 export interface NotificationDto {
   readonly id: number;
   readonly receiver_id: number;
-  readonly title: string | null;
+  readonly event_type: string;
   readonly message: string;
-  readonly type: NotificationType;
-  readonly event_type: string | null;
-  readonly event_key: string | null;
   readonly data: Record<string, unknown>;
   readonly severity: NotificationSeverity;
   readonly link_url: string | null;
-  readonly sender_name: string | null;
-  readonly target_scope: string;
-  readonly target_label: string | null;
+  readonly actor_name: string | null;
   readonly status: NotificationStatus;
   readonly read_at: string | null;
   readonly created_by: number | null;
   readonly created_at: string;
-  readonly updated_at: string;
 }
 
 export interface PaginatedNotificationsDto {
@@ -50,7 +44,6 @@ export interface MarkAllReadResponseDto {
 export interface NotificationListParams {
   readonly status?: NotificationStatus | NotificationStatus[];
   readonly event_type?: string;
-  readonly type?: NotificationType;
   readonly since?: string;
   readonly page?: number;
   readonly page_size?: number;
@@ -70,12 +63,8 @@ export interface NotificationPreferenceUpdateBody {
   readonly mute_until?: string | null;
 }
 
-export interface EventPreferenceChannels {
-  readonly inapp: boolean;
-  readonly email: boolean;
-}
-
-export interface EventPreferenceEntryDto {
+/** Entry of the public event-type catalogue (`GET /api/v1/event-types/`). Read-only. */
+export interface EventTypeCatalogueEntryDto {
   readonly event_type: string;
   readonly type: NotificationType;
   readonly severity: NotificationSeverity;
@@ -83,12 +72,6 @@ export interface EventPreferenceEntryDto {
   readonly default_channels: NotificationChannel[];
   readonly available_channels: NotificationChannel[];
   readonly is_silenceable: boolean;
-  readonly channels: EventPreferenceChannels;
-}
-
-export interface EventPreferenceUpdateBody {
-  readonly inapp_enabled?: boolean;
-  readonly email_enabled?: boolean;
 }
 
 // SSE
@@ -113,5 +96,5 @@ export interface SseNotificationUpdatedSingle {
 export interface SseNotificationUpdatedBulk {
   readonly all_marked_read: true;
   readonly count: number;
-  readonly until_id?: number;
+  readonly until_id?: number | null;
 }

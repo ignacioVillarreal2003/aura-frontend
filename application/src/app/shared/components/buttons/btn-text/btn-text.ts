@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, input} from '@angular/core';
 import {NgClass} from '@angular/common';
 
 @Component({
@@ -10,10 +10,10 @@ import {NgClass} from '@angular/common';
   styleUrl: './btn-text.css'
 })
 export class BtnText {
-  @Input() label: string | undefined;
-  @Input() variant: 'solid' | 'outline' | 'ghost' = 'solid';
-  @Input() colorScheme: 'blue' | 'red' | 'auto' | 'dark' | 'light' = 'blue';
-  @Input() size: 'sm' | 'md' | 'lg' = 'md';
-  @Input() type: 'button' | 'submit' = 'button';
-  @Input() disabled: boolean = false;
+  readonly label = input<string>();
+  readonly variant = input<'solid' | 'outline' | 'ghost'>('solid');
+  readonly colorScheme = input<'violet' | 'blue' | 'red' | 'auto' | 'dark' | 'light'>('violet');
+  readonly size = input<'sm' | 'md' | 'lg'>('md');
+  readonly buttonType = input<'button' | 'submit'>('button');
+  readonly disabled = input<boolean>(false);
 }

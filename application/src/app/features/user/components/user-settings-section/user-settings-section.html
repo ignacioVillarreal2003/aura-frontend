@@ -1,0 +1,107 @@
+<div class="user-settings-container">
+  @switch (section()) {
+    @case ('security') {
+      <header class="user-settings-header">
+        <h1 class="user-settings-title">
+          <i class="pi pi-lock" aria-hidden="true"></i>
+          Contraseña
+        </h1>
+        <p class="user-settings-subtitle">Actualizá la contraseña de tu cuenta.</p>
+      </header>
+      <div class="user-settings-body">
+        <div class="password-card">
+        <div class="password-section">
+          <div class="input-group">
+            <label class="input-label">Contraseña actual</label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="store.showPasswords().current ? 'text' : 'password'"
+                class="input-field"
+                placeholder="Ingresa tu contraseña actual"
+                [value]="store.passwordFields().current"
+                (input)="store.setPasswordField('current', $any($event.target).value)" />
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="store.togglePasswordVisibility('current')">
+                <i [class]="store.showPasswords().current ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Nueva contraseña</label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="store.showPasswords().new ? 'text' : 'password'"
+                class="input-field"
+                placeholder="Ingresa tu nueva contraseña"
+                [value]="store.passwordFields().new"
+                (input)="store.setPasswordField('new', $any($event.target).value)" />
+              <button type="button" class="password-toggle" (click)="store.togglePasswordVisibility('new')">
+                <i [class]="store.showPasswords().new ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Confirmar nueva contraseña</label>
+            <div class="password-input-wrapper">
+              <input
+                [type]="store.showPasswords().confirm ? 'text' : 'password'"
+                class="input-field"
+                placeholder="Confirma tu nueva contraseña"
+                [value]="store.passwordFields().confirm"
+                (input)="store.setPasswordField('confirm', $any($event.target).value)" />
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="store.togglePasswordVisibility('confirm')">
+                <i [class]="store.showPasswords().confirm ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="change-password-btn" (click)="store.onPasswordChange()">
+            <i class="pi pi-key"></i>
+            Cambiar contraseña
+          </button>
+        </div>
+        </div>
+      </div>
+    }
+    @case ('data-control') {
+      <header class="user-settings-header">
+        <h1 class="user-settings-title">
+          <i class="pi pi-database" aria-hidden="true"></i>
+          Control de datos
+        </h1>
+      </header>
+      <div class="user-settings-body">
+        <div class="data-control-section">
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Chats archivados</span>
+            </div>
+            <button type="button" class="manage-btn">Administrar</button>
+          </div>
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Archivar todos los chats</span>
+            </div>
+            <button type="button" class="manage-btn">Archivar todo</button>
+          </div>
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Eliminar todos los chats</span>
+            </div>
+            <button type="button" class="danger-btn">Eliminar todo</button>
+          </div>
+          <div class="data-control-item">
+            <div class="data-control-info">
+              <span class="data-control-label">Exportar datos</span>
+            </div>
+            <button type="button" class="export-btn">Exportar</button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

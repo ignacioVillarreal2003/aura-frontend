@@ -12,37 +12,9 @@
       </button>
       <div class="ds-bar__identity">
         <span class="ds-type-badge">Resumen</span>
-        <input
-          class="ds-title"
-          type="text"
-          [value]="editTitle()"
-          (input)="editTitle.set($any($event.target).value)"
-          placeholder="Título del resumen"
-          maxlength="500"
-          aria-label="Título"
-        />
+        <span class="ds-title">{{ s.title }}</span>
       </div>
       <div class="ds-bar__actions">
-        <div class="ds-view-toggle" role="group" aria-label="Modo de visualización">
-          <button
-            type="button"
-            class="ds-view-btn"
-            [class.ds-view-btn--active]="viewMode() === 'edit'"
-            (click)="viewMode.set('edit')"
-          >
-            <i class="pi pi-pencil" aria-hidden="true"></i>
-            Editar
-          </button>
-          <button
-            type="button"
-            class="ds-view-btn"
-            [class.ds-view-btn--active]="viewMode() === 'preview'"
-            (click)="viewMode.set('preview')"
-          >
-            <i class="pi pi-eye" aria-hidden="true"></i>
-            Vista previa
-          </button>
-        </div>
         <button type="button" class="ds-action-btn" [disabled]="exportingAs() !== null" (click)="export('pdf')">
           <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
           PDF
@@ -50,10 +22,6 @@
         <button type="button" class="ds-action-btn" [disabled]="exportingAs() !== null" (click)="export('markdown')">
           <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
           MD
-        </button>
-        <button type="button" class="ds-action-btn ds-action-btn--primary" [disabled]="saving()" (click)="save()">
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-          Guardar
         </button>
       </div>
     </header>
@@ -67,36 +35,19 @@
         <i class="pi pi-calendar" aria-hidden="true"></i>
         {{ s.created_at | date:'dd/MM/yyyy HH:mm' }}
       </span>
-      @if (hasChanges()) {
-        <span class="ds-meta__chip ds-meta__chip--unsaved">
-          <i class="pi pi-circle-fill" aria-hidden="true"></i>
-          Sin guardar
-        </span>
-      }
     </div>
 
     <div class="ds-editor">
-      @if (viewMode() === 'edit') {
-        <textarea
-          class="ds-textarea"
-          aria-label="Resumen generado"
-          [value]="editSummary()"
-          (input)="editSummary.set($any($event.target).value)"
-          placeholder="Resumen generado por IA…"
-          spellcheck="false"
-        ></textarea>
-      } @else {
-        <div class="ds-preview">
-          @if (editSummary().trim()) {
-            <div class="ds-preview__body" [innerHTML]="editSummary() | markdown"></div>
-          } @else {
-            <div class="ds-preview__empty">
-              <i class="pi pi-file-edit" aria-hidden="true"></i>
-              <p>Sin contenido. Cambiá a modo edición para escribir.</p>
-            </div>
-          }
-        </div>
-      }
+      <div class="ds-preview">
+        @if (s.summary.trim()) {
+          <div class="ds-preview__body" [innerHTML]="s.summary | markdown"></div>
+        } @else {
+          <div class="ds-preview__empty">
+            <i class="pi pi-file-edit" aria-hidden="true"></i>
+            <p>Sin contenido.</p>
+          </div>
+        }
+      </div>
     </div>
   }
 </div>

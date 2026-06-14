@@ -7,6 +7,8 @@ import type {
   DocumentProcessingCreateDocumentResponseDto,
   DocumentQueryChatDocumentDto,
   DocumentQueryListByChatResponseDto,
+  DocumentSearchRequestDto,
+  DocumentSearchResponseDto,
 } from '@aura-types/aura-document-processing-service.types';
 import {
   DOCUMENT_PROCESSING_UPLOAD_FIELD_NAME,
@@ -28,6 +30,13 @@ export class AuraDocumentProcessingServiceHttp {
   listDocumentsByChat(chatId: number): Observable<DocumentQueryListByChatResponseDto> {
     return this.http.get<DocumentQueryListByChatResponseDto>(
       `${this.base}/document-query/documents/chat/${chatId}`,
+    );
+  }
+
+  searchDocumentsByContent(body: DocumentSearchRequestDto): Observable<DocumentSearchResponseDto> {
+    return this.http.post<DocumentSearchResponseDto>(
+      `${this.base}/document-search/by-content`,
+      body,
     );
   }
 

@@ -24,7 +24,7 @@
       <div class="header-right">
         <app-btn-icon
           [icon]="'more_vert'"
-          [style]="'transparent'"
+          [variant]="'transparent'"
           [rounded]="'radius-circle'"
           (click)="toggleOptions()"
         />
@@ -40,7 +40,6 @@
         is_pinned: chat.is_pinned,
         archived_at: chat.archived_at,
         is_locked: chat.is_locked,
-        is_muted: chat.is_muted,
         tags: chat.tags,
         system_prompt: chat.system_prompt,
         response_style: chat.response_style

@@ -212,3 +212,9 @@
 .db-add-btn:hover {
   border-color: rgba(99,102,241,0.5); color: #818cf8; background: rgba(99,102,241,0.06);
 }
+
+/* Foco visible (teclado) — DESIGN.md */
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

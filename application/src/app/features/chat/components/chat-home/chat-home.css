@@ -472,7 +472,7 @@
 }
 
 .chat-home-doc-hint__ok {
-  color: #4ade80 !important;
+  color: var(--color-malachite-500) !important; /* #30d158 — verde de éxito del sistema */
 }
 
 .chat-home-doc-hint strong {
@@ -679,6 +679,23 @@
 
 .chat-home-send--gen i {
   transform: none;
+}
+
+/* ── Focus visible — DESIGN.md: 3px Thought Violet ring, sin outline-none pelado ── */
+.chat-home-mode-trigger:focus-visible,
+.chat-home-attach:focus-visible,
+.chat-home-gen-mode-pill:focus-visible,
+.chat-home-mode-item:focus-visible,
+.chat-home-file-chip__remove:focus-visible,
+.chat-home-gen-type-select:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* El send conserva su Action Glow y suma el anillo de foco */
+.chat-home-send:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring), 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 
 @media (max-width: 640px) {

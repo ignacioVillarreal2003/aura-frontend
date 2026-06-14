@@ -8,4 +8,5 @@ export const environment = {
   documentProcessingUrl: '',
   toolsApiUrl: '',
   notificationApiUrl: '',
+  llmApiUrl: '',
 };

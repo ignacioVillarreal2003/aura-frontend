@@ -15,6 +15,9 @@ import { LoginForm } from '../../components/login-form/login-form';
 })
 export class LoginPage implements AfterViewInit {
   ngAfterViewInit(): void {
+    // Respeta prefers-reduced-motion: el CSS deja el wordmark visible (scale 1).
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
     animate('.auth-page__title span', {
       scale: [0, 1],
       duration: 600,

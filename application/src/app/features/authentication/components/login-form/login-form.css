@@ -1,3 +1,10 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
 .login-form {
   width: 100%;
   height: 100%;
@@ -25,7 +32,7 @@
 }
 
 .login-form__title {
-  font-size: 48px;
+  font-size: clamp(1.75rem, 5vw, 48px);
   text-align: center;
   color: var(--foreground);
 }

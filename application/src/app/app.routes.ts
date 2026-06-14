@@ -23,7 +23,7 @@ export const routes: Routes = [
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/report-editor/report-editor').then(
-        (m) => m.ReportEditorComponent
+        (m) => m.ReportEditor
       ),
   },
   {
@@ -31,7 +31,7 @@ export const routes: Routes = [
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/checklist-editor/checklist-editor').then(
-        (m) => m.ChecklistEditorComponent
+        (m) => m.ChecklistEditor
       ),
   },
   {
@@ -39,7 +39,7 @@ export const routes: Routes = [
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/quiz-editor/quiz-editor').then(
-        (m) => m.QuizEditorComponent
+        (m) => m.QuizEditor
       ),
   },
   {
@@ -47,7 +47,7 @@ export const routes: Routes = [
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/timeline-editor/timeline-editor').then(
-        (m) => m.TimelineEditorComponent
+        (m) => m.TimelineEditor
       ),
   },
   {
@@ -55,7 +55,7 @@ export const routes: Routes = [
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/lessons-learned-editor/lessons-learned-editor').then(
-        (m) => m.LessonsLearnedEditorComponent
+        (m) => m.LessonsLearnedEditor
       ),
   },
   {
@@ -63,7 +63,7 @@ export const routes: Routes = [
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/decision-brief-editor/decision-brief-editor').then(
-        (m) => m.DecisionBriefEditorComponent
+        (m) => m.DecisionBriefEditor
       ),
   },
   {
@@ -71,7 +71,7 @@ export const routes: Routes = [
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/document-summary-editor/document-summary-editor').then(
-        (m) => m.DocumentSummaryEditorComponent
+        (m) => m.DocumentSummaryEditor
       ),
   },
   {
@@ -79,7 +79,7 @@ export const routes: Routes = [
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/document-action-editor/document-action-editor').then(
-        (m) => m.DocumentActionEditorComponent
+        (m) => m.DocumentActionEditor
       ),
   },
 
@@ -94,7 +94,7 @@ export const routes: Routes = [
     path: 'share/:token',
     loadComponent: () =>
       import('./features/chat/components/public-share/public-share').then(
-        (m) => m.PublicShareComponent
+        (m) => m.PublicShare
       ),
   },
 

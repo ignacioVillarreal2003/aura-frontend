@@ -1,0 +1,262 @@
+/* El scroll lo hace el <main class="user-content"> del user-page; el :host llena el alto. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.user-profile-container {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2rem 1.75rem 2.5rem;
+  padding-bottom: 3rem;
+  box-sizing: border-box;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 0;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-name {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.profile-role {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.25rem 0;
+}
+
+.profile-department {
+  font-size: 1rem;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.edit-button {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: inherit;
+}
+
+.edit-button:hover {
+  background: var(--overlay-hover);
+  border-color: var(--border-strong);
+}
+
+.profile-content-wrapper {
+  padding-right: 0.25rem;
+}
+
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding-top: 2rem;
+}
+
+.profile-section {
+  background: var(--surface-raised);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-title i {
+  color: var(--accent-color);
+  font-size: 1.1rem;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Lista plana dentro de la card de sección — sin cards anidadas.
+   Filas separadas por divisores sutiles, ancladas por el icon-tile. */
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-surface);
+  color: var(--accent-fg);
+  font-size: 1.05rem;
+}
+
+.info-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.info-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.info-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.info-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+}
+
+.info-role-chip {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: var(--accent-surface);
+  color: var(--accent-fg);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.info-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  transition: border-color 0.2s ease;
+}
+
+.info-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.save-button {
+  background: var(--color-malachite-500);
+  border: none;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: inherit;
+}
+
+.save-button:hover {
+  background: var(--color-malachite-600);
+}
+
+.cancel-button {
+  background: var(--text-secondary);
+  border: none;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: inherit;
+}
+
+.cancel-button:hover {
+  background: var(--text-tertiary);
+}
+

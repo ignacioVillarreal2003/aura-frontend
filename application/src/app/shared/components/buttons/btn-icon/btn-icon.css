@@ -15,6 +15,18 @@
   transform: scale(0.95);
 }
 
+.btn-icon:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-icon:hover,
+  .btn-icon:active {
+    transform: none;
+  }
+}
+
 .small {
   --size: 38px;
   width: var(--size);
@@ -128,6 +140,6 @@
 }
 
 .danger {
-  background-color: red;
+  background-color: var(--destructive);
   color: white;
 }

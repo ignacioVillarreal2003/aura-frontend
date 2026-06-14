@@ -12,15 +12,7 @@
         <i class="pi pi-arrow-left" aria-hidden="true"></i>
         Volver
       </button>
-      <input
-        class="te-title"
-        type="text"
-        [value]="editTitle()"
-        (input)="editTitle.set($any($event.target).value)"
-        placeholder="Título de la línea de tiempo"
-        maxlength="255"
-        aria-label="Título"
-      />
+      <span class="te-title">{{ t.title }}</span>
       <div class="te-bar__actions">
         <button type="button" class="te-action-btn" [disabled]="exportingAs() !== null" (click)="export('pdf')">
           <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
@@ -29,10 +21,6 @@
         <button type="button" class="te-action-btn" [disabled]="exportingAs() !== null" (click)="export('markdown')">
           <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
           MD
-        </button>
-        <button type="button" class="te-action-btn te-action-btn--primary" [disabled]="saving()" (click)="save()">
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-          Guardar
         </button>
       </div>
     </header>
@@ -49,40 +37,34 @@
       </span>
       <span class="te-meta__chip">
         <i class="pi pi-list" aria-hidden="true"></i>
-        {{ events().length }} evento{{ events().length !== 1 ? 's' : '' }}
+        {{ sortedEvents().length }} evento{{ sortedEvents().length !== 1 ? 's' : '' }}
       </span>
     </div>
 
     <!-- ── Body ────────────────────────────────────────────── -->
     <div class="te-body">
 
-      <!-- Summary -->
-      <div class="te-field">
-        <label class="te-label">Resumen general</label>
-        <textarea
-          class="te-textarea"
-          rows="3"
-          placeholder="Descripción general de la línea de tiempo…"
-          [value]="editSummary()"
-          (input)="editSummary.set($any($event.target).value)"
-        ></textarea>
-      </div>
+      @if (t.summary) {
+        <div class="te-field">
+          <span class="te-label">Resumen general</span>
+          <p class="te-summary-text">{{ t.summary }}</p>
+        </div>
+      }
 
-      <!-- Timeline visual -->
       <div class="te-section-label">
         <i class="pi pi-calendar" aria-hidden="true"></i>
         Eventos
       </div>
 
-      @if (events().length === 0) {
+      @if (sortedEvents().length === 0) {
         <div class="te-empty">
           <i class="pi pi-calendar te-empty__icon" aria-hidden="true"></i>
-          <p>Sin eventos aún. Añadí el primero con el botón de abajo.</p>
+          <p>Sin eventos.</p>
         </div>
       }
 
       <div class="te-timeline">
-        @for (evt of events(); track evt.uid; let ei = $index; let last = $last) {
+        @for (evt of sortedEvents(); track evt.id; let ei = $index; let last = $last) {
           <div class="te-event" [class.te-event--last]="last">
             <!-- Timeline spine -->
             <div class="te-event__spine">
@@ -94,75 +76,25 @@
             <div class="te-event__card">
               <div class="te-event__card-header">
                 <span class="te-event__num">{{ ei + 1 }}</span>
-                <div class="te-event__move-btns">
-                  <button type="button" class="te-event__move" [disabled]="ei === 0"
-                    (click)="moveEvent(ei, -1)" title="Subir">
-                    <i class="pi pi-chevron-up" aria-hidden="true"></i>
-                  </button>
-                  <button type="button" class="te-event__move" [disabled]="ei === events().length - 1"
-                    (click)="moveEvent(ei, 1)" title="Bajar">
-                    <i class="pi pi-chevron-down" aria-hidden="true"></i>
-                  </button>
-                </div>
-                <button type="button" class="te-event__del" (click)="deleteEvent(ei)" title="Eliminar evento">
-                  <i class="pi pi-trash" aria-hidden="true"></i>
-                </button>
               </div>
 
               <div class="te-event__fields">
-                <div class="te-event__row te-event__row--date">
-                  <div class="te-field-inline">
-                    <label class="te-label">Etiqueta de fecha</label>
-                    <input
-                      type="text"
-                      class="te-input"
-                      [value]="evt.occurred_label"
-                      (input)="updateField(ei, 'occurred_label', $event)"
-                      placeholder="ej. Enero 2024, Fase 1…"
-                    />
+                @if (evt.occurred_label) {
+                  <div class="te-event__date-label">
+                    <i class="pi pi-calendar" aria-hidden="true"></i>
+                    {{ evt.occurred_label }}
                   </div>
-                  <div class="te-field-inline">
-                    <label class="te-label">Fecha exacta (opcional)</label>
-                    <input
-                      type="datetime-local"
-                      class="te-input"
-                      [value]="evt.occurred_at"
-                      (input)="updateField(ei, 'occurred_at', $event)"
-                    />
-                  </div>
-                </div>
-
-                <div class="te-field-inline">
-                  <label class="te-label">Título del evento</label>
-                  <input
-                    type="text"
-                    class="te-input"
-                    [value]="evt.title"
-                    (input)="updateField(ei, 'title', $event)"
-                    placeholder="Título del evento…"
-                  />
-                </div>
-
-                <div class="te-field-inline">
-                  <label class="te-label">Descripción</label>
-                  <textarea
-                    class="te-textarea te-textarea--sm"
-                    rows="2"
-                    [value]="evt.description"
-                    (input)="updateField(ei, 'description', $event)"
-                    placeholder="Descripción del evento…"
-                  ></textarea>
-                </div>
+                }
+                <div class="te-event__title-view">{{ evt.title }}</div>
+                @if (evt.description) {
+                  <div class="te-event__desc-view">{{ evt.description }}</div>
+                }
               </div>
             </div>
           </div>
         }
       </div>
 
-      <button type="button" class="te-add-btn" (click)="addEvent()">
-        <i class="pi pi-plus" aria-hidden="true"></i>
-        Añadir evento
-      </button>
     </div>
   }
 </div>

@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, input} from '@angular/core';
 import {NgClass} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
 
@@ -12,8 +12,8 @@ import {MatIcon} from '@angular/material/icon';
   styleUrl: './btn-icon.css'
 })
 export class BtnIcon {
-  @Input() size: 'small' | 'medium' | 'large' = 'large';
-  @Input() style: 'transparent' | 'auto' | 'dark' | 'light' | 'danger' = 'auto';
-  @Input() rounded: 'radius-normal' | 'radius-circle' = 'radius-normal';
-  @Input() icon: string | undefined;
+  readonly size = input<'small' | 'medium' | 'large'>('large');
+  readonly variant = input<'transparent' | 'auto' | 'dark' | 'light' | 'danger'>('auto');
+  readonly rounded = input<'radius-normal' | 'radius-circle'>('radius-normal');
+  readonly icon = input<string>();
 }

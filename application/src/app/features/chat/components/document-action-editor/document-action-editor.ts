@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs';
@@ -24,7 +24,7 @@ const ACTION_LABELS: Record<DocumentActionType, string> = {
   templateUrl: './document-action-editor.html',
   styleUrl: './document-action-editor.css',
 })
-export class DocumentActionEditorComponent implements OnInit {
+export class DocumentActionEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);
@@ -32,22 +32,7 @@ export class DocumentActionEditorComponent implements OnInit {
 
   readonly action = signal<DocumentActionDto | null>(null);
   readonly loading = signal(true);
-  readonly saving = signal(false);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
-  readonly editTitle = signal('');
-  readonly editResult = signal('');
-  readonly editInstruction = signal('');
-  readonly viewMode = signal<'edit' | 'preview'>('edit');
-
-  readonly hasChanges = computed(() => {
-    const a = this.action();
-    if (!a) return false;
-    return (
-      this.editTitle().trim() !== a.title ||
-      this.editResult() !== a.result ||
-      this.editInstruction() !== a.instruction
-    );
-  });
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -55,9 +40,6 @@ export class DocumentActionEditorComponent implements OnInit {
     this.http.getDocumentAction(id).pipe(take(1)).subscribe({
       next: (a) => {
         this.action.set(a);
-        this.editTitle.set(a.title);
-        this.editResult.set(a.result);
-        this.editInstruction.set(a.instruction);
         this.loading.set(false);
       },
       error: () => {
@@ -76,32 +58,6 @@ export class DocumentActionEditorComponent implements OnInit {
     const chatId = this.action()?.source_chat_id;
     if (chatId) void this.router.navigate(['/main-container', 'chat', chatId]);
     else void this.router.navigate(['/main-container', 'chat-home']);
-  }
-
-  save(): void {
-    const a = this.action();
-    if (!a || this.saving()) return;
-    this.saving.set(true);
-    this.http.patchDocumentAction(a.id, {
-      title: this.editTitle(),
-      result: this.editResult(),
-      instruction: this.editInstruction(),
-    })
-      .pipe(take(1))
-      .subscribe({
-        next: (updated) => {
-          this.action.set(updated);
-          this.editTitle.set(updated.title);
-          this.editResult.set(updated.result);
-          this.editInstruction.set(updated.instruction);
-          this.saving.set(false);
-          this.toast.show('Acción guardada.', 'success');
-        },
-        error: () => {
-          this.saving.set(false);
-          this.toast.show('No se pudo guardar.', 'error');
-        },
-      });
   }
 
   export(format: 'pdf' | 'markdown'): void {

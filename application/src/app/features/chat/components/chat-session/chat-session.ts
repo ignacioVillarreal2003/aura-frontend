@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   ElementRef,
-  HostListener,
   NgZone,
   OnDestroy,
   computed,
@@ -68,9 +67,9 @@ import { TokenMaterializeDirective } from '../../../../shared/directives/token-m
 import { UserState } from '@core/state/user.state';
 import { UserCacheService } from '@core/services/user-cache.service';
 import {
-  FeedbackDialogComponent,
+  FeedbackDialog,
   type DislikeFeedbackResult,
-} from '../feedback-dialog/feedback-dialog.component';
+} from '../feedback-dialog/feedback-dialog';
 
 interface ChatMessage {
   readonly id: number;
@@ -118,11 +117,14 @@ const AI_MODES: readonly AiModeOption[] = [
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, TokenMaterializeDirective, FeedbackDialogComponent],
+  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, TokenMaterializeDirective, FeedbackDialog],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
+  host: {
+    '(document:click)': 'onDocumentClick()',
+  },
 })
-export class ChatSessionComponent implements OnDestroy {
+export class ChatSession implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly chatShell = inject(ChatService);
@@ -200,7 +202,6 @@ export class ChatSessionComponent implements OnDestroy {
   private _messagesTopObserver: IntersectionObserver | null = null;
   readonly messagesContainerRef = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
 
-  @HostListener('document:click')
   onDocumentClick(): void {
     if (this.exportDropdownId() !== null) {
       this.exportDropdownId.set(null);
@@ -817,7 +818,7 @@ export class ChatSessionComponent implements OnDestroy {
     if (e.action === 'tags-updated' && this.chat && this.chat.id === e.chatId && e.tags != null) {
       this.chat = { ...this.chat, tags: e.tags };
     }
-    const sidebarReloadActions = new Set(['pin', 'unpin', 'lock', 'unlock', 'mute', 'unmute', 'tags-updated']);
+    const sidebarReloadActions = new Set(['pin', 'unpin', 'lock', 'unlock', 'tags-updated']);
     if (sidebarReloadActions.has(e.action)) {
       this.chatShell.triggerSidebarReload();
     }
@@ -835,14 +836,6 @@ export class ChatSessionComponent implements OnDestroy {
     }
     if (e.action === 'unpin' && this.chat && this.chat.id === e.chatId) {
       this.chat = { ...this.chat, is_pinned: false };
-      return;
-    }
-    if (e.action === 'mute' && this.chat && this.chat.id === e.chatId) {
-      this.chat = { ...this.chat, is_muted: true };
-      return;
-    }
-    if (e.action === 'unmute' && this.chat && this.chat.id === e.chatId) {
-      this.chat = { ...this.chat, is_muted: false };
       return;
     }
   }

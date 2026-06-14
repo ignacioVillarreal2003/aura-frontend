@@ -54,3 +54,9 @@
     background-position: 100% 100%, 80% 60%;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .background-1__layer {
+    animation: none;
+  }
+}

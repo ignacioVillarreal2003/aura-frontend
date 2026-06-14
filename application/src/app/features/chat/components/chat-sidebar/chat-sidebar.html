@@ -1,0 +1,144 @@
+<nav
+  class="sidebar-nav"
+  [class.open]="isOpen()"
+  [class.closed]="!isOpen()"
+  [attr.data-state]="isOpen() ? 'open' : 'closed'">
+  <header class="sidebar-header">
+    <div class="sidebar-header__toggle">
+      <div class="sidebar-header__toggle-inner">
+        <button
+          type="button"
+          class="sidebar-header__toggle-btn"
+          [attr.aria-label]="isOpen() ? 'Cerrar sidebar' : 'Abrir sidebar'"
+          (click)="onOpenClose()"
+        >
+          <i class="pi" [ngClass]="isOpen() ? 'pi-chevron-left' : 'pi-chevron-right'" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="sidebar-divider" role="presentation"></div>
+
+  <div class="sidebar-body">
+    <nav class="sidebar-nav-links" aria-label="Acciones principales">
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId() === 'chat-home'"
+        [routerLink]="['/main-container', 'chat-home']">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Nuevo chat</span>
+      </button>
+
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId() === 'chats' || activeId() === 'search'"
+        [routerLink]="['/main-container', 'chats']">
+        <i class="pi pi-comments" aria-hidden="true"></i>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Chats</span>
+      </button>
+
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId() === 'assistants'"
+        [routerLink]="['/main-container', 'assistants']">
+        <i class="pi pi-android" aria-hidden="true"></i>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Asistentes</span>
+      </button>
+
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId() === 'document-search'"
+        [routerLink]="['/main-container', 'document-search']">
+        <i class="pi pi-file" aria-hidden="true"></i>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Documentos</span>
+      </button>
+
+    </nav>
+
+    @if (sortedChats().length > 0) {
+      <div class="sidebar-chats-collapse" [attr.data-state]="isOpen() ? 'open' : 'closed'">
+        <div class="sidebar-chats-collapse-inner">
+          <div class="sidebar-chats-block">
+            <div class="sidebar-chats-separator" role="presentation"></div>
+            <div class="sidebar-chats-inner">
+              <p class="chats-section-label">Recientes</p>
+              <div class="chats-container">
+                <div class="sidebar-nav-links sidebar-nav-links--recents" role="list">
+                  @for (c of sortedChats(); track c.id; let i = $index) {
+                    <div
+                      class="sidebar-chat-item"
+                      role="listitem"
+                      [style.--i]="i"
+                      [class.menu-open]="drawerContextChat()?.id === c.id">
+                      <button
+                        type="button"
+                        class="sidebar-link sidebar-link--chat"
+                        [class.is-active]="activeId() === '' + c.id"
+                        [routerLink]="['/main-container', 'chat', c.id]">
+                        <i [ngClass]="['pi', c.is_pinned ? 'pi-thumbtack' : 'pi-comments']" aria-hidden="true"></i>
+                        <span class="sidebar-link__text">{{ c.name }}</span>
+                        @if (c.is_locked) {
+                          <i class="pi pi-lock sidebar-chat-badge" title="Bloqueado" aria-label="Bloqueado" aria-hidden="true"></i>
+                        }
+                      </button>
+                      <button
+                        type="button"
+                        class="sidebar-link-more"
+                        [attr.aria-label]="'Opciones del chat ' + c.name"
+                        (click)="onChatOptionsClick($event, c.id)">
+                        <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-divider" role="presentation"></div>
+
+    <nav class="sidebar-nav-links sidebar-nav-links--footer" aria-label="Cuenta">
+      <button
+        type="button"
+        class="sidebar-link"
+        [routerLink]="['/user', 'notifications']">
+        <span class="notif-bell-wrap">
+          <i class="pi pi-bell" aria-hidden="true"></i>
+          @if (notifState.unreadCount() > 0) {
+            <span class="notif-badge">{{ notifState.unreadCount() > 99 ? '99+' : notifState.unreadCount() }}</span>
+          }
+        </span>
+        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Notificaciones</span>
+      </button>
+
+      <button
+        type="button"
+        class="sidebar-link"
+        [class.is-active]="activeId() === 'profile'"
+        routerLink="/user">
+        <span class="avatar-fallback" aria-hidden="true">{{ initials() }}</span>
+        <span class="sidebar-link__stack sidebar-link__stack--collapsible" [attr.aria-hidden]="collapsed() ? true : null">
+          <span class="user-email">{{ username() }}</span>
+        </span>
+      </button>
+    </nav>
+  </div>
+</nav>
+
+<app-chat-options-drawer
+  [isOpen]="chatActionsDrawerOpen()"
+  (isOpenChange)="onChatActionsDrawerChange($event)"
+  [contextChat]="drawerContextChat()"
+  (chatAction)="onDrawerChatAction($event)"
+  (chatMetaUpdated)="onChatUpdated($event)"
+/>

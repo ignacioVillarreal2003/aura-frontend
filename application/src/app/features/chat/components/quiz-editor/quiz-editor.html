@@ -12,15 +12,7 @@
         <i class="pi pi-arrow-left" aria-hidden="true"></i>
         Volver
       </button>
-      <input
-        class="qe-title"
-        type="text"
-        [value]="editTitle()"
-        (input)="editTitle.set($any($event.target).value)"
-        placeholder="Título del quiz"
-        maxlength="255"
-        aria-label="Título"
-      />
+      <span class="qe-title">{{ q.title }}</span>
       <div class="qe-bar__actions">
         <button type="button" class="qe-action-btn" [disabled]="exportingAs() !== null" (click)="export('pdf')">
           <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
@@ -29,11 +21,6 @@
         <button type="button" class="qe-action-btn" [disabled]="exportingAs() !== null" (click)="export('markdown')">
           <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
           MD
-        </button>
-        <button type="button" class="qe-action-btn qe-action-btn--primary"
-          [disabled]="saving()" (click)="save()">
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-          Guardar
         </button>
       </div>
     </header>
@@ -50,137 +37,68 @@
       </span>
       <span class="qe-meta__chip">
         <i class="pi pi-question-circle" aria-hidden="true"></i>
-        {{ questions().length }} pregunta{{ questions().length !== 1 ? 's' : '' }}
+        {{ sortedQuestions().length }} pregunta{{ sortedQuestions().length !== 1 ? 's' : '' }}
       </span>
+      @if (q.pass_score != null) {
+        <span class="qe-meta__chip">
+          <i class="pi pi-star" aria-hidden="true"></i>
+          Mínimo: {{ q.pass_score }}%
+        </span>
+      }
     </div>
 
     <!-- ── Body ────────────────────────────────────────────── -->
     <div class="qe-body">
 
-      <!-- Instructions & Pass Score row -->
-      <div class="qe-config-row">
-        <div class="qe-field qe-field--grow">
-          <label class="qe-label">Instrucciones</label>
-          <textarea
-            class="qe-textarea qe-textarea--sm"
-            rows="2"
-            placeholder="Instrucciones para el participante…"
-            [value]="editInstructions()"
-            (input)="editInstructions.set($any($event.target).value)"
-          ></textarea>
-        </div>
-        <div class="qe-field qe-field--narrow">
-          <label class="qe-label">Puntaje mínimo (%)</label>
-          <input
-            class="qe-input"
-            type="number"
-            min="0"
-            max="100"
-            placeholder="—"
-            [value]="editPassScore()"
-            (input)="editPassScore.set($any($event.target).value)"
-          />
-        </div>
-      </div>
-
-      <!-- Questions list -->
-      @if (questions().length === 0) {
-        <div class="qe-empty">
-          <i class="pi pi-question-circle qe-empty__icon" aria-hidden="true"></i>
-          <p>Sin preguntas aún. Añadí la primera con el botón de abajo.</p>
+      @if (q.instructions) {
+        <div class="qe-config-row">
+          <div class="qe-field qe-field--grow">
+            <span class="qe-label">Instrucciones</span>
+            <p class="qe-instructions-text">{{ q.instructions }}</p>
+          </div>
         </div>
       }
 
-      @for (q of questions(); track q.uid; let qi = $index) {
+      @if (sortedQuestions().length === 0) {
+        <div class="qe-empty">
+          <i class="pi pi-question-circle qe-empty__icon" aria-hidden="true"></i>
+          <p>Sin preguntas.</p>
+        </div>
+      }
+
+      @for (qq of sortedQuestions(); track qq.id; let qi = $index) {
         <div class="qe-question">
           <div class="qe-question__header">
             <span class="qe-question__num">{{ qi + 1 }}</span>
-
-            <!-- Kind pills -->
-            <div class="qe-kind-pills">
-              @for (k of questionKinds; track k.value) {
-                <button
-                  type="button"
-                  class="qe-kind-pill"
-                  [class.qe-kind-pill--active]="q.kind === k.value"
-                  (click)="setQuestionKind(qi, k.value)"
-                  [title]="k.label">
-                  <i [ngClass]="['pi', k.icon]" aria-hidden="true"></i>
-                  {{ k.label }}
-                </button>
-              }
-            </div>
-
-            <button type="button" class="qe-question__del" (click)="deleteQuestion(qi)" title="Eliminar pregunta">
-              <i class="pi pi-trash" aria-hidden="true"></i>
-            </button>
+            <span class="qe-kind-badge">
+              <i [ngClass]="['pi', kindIcon(qq.kind)]" aria-hidden="true"></i>
+              {{ kindLabel(qq.kind) }}
+            </span>
           </div>
 
-          <textarea
-            class="qe-textarea qe-question__text"
-            rows="2"
-            placeholder="Enunciado de la pregunta…"
-            [value]="q.text"
-            (input)="updateQuestionText(qi, $event)"
-          ></textarea>
+          <p class="qe-question__text-view">{{ qq.text }}</p>
 
-          <!-- Options (single / multiple / boolean) -->
-          @if (hasOptions(q.kind)) {
+          <!-- Options -->
+          @if (qq.options.length > 0) {
             <div class="qe-options">
-              @for (opt of q.options; track opt.uid; let oi = $index) {
-                <div class="qe-option" [class.qe-option--correct]="opt.is_correct">
-                  <button
-                    type="button"
-                    class="qe-option__check"
-                    [class.qe-option__check--active]="opt.is_correct"
-                    (click)="toggleOptionCorrect(qi, oi)"
-                    [title]="opt.is_correct ? 'Respuesta correcta' : 'Marcar como correcta'">
-                    <i [ngClass]="['pi', opt.is_correct ? 'pi-check-circle' : 'pi-circle']" aria-hidden="true"></i>
-                  </button>
-                  <input
-                    type="text"
-                    class="qe-option__text"
-                    [value]="opt.text"
-                    (input)="updateOptionText(qi, oi, $event)"
-                    [placeholder]="'Opción ' + (oi + 1)"
-                    [readonly]="q.kind === 'boolean'"
-                  />
-                  @if (q.kind !== 'boolean') {
-                    <button type="button" class="qe-option__del" (click)="deleteOption(qi, oi)" title="Eliminar opción">
-                      <i class="pi pi-times" aria-hidden="true"></i>
-                    </button>
-                  }
+              @for (opt of qq.options; track opt.id; let oi = $index) {
+                <div class="qe-option">
+                  <i class="pi pi-circle qe-option__icon" aria-hidden="true"></i>
+                  <span class="qe-option__text">{{ opt.text }}</span>
                 </div>
               }
-              @if (q.kind !== 'boolean') {
-                <button type="button" class="qe-add-option-btn" (click)="addOption(qi)">
-                  <i class="pi pi-plus" aria-hidden="true"></i>
-                  Añadir opción
-                </button>
-              }
             </div>
-          } @else {
-            <p class="qe-open-hint">
-              <i class="pi pi-info-circle" aria-hidden="true"></i>
-              Pregunta abierta — no requiere opciones predefinidas.
-            </p>
           }
 
-          <!-- Explanation -->
-          <input
-            type="text"
-            class="qe-input qe-question__explanation"
-            [value]="q.explanation"
-            (input)="updateQuestionExplanation(qi, $event)"
-            placeholder="Explicación (opcional)…"
-          />
+          @if (qq.explanation) {
+            <p class="qe-question__explanation-view">
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              {{ qq.explanation }}
+            </p>
+          }
         </div>
       }
 
-      <button type="button" class="qe-add-question-btn" (click)="addQuestion()">
-        <i class="pi pi-plus" aria-hidden="true"></i>
-        Añadir pregunta
-      </button>
     </div>
   }
 </div>

@@ -1,182 +1,109 @@
 <div class="ce-root">
   @if (loading()) {
     <div class="ce-loading">
-      <i class="pi pi-spin pi-spinner ce-loading__spinner" aria-hidden="true"></i>
-      <p class="ce-loading__text">Cargando checklist…</p>
+      <i class="pi pi-spin pi-spinner ce-loading__icon" aria-hidden="true"></i>
+      <span class="ce-loading__text">Cargando checklist…</span>
     </div>
   } @else if (checklist(); as c) {
 
-    <!-- ── Top bar ─────────────────────────────────────── -->
+    <!-- ── Top bar ─────────────────────────────────────────── -->
     <header class="ce-bar">
-      <button type="button" class="ce-back" (click)="goBack()">
-        <i class="pi pi-arrow-left" aria-hidden="true"></i>
-        Volver
-      </button>
-      <input
-        class="ce-title"
-        type="text"
-        [value]="editTitle()"
-        (input)="editTitle.set($any($event.target).value)"
-        placeholder="Título de la checklist"
-        maxlength="255"
-        aria-label="Título"
-      />
-      <div class="ce-bar__actions">
-        <button type="button" class="ce-action-btn" [disabled]="exportingAs() !== null" (click)="export('pdf')">
+      <div class="ce-bar__left">
+        <button type="button" class="ce-back" (click)="goBack()">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          <span>Volver</span>
+        </button>
+        <div class="ce-vdivider" aria-hidden="true"></div>
+        <span class="ce-title">{{ c.title }}</span>
+      </div>
+
+      <div class="ce-bar__right">
+        <button
+          type="button"
+          class="ce-icon-btn"
+          title="Exportar como PDF"
+          [disabled]="exportingAs() !== null"
+          (click)="export('pdf')"
+        >
           <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
-          PDF
+          <span>PDF</span>
         </button>
-        <button type="button" class="ce-action-btn" [disabled]="exportingAs() !== null" (click)="export('markdown')">
-          <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
-          MD
-        </button>
-        <button type="button" class="ce-action-btn ce-action-btn--primary"
-          [disabled]="saving() || !hasChanges()" (click)="save()">
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-          Guardar
+        <button
+          type="button"
+          class="ce-icon-btn"
+          title="Exportar como Markdown"
+          [disabled]="exportingAs() !== null"
+          (click)="export('markdown')"
+        >
+          <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
+          <span>.md</span>
         </button>
       </div>
     </header>
 
-    <!-- ── Meta strip ─────────────────────────────────── -->
+    <!-- ── Meta strip ────────────────────────────────────────── -->
     <div class="ce-meta">
-      <span class="ce-meta__chip">
+      <span class="ce-meta__item">
         <i class="pi pi-calendar" aria-hidden="true"></i>
-        {{ c.created_at | date: 'mediumDate' }}
+        {{ c.created_at | date: 'd MMM yyyy' }}
       </span>
-      <span class="ce-meta__chip">
+      <span class="ce-meta__sep" aria-hidden="true">·</span>
+      <span class="ce-meta__item">
         <i class="pi pi-bolt" aria-hidden="true"></i>
-        {{ c.mode === 'rag' ? 'RAG' : 'Directo' }}
+        {{ c.mode === 'rag' ? 'Con documentos' : 'Directo' }}
       </span>
-      @if (hasChanges()) {
-        <span class="ce-meta__chip ce-meta__chip--unsaved">
-          <i class="pi pi-circle-fill" aria-hidden="true"></i>
-          Sin guardar
-        </span>
-      }
-      <span class="ce-meta__chip ce-meta__chip--progress">
-        {{ checkedCount() }}/{{ totalCount() }}
-      </span>
+      <span class="ce-meta__spacer"></span>
+      <span class="ce-meta__progress">{{ checkedCount() }}/{{ totalCount() }}</span>
     </div>
 
-    <div class="ce-progress-bar">
+    <!-- ── Progress bar ─────────────────────────────────────── -->
+    <div class="ce-progress-bar" role="progressbar" [attr.aria-valuenow]="progressPct()" aria-valuemin="0" aria-valuemax="100">
       <div class="ce-progress-bar__fill" [style.width.%]="progressPct()"></div>
     </div>
 
-    <!-- ── Body (scrollable) ──────────────────────────── -->
-    <div class="ce-body" cdkScrollable>
+    <!-- ── Body (scrollable) ─────────────────────────────────── -->
+    <div class="ce-body">
 
-      @if (sections().length === 0) {
-        <p class="ce-empty">Sin secciones aún. Usá "Añadir sección" para empezar.</p>
+      @if (sortedSections().length === 0) {
+        <div class="ce-empty">
+          <i class="pi pi-list-check" aria-hidden="true"></i>
+          <p>Sin secciones.</p>
+        </div>
       }
 
-      <!-- Sections drag list -->
-      <div
-        cdkDropList
-        cdkDropListLockAxis="y"
-        [cdkDropListData]="sections()"
-        (cdkDropListDropped)="dropSection($event)"
-        class="ce-sections-list"
-      >
-        @for (group of sections(); track $index; let si = $index) {
+      <div class="ce-sections-list">
+        @for (group of sortedSections(); track group.id) {
 
-          <div cdkDrag class="ce-section-block" [cdkDragData]="group">
-
-            <!-- Drag preview placeholder -->
-            <div *cdkDragPlaceholder class="ce-section-placeholder"></div>
-
+          <div class="ce-section-block">
             <!-- Section header -->
             <div class="ce-section-header">
-              <div class="ce-section-handle" cdkDragHandle title="Arrastrar sección">
-                <i class="pi pi-bars" aria-hidden="true"></i>
-              </div>
-              <input
-                class="ce-section-name"
-                type="text"
-                [value]="group.name"
-                (input)="renameSection(si, $event)"
-                placeholder="Nombre de sección"
-                (click)="$event.stopPropagation()"
-                aria-label="Nombre de sección"
-              />
+              <span class="ce-section-name">{{ group.title }}</span>
               <span class="ce-section-count">{{ group.items.length }}</span>
-              <button type="button" class="ce-section-add-btn" (click)="addItemToSection(si)">
-                <i class="pi pi-plus" aria-hidden="true"></i>
-                Añadir ítem
-              </button>
-              <button type="button" class="ce-section-del-btn" (click)="deleteSection(si)" title="Eliminar sección">
-                <i class="pi pi-trash" aria-hidden="true"></i>
-              </button>
             </div>
 
-            <!-- Items drop list -->
-            <div
-              cdkDropList
-              [id]="'items-' + group.id"
-              [cdkDropListData]="group.items"
-              [cdkDropListConnectedTo]="sectionListIds()"
-              (cdkDropListDropped)="dropItem($event)"
-              class="ce-section-items"
-            >
+            <!-- Items list -->
+            <div class="ce-section-items">
               @if (group.items.length === 0) {
-                <p class="ce-section-empty">Arrastrá un ítem aquí.</p>
+                <p class="ce-section-empty">Sin ítems.</p>
               }
 
-              @for (item of group.items; track item.id; let ii = $index) {
-                <div cdkDrag [cdkDragData]="item" class="ce-item" [class.ce-item--done]="item.is_checked">
-
-                  <div *cdkDragPlaceholder class="ce-item-placeholder"></div>
-
-                  <!-- Row 1 -->
+              @for (item of group.items; track item.id) {
+                <div class="ce-item" [class.ce-item--done]="item.is_checked">
                   <div class="ce-item__top">
-                    <i class="pi pi-bars ce-item__handle" cdkDragHandle aria-hidden="true"></i>
-                    <button
-                      type="button"
-                      class="ce-item__toggle"
-                      [class.ce-item__toggle--checked]="item.is_checked"
-                      (click)="toggleItem(si, ii)"
-                      [attr.aria-label]="item.is_checked ? 'Desmarcar' : 'Marcar'"
-                    >
-                      <i [ngClass]="['pi', item.is_checked ? 'pi-check-circle' : 'pi-circle']" aria-hidden="true"></i>
-                    </button>
-                    <input
-                      type="text"
-                      class="ce-item__text"
-                      [class.ce-item__text--done]="item.is_checked"
-                      [value]="item.text"
-                      (input)="updateItemText(si, ii, $event)"
-                      [attr.data-item-id]="item.id"
-                      placeholder="Ítem…"
-                      aria-label="Texto del ítem"
-                    />
-                    <button type="button" class="ce-item__del" (click)="deleteItem(si, ii)" title="Eliminar ítem">
-                      <i class="pi pi-trash" aria-hidden="true"></i>
-                    </button>
+                    <i [ngClass]="['pi', item.is_checked ? 'pi-check-circle' : 'pi-circle', 'ce-item__toggle']" aria-hidden="true"></i>
+                    <span class="ce-item__text" [class.ce-item__text--done]="item.is_checked">{{ item.text }}</span>
                   </div>
-
-                  <!-- Row 2: notes -->
-                  <div class="ce-item__notes-row">
-                    <input
-                      type="text"
-                      class="ce-item__notes-input"
-                      [value]="item.notes"
-                      (input)="updateItemNotes(si, ii, $event)"
-                      placeholder="Notas opcionales…"
-                      aria-label="Notas"
-                    />
-                  </div>
+                  @if (item.notes) {
+                    <div class="ce-item__notes-row">
+                      <span class="ce-item__notes-input">{{ item.notes }}</span>
+                    </div>
+                  }
                 </div>
               }
             </div>
           </div>
         }
       </div>
-
-      <!-- Add section -->
-      <button type="button" class="ce-add-section-btn" (click)="addSection()">
-        <i class="pi pi-plus" aria-hidden="true"></i>
-        Añadir sección
-      </button>
 
     </div>
   }

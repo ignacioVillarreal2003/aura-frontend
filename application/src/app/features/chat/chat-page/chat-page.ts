@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ChatSidebarComponent } from '../components/chat-sidebar/chat-sidebar.component';
+import { ChatSidebar } from '../components/chat-sidebar/chat-sidebar';
 import { NotificationSseService } from '@core/services/notification/notification-sse.service';
 import { NotificationState } from '@core/state/notification.state';
 import { AuraNotificationServiceHttp } from '@core/services/http-services/aura-notification-service-http.service';
@@ -13,13 +13,13 @@ import type { NotificationDto } from '@core/types/aura-notification-service.type
 @Component({
   selector: 'app-chat-page',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, ChatSidebarComponent],
+  imports: [CommonModule, RouterOutlet, ChatSidebar],
   templateUrl: './chat-page.html',
   styleUrls: ['./chat-page.css'],
 })
-export class ChatPageComponent {
+export class ChatPage {
   private readonly router = inject(Router);
-  private readonly chatSidebar = viewChild<ChatSidebarComponent>('chatSidebar');
+  private readonly chatSidebar = viewChild<ChatSidebar>('chatSidebar');
   private readonly sse = inject(NotificationSseService);
   private readonly notifState = inject(NotificationState);
   private readonly notifHttp = inject(AuraNotificationServiceHttp);
@@ -56,7 +56,7 @@ export class ChatPageComponent {
     this.sse.events$.pipe(takeUntilDestroyed()).subscribe(event => {
       if (event.type === 'notification.created') {
         const n = event.data as NotificationDto;
-        const text = n.title ? `${n.title}: ${n.message}` : n.message;
+        const text = n.message;
         this.toast.show(text.length > 80 ? text.slice(0, 80) + '…' : text, 'success');
         this.notifState.increment();
       }
@@ -79,6 +79,10 @@ export class ChatPageComponent {
     }
     if (url.includes('/main-container/assistants')) {
       this.activeId.set('assistants');
+      return;
+    }
+    if (url.includes('/main-container/document-search')) {
+      this.activeId.set('document-search');
       return;
     }
     if (url.includes('/main-container/chat-home')) {

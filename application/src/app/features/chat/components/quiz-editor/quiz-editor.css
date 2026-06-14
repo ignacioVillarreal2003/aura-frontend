@@ -414,3 +414,9 @@
   color: #c4b5fd;
   background: rgba(167,139,250,0.06);
 }
+
+/* Foco visible (teclado) — DESIGN.md */
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

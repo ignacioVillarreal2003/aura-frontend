@@ -562,3 +562,9 @@
 :host ::ng-deep .re-doc__body tr:nth-child(even) td {
   background: rgba(255, 255, 255, 0.022);
 }
+
+/* Foco visible (teclado) — DESIGN.md */
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

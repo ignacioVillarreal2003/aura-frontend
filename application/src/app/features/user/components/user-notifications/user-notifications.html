@@ -1,0 +1,255 @@
+<div class="notif-page">
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       INBOX TAB
+       ════════════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'inbox') {
+    <div class="inbox-section">
+
+      <!-- Header row -->
+      <div class="inbox-header">
+        <div class="filter-bar">
+          <button
+            type="button"
+            class="filter-btn"
+            [class.active]="statusFilter() === null"
+            (click)="setFilter(null)">
+            Todas
+          </button>
+          <button
+            type="button"
+            class="filter-btn"
+            [class.active]="statusFilter() === 'unread'"
+            (click)="setFilter('unread')">
+            Sin leer
+          </button>
+          <button
+            type="button"
+            class="filter-btn"
+            [class.active]="statusFilter() === 'read'"
+            (click)="setFilter('read')">
+            Leídas
+          </button>
+        </div>
+
+        <div class="inbox-actions">
+          @if (unreadCount() > 0) {
+            <button type="button" class="action-btn-sm" (click)="markAllRead()">
+              <i class="pi pi-check-square"></i>
+              Marcar todo leído
+            </button>
+          }
+          <button type="button" class="icon-btn" (click)="loadNotifications()" title="Actualizar">
+            <i class="pi pi-refresh"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- List -->
+      @if (loadingList()) {
+        <div class="empty-state">
+          <i class="pi pi-spin pi-spinner"></i>
+          <p>Cargando notificaciones...</p>
+        </div>
+      } @else if (notifications().length === 0) {
+        <div class="empty-state">
+          <i class="pi pi-bell-slash"></i>
+          <h3>Sin notificaciones</h3>
+          <p>Cuando recibas notificaciones, aparecerán aquí.</p>
+        </div>
+      } @else {
+        <div class="notifications-list">
+          @for (n of notifications(); track n.id) {
+            <div
+              class="notif-item"
+              [class.is-unread]="n.status === 'unread'"
+              [attr.data-severity]="n.severity">
+
+              <!-- Severity dot -->
+              <span class="severity-dot" [attr.data-severity]="n.severity"></span>
+
+              <!-- Icon -->
+              <div class="notif-avatar" [attr.data-type]="getEventCategory(n.event_type)">
+                {{ getSenderInitials(n) }}
+              </div>
+
+              <!-- Body -->
+              <div class="notif-body">
+                <div class="notif-meta-top">
+                  <span class="notif-sender">{{ getSenderDisplay(n) }}</span>
+                  <span class="event-tag">{{ n.event_type }}</span>
+                  <span class="notif-time">{{ getTimeAgo(n.created_at) }}</span>
+                </div>
+                <p class="notif-message">{{ n.message }}</p>
+                @if (n.link_url) {
+                  <a class="notif-link" [href]="n.link_url" target="_blank" rel="noopener">
+                    <i class="pi pi-external-link"></i> Abrir
+                  </a>
+                }
+              </div>
+
+              <!-- Actions -->
+              <div class="notif-actions">
+                @if (n.status === 'unread') {
+                  <button type="button" class="pill-btn" (click)="markAsRead(n.id)" title="Marcar como leída">
+                    <i class="pi pi-eye"></i>
+                  </button>
+                } @else {
+                  <button type="button" class="pill-btn" (click)="markAsUnread(n.id)" title="Marcar como no leída">
+                    <i class="pi pi-eye-slash"></i>
+                  </button>
+                }
+                <button type="button" class="pill-btn danger" (click)="deleteNotification(n.id)" title="Eliminar">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Load more -->
+        @if (hasMore()) {
+          <div class="load-more-row">
+            <button type="button" class="load-more-btn" (click)="loadMore()" [disabled]="loadingMore()">
+              @if (loadingMore()) {
+                <i class="pi pi-spin pi-spinner"></i> Cargando...
+              } @else {
+                Cargar más
+              }
+            </button>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       PREFERENCES TAB
+       ════════════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'preferences') {
+    <div class="prefs-section">
+
+      @if (loadingPrefs()) {
+        <div class="empty-state">
+          <i class="pi pi-spin pi-spinner"></i>
+          <p>Cargando preferencias...</p>
+        </div>
+      } @else {
+
+        <!-- Global preferences -->
+        <section class="pref-group" aria-labelledby="global-prefs-title">
+          <h2 id="global-prefs-title" class="pref-group-title">Preferencias globales</h2>
+          <p class="pref-group-subtitle">Controla todos los canales de notificación de tu cuenta.</p>
+
+          @if (preferences(); as prefs) {
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Notificaciones en la app</span>
+                <span class="toggle-description">Recibir alertas dentro de AURA</span>
+              </div>
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  [checked]="prefs.inapp_enabled"
+                  (change)="toggleGlobalInapp($any($event.target).checked)" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <span class="toggle-label">Notificaciones por email</span>
+                <span class="toggle-description">Recibir notificaciones importantes por correo</span>
+              </div>
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  [checked]="prefs.email_enabled"
+                  (change)="toggleGlobalEmail($any($event.target).checked)" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Mute until -->
+            <div class="mute-block">
+              <div class="toggle-info">
+                <span class="toggle-label">Silenciar hasta</span>
+                <span class="toggle-description">
+                  @if (prefs.mute_until) {
+                    Silenciado hasta {{ formatMuteUntil(prefs.mute_until) }}
+                  } @else {
+                    Desactivar temporalmente todas las notificaciones
+                  }
+                </span>
+              </div>
+              <div class="mute-controls">
+                <input
+                  type="datetime-local"
+                  class="datetime-input"
+                  [value]="muteInput()"
+                  (change)="muteInput.set($any($event.target).value)"
+                  [min]="minDatetime" />
+                <button
+                  type="button"
+                  class="action-btn-sm"
+                  (click)="saveMuteUntil()"
+                  [disabled]="savingMute() || !muteInput()">
+                  @if (savingMute()) { <i class="pi pi-spin pi-spinner"></i> } @else { Aplicar }
+                </button>
+                @if (prefs.mute_until) {
+                  <button type="button" class="action-btn-sm danger" (click)="clearMute()">
+                    Desactivar
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </section>
+
+        <!-- Event type catalogue (informative) -->
+        @if (eventCatalogue().length > 0) {
+          <section class="pref-group" aria-labelledby="event-prefs-title">
+            <h2 id="event-prefs-title" class="pref-group-title">Tipos de notificación</h2>
+            <p class="pref-group-subtitle">
+              Estos son los eventos que pueden generar notificaciones y sus canales de entrega.
+              Los eventos marcados con candado se entregan siempre, incluso con las notificaciones silenciadas.
+            </p>
+
+            <div class="event-prefs-list">
+              @for (entry of eventCatalogue(); track entry.event_type) {
+                <div class="event-pref-item">
+                  <div class="event-pref-info">
+                    <div class="event-pref-name-row">
+                      <span class="event-pref-name">{{ entry.event_type }}</span>
+                      <span class="badge" [attr.data-type]="entry.type">{{ entry.type }}</span>
+                      <span class="badge" [attr.data-severity]="entry.severity">{{ entry.severity }}</span>
+                      @if (!entry.is_silenceable) {
+                        <span class="badge locked" title="Se entrega siempre, no se puede silenciar">
+                          <i class="pi pi-lock"></i>
+                        </span>
+                      }
+                    </div>
+                    <p class="event-pref-desc">{{ entry.description }}</p>
+                  </div>
+
+                  <div class="event-pref-channels">
+                    @if (hasChannel(entry, 'inapp')) {
+                      <span class="channel-chip" title="Notificación en la app">
+                        <i class="pi pi-bell"></i> App
+                      </span>
+                    }
+                    @if (hasChannel(entry, 'email')) {
+                      <span class="channel-chip" title="Notificación por email">
+                        <i class="pi pi-envelope"></i> Email
+                      </span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      }
+    </div>
+  }
+</div>

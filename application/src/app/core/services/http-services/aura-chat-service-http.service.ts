@@ -49,7 +49,6 @@ import type {
   MemberListQueryParams,
   MembershipDto,
   MessageDto,
-  MuteChatBody,
   PageNumberResult,
   PinnedArtifactDto,
   QuizDto,
@@ -72,16 +71,8 @@ import type {
   UpdateChatBody,
   StartChatResponseDto,
   UpdateAssistantBody,
-  UpdateChecklistBody,
-  UpdateDecisionBriefBody,
-  UpdateDocumentActionBody,
-  UpdateDocumentSummaryBody,
-  UpdateLessonsLearnedBody,
   UpdateMemberRoleBody,
   UpdateMemberStatusBody,
-  UpdateQuizBody,
-  UpdateReportBody,
-  UpdateTimelineBody,
 } from '@aura-types/aura-chat-service.types';
 
 interface PageFollowQuery {
@@ -192,14 +183,6 @@ export class AuraChatServiceHttp {
 
   unlockChat(chatId: number): Observable<void> {
     return this.http.delete<void>(`${this.chatDetail(chatId)}lock/`);
-  }
-
-  muteChat(chatId: number, body: MuteChatBody): Observable<void> {
-    return this.http.post<void>(`${this.chatDetail(chatId)}mute/`, body);
-  }
-
-  unmuteChat(chatId: number): Observable<void> {
-    return this.http.delete<void>(`${this.chatDetail(chatId)}mute/`);
   }
 
   listShareLinks(
@@ -482,10 +465,6 @@ export class AuraChatServiceHttp {
     return this.http.get<ReportDto>(`${this.base}/reports/${reportId}/`);
   }
 
-  patchReport(reportId: number, body: UpdateReportBody): Observable<ReportDto> {
-    return this.http.patch<ReportDto>(`${this.base}/reports/${reportId}/`, body);
-  }
-
   deleteReport(reportId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/reports/${reportId}/`);
   }
@@ -512,10 +491,6 @@ export class AuraChatServiceHttp {
 
   getChecklist(checklistId: number): Observable<ChecklistDto> {
     return this.http.get<ChecklistDto>(`${this.base}/checklists/${checklistId}/`);
-  }
-
-  patchChecklist(checklistId: number, body: UpdateChecklistBody): Observable<ChecklistDto> {
-    return this.http.patch<ChecklistDto>(`${this.base}/checklists/${checklistId}/`, body);
   }
 
   deleteChecklist(checklistId: number): Observable<void> {
@@ -546,10 +521,6 @@ export class AuraChatServiceHttp {
     return this.http.get<QuizDto>(`${this.base}/quizzes/${quizId}/`);
   }
 
-  patchQuiz(quizId: number, body: UpdateQuizBody): Observable<QuizDto> {
-    return this.http.patch<QuizDto>(`${this.base}/quizzes/${quizId}/`, body);
-  }
-
   deleteQuiz(quizId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/quizzes/${quizId}/`);
   }
@@ -576,10 +547,6 @@ export class AuraChatServiceHttp {
 
   getTimeline(timelineId: number): Observable<TimelineDto> {
     return this.http.get<TimelineDto>(`${this.base}/timelines/${timelineId}/`);
-  }
-
-  patchTimeline(timelineId: number, body: UpdateTimelineBody): Observable<TimelineDto> {
-    return this.http.patch<TimelineDto>(`${this.base}/timelines/${timelineId}/`, body);
   }
 
   deleteTimeline(timelineId: number): Observable<void> {
@@ -610,10 +577,6 @@ export class AuraChatServiceHttp {
     return this.http.get<LessonsLearnedDto>(`${this.base}/lessons-learned/${id}/`);
   }
 
-  patchLessonsLearned(id: number, body: UpdateLessonsLearnedBody): Observable<LessonsLearnedDto> {
-    return this.http.patch<LessonsLearnedDto>(`${this.base}/lessons-learned/${id}/`, body);
-  }
-
   deleteLessonsLearned(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/lessons-learned/${id}/`);
   }
@@ -640,10 +603,6 @@ export class AuraChatServiceHttp {
 
   getDecisionBrief(id: number): Observable<DecisionBriefDto> {
     return this.http.get<DecisionBriefDto>(`${this.base}/decision-briefs/${id}/`);
-  }
-
-  patchDecisionBrief(id: number, body: UpdateDecisionBriefBody): Observable<DecisionBriefDto> {
-    return this.http.patch<DecisionBriefDto>(`${this.base}/decision-briefs/${id}/`, body);
   }
 
   deleteDecisionBrief(id: number): Observable<void> {
@@ -674,10 +633,6 @@ export class AuraChatServiceHttp {
     return this.http.get<DocumentSummaryDto>(`${this.base}/document-summaries/${id}/`);
   }
 
-  patchDocumentSummary(id: number, body: UpdateDocumentSummaryBody): Observable<DocumentSummaryDto> {
-    return this.http.patch<DocumentSummaryDto>(`${this.base}/document-summaries/${id}/`, body);
-  }
-
   deleteDocumentSummary(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/document-summaries/${id}/`);
   }
@@ -704,10 +659,6 @@ export class AuraChatServiceHttp {
 
   getDocumentAction(id: number): Observable<DocumentActionDto> {
     return this.http.get<DocumentActionDto>(`${this.base}/document-actions/${id}/`);
-  }
-
-  patchDocumentAction(id: number, body: UpdateDocumentActionBody): Observable<DocumentActionDto> {
-    return this.http.patch<DocumentActionDto>(`${this.base}/document-actions/${id}/`, body);
   }
 
   deleteDocumentAction(id: number): Observable<void> {

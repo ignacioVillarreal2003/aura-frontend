@@ -12,15 +12,7 @@
         <i class="pi pi-arrow-left" aria-hidden="true"></i>
         Volver
       </button>
-      <input
-        class="ll-title"
-        type="text"
-        [value]="editTitle()"
-        (input)="editTitle.set($any($event.target).value)"
-        placeholder="Título de las lecciones aprendidas"
-        maxlength="255"
-        aria-label="Título"
-      />
+      <span class="ll-title">{{ d.title }}</span>
       <div class="ll-bar__actions">
         <button type="button" class="ll-action-btn" [disabled]="exportingAs() !== null" (click)="export('pdf')">
           <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
@@ -29,10 +21,6 @@
         <button type="button" class="ll-action-btn" [disabled]="exportingAs() !== null" (click)="export('markdown')">
           <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
           MD
-        </button>
-        <button type="button" class="ll-action-btn ll-action-btn--primary" [disabled]="saving()" (click)="save()">
-          <i [ngClass]="['pi', saving() ? 'pi-spin pi-spinner' : 'pi-save']" aria-hidden="true"></i>
-          Guardar
         </button>
       </div>
     </header>
@@ -60,32 +48,26 @@
     <!-- ── Body ────────────────────────────────────────────── -->
     <div class="ll-body">
 
-      <!-- Context -->
-      <div class="ll-field">
-        <label class="ll-label">Contexto</label>
-        <textarea
-          class="ll-textarea"
-          rows="3"
-          placeholder="Contexto de la sesión de lecciones aprendidas…"
-          [value]="editContext()"
-          (input)="editContext.set($any($event.target).value)"
-        ></textarea>
-      </div>
+      @if (d.context) {
+        <div class="ll-field">
+          <span class="ll-label">Contexto</span>
+          <p class="ll-context-text">{{ d.context }}</p>
+        </div>
+      }
 
-      <!-- Section label -->
       <div class="ll-section-label">
         <i class="pi pi-book" aria-hidden="true"></i>
         Lecciones
       </div>
 
-      @if (items().length === 0) {
+      @if (sortedItems().length === 0) {
         <div class="ll-empty">
           <i class="pi pi-book ll-empty__icon" aria-hidden="true"></i>
-          <p>Sin lecciones aún. Añadí la primera con los botones de abajo.</p>
+          <p>Sin lecciones.</p>
         </div>
       }
 
-      @for (item of items(); track item.uid; let ii = $index) {
+      @for (item of sortedItems(); track item.id; let ii = $index) {
         <div class="ll-item" [ngClass]="'ll-item--' + item.category">
           <div class="ll-item__header">
             <span class="ll-item__num">{{ ii + 1 }}</span>
@@ -93,73 +75,31 @@
               <i [ngClass]="['pi', categoryIcon(item.category)]" aria-hidden="true"></i>
               {{ categoryLabel(item.category) }}
             </span>
-
-            <!-- Category selector -->
-            <div class="ll-cat-pills">
-              @for (cat of categories; track cat.value) {
-                <button
-                  type="button"
-                  class="ll-cat-pill"
-                  [class.ll-cat-pill--active]="item.category === cat.value"
-                  [ngClass]="item.category === cat.value ? 'll-cat-pill--active-' + cat.value : ''"
-                  (click)="setCategory(ii, cat.value)"
-                  [title]="cat.label">
-                  {{ cat.label }}
-                </button>
-              }
-            </div>
-
-            <button type="button" class="ll-item__del" (click)="deleteItem(ii)" title="Eliminar lección">
-              <i class="pi pi-trash" aria-hidden="true"></i>
-            </button>
           </div>
 
           <div class="ll-item__fields">
             <div class="ll-field ll-field--no-margin">
-              <label class="ll-label">Observación *</label>
-              <textarea
-                class="ll-textarea ll-textarea--sm"
-                rows="2"
-                placeholder="¿Qué ocurrió?"
-                [value]="item.observation"
-                (input)="updateField(ii, 'observation', $event)"
-              ></textarea>
+              <span class="ll-label">Observación</span>
+              <p class="ll-item__text">{{ item.observation }}</p>
             </div>
             <div class="ll-item__two-cols">
-              <div class="ll-field ll-field--no-margin">
-                <label class="ll-label">Discusión</label>
-                <textarea
-                  class="ll-textarea ll-textarea--sm"
-                  rows="2"
-                  placeholder="Análisis y discusión…"
-                  [value]="item.discussion"
-                  (input)="updateField(ii, 'discussion', $event)"
-                ></textarea>
-              </div>
-              <div class="ll-field ll-field--no-margin">
-                <label class="ll-label">Recomendación</label>
-                <textarea
-                  class="ll-textarea ll-textarea--sm"
-                  rows="2"
-                  placeholder="Acción recomendada…"
-                  [value]="item.recommendation"
-                  (input)="updateField(ii, 'recommendation', $event)"
-                ></textarea>
-              </div>
+              @if (item.discussion) {
+                <div class="ll-field ll-field--no-margin">
+                  <span class="ll-label">Discusión</span>
+                  <p class="ll-item__text">{{ item.discussion }}</p>
+                </div>
+              }
+              @if (item.recommendation) {
+                <div class="ll-field ll-field--no-margin">
+                  <span class="ll-label">Recomendación</span>
+                  <p class="ll-item__text">{{ item.recommendation }}</p>
+                </div>
+              }
             </div>
           </div>
         </div>
       }
 
-      <!-- Add buttons per category -->
-      <div class="ll-add-row">
-        @for (cat of categories; track cat.value) {
-          <button type="button" class="ll-add-btn" [ngClass]="'ll-add-btn--' + cat.value" (click)="addItem(cat.value)">
-            <i class="pi pi-plus" aria-hidden="true"></i>
-            {{ cat.label }}
-          </button>
-        }
-      </div>
     </div>
   }
 </div>

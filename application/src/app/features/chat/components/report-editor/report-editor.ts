@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs';
@@ -14,7 +14,7 @@ import type { ReportDto } from '@aura-types/aura-chat-service.types';
   templateUrl: './report-editor.html',
   styleUrl: './report-editor.css',
 })
-export class ReportEditorComponent implements OnInit {
+export class ReportEditor implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);
@@ -22,17 +22,7 @@ export class ReportEditorComponent implements OnInit {
 
   readonly report = signal<ReportDto | null>(null);
   readonly loading = signal(true);
-  readonly editTitle = signal('');
-  readonly editContent = signal('');
-  readonly saving = signal(false);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
-  readonly viewMode = signal<'edit' | 'preview'>('preview');
-
-  readonly hasChanges = computed(() => {
-    const r = this.report();
-    if (!r) return false;
-    return this.editTitle().trim() !== r.title || this.editContent() !== r.content;
-  });
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -43,8 +33,6 @@ export class ReportEditorComponent implements OnInit {
     this.http.getReport(id).pipe(take(1)).subscribe({
       next: (r) => {
         this.report.set(r);
-        this.editTitle.set(r.title);
-        this.editContent.set(r.content);
         this.loading.set(false);
       },
       error: () => {
@@ -61,31 +49,6 @@ export class ReportEditorComponent implements OnInit {
     } else {
       void this.router.navigate(['/main-container', 'chat-home']);
     }
-  }
-
-  save(): void {
-    const r = this.report();
-    if (!r) return;
-    const t = this.editTitle().trim();
-    const c = this.editContent().trim();
-    if (!t || !c) {
-      this.toast.show('El título y el contenido no pueden estar vacíos.', 'error');
-      return;
-    }
-    this.saving.set(true);
-    this.http.patchReport(r.id, { title: t, content: c }).pipe(take(1)).subscribe({
-      next: (updated) => {
-        this.report.set(updated);
-        this.editTitle.set(updated.title);
-        this.editContent.set(updated.content);
-        this.saving.set(false);
-        this.toast.show('Informe guardado.', 'success');
-      },
-      error: () => {
-        this.saving.set(false);
-        this.toast.show('No se pudo guardar el informe.', 'error');
-      },
-    });
   }
 
   export(format: 'pdf' | 'markdown'): void {

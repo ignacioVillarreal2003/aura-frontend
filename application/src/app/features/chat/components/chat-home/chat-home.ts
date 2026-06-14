@@ -56,7 +56,7 @@ const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: st
   templateUrl: './chat-home.html',
   styleUrls: ['./chat-home.css'],
 })
-export class ChatHomeComponent {
+export class ChatHome {
   private readonly router    = inject(Router);
   private readonly api       = inject(AuraChatServiceHttp);
   private readonly docHttp   = inject(AuraDocumentProcessingServiceHttp);
