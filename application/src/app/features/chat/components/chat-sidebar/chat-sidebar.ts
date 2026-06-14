@@ -1,12 +1,11 @@
 import {
   Component,
   DestroyRef,
-  EventEmitter,
   OnInit,
-  Output,
   computed,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -40,8 +39,8 @@ export class ChatSidebar implements OnInit {
   readonly collapsed = input(false);
   readonly activeId = input<string | null>(null);
 
-  @Output() toggle = new EventEmitter<boolean>();
-  @Output() chatAction = new EventEmitter<{ chatId: string; action: string }>();
+  readonly toggle = output<boolean>();
+  readonly chatAction = output<{ chatId: string; action: string }>();
 
   readonly chats = signal<ChatListItemDto[]>([]);
   readonly sortedChats = computed(() =>

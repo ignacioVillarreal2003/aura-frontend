@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -9,8 +9,8 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./user-logout-modal.css'],
 })
 export class UserLogoutModal {
-  @Output() close = new EventEmitter<void>();
-  @Output() confirm = new EventEmitter<void>();
+  readonly close = output<void>();
+  readonly confirm = output<void>();
 
   onClose() {
     this.close.emit();

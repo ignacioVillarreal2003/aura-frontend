@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import type { FeedbackReason } from '../../../../core/types/aura-chat-service.types';
@@ -28,8 +28,8 @@ const COMMENT_MAX = 500;
   styleUrl: './feedback-dialog.css',
 })
 export class FeedbackDialog {
-  @Output() readonly submitFeedback = new EventEmitter<DislikeFeedbackResult>();
-  @Output() readonly cancel = new EventEmitter<void>();
+  readonly submitFeedback = output<DislikeFeedbackResult>();
+  readonly cancel = output<void>();
 
   readonly reasons = REASON_OPTIONS;
   readonly commentMax = COMMENT_MAX;
