@@ -775,10 +775,8 @@
   }
 
   @if (feedbackDialogMessageId() !== null) {
-    <app-feedback-dialog
-      (submitFeedback)="onFeedbackDialogSubmit($event)"
-      (cancel)="onFeedbackDialogCancel()">
-    </app-feedback-dialog>
+    <app-feedback-dialog (submitFeedback)="onFeedbackDialogSubmit($event)"
+      (cancel)="onFeedbackDialogCancel()" />
   }
 
   @if (pendingDeleteMessage() !== null) {

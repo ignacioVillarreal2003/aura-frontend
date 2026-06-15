@@ -39,11 +39,10 @@
         <p class="login-form__error" role="alert">{{ errorMessage() }}</p>
       }
 
-      <app-btn-text
-        [buttonType]="'submit'"
+      <app-btn-text [buttonType]="'submit'"
         [label]="submitting() ? 'Ingresando…' : 'Ingresar'"
         [disabled]="submitting()"
-      ></app-btn-text>
+       />
     </form>
   </div>
 </section>
