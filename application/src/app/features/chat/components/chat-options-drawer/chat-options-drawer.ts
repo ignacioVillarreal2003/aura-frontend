@@ -1,13 +1,11 @@
 import {
   Component,
   computed,
-  effect,
   inject,
   input,
   linkedSignal,
   output,
   signal,
-  untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -153,7 +151,12 @@ export class ChatOptionsDrawer {
   readonly chatAction = output<{ chatId: number; action: string; tags?: readonly string[] }>();
   readonly chatMetaUpdated = output<{ chatId: number; name?: string; system_prompt?: string | null; response_style?: string | null }>();
 
-  readonly panelView = signal<PanelView>('root');
+  // Resets to 'root' when the drawer closes; preserves the user's navigation
+  // while it stays open. Writable, so set(...) for navigation still works.
+  readonly panelView = linkedSignal<boolean, PanelView>({
+    source: this.isOpen,
+    computation: (open, prev) => (open ? (prev?.value ?? 'root') : 'root'),
+  });
   readonly members = signal<MembershipDto[]>([]);
   readonly membersLoading = signal(false);
   readonly memberUserMap = signal<Map<number, UserLookupDto>>(new Map());
@@ -179,7 +182,10 @@ export class ChatOptionsDrawer {
   private readonly reportsPageSize = 8;
   readonly exportingItemId = signal<number | null>(null);
 
-  readonly pendingConfirm = signal<ConfirmOpts | null>(null);
+  readonly pendingConfirm = linkedSignal<boolean, ConfirmOpts | null>({
+    source: this.isOpen,
+    computation: (open, prev) => (open ? (prev?.value ?? null) : null),
+  });
 
   readonly checklists = signal<ChecklistListItemDto[]>([]);
   readonly checklistsLoading = signal(false);
@@ -253,15 +259,6 @@ export class ChatOptionsDrawer {
   });
 
   constructor() {
-    effect(() => {
-      if (!this.isOpen()) {
-        untracked(() => {
-          this.panelView.set('root');
-          this.pendingConfirm.set(null);
-        });
-      }
-    });
-
     this._userSearch$.pipe(
       debounceTime(300),
       distinctUntilChanged(),
