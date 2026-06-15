@@ -1,4 +1,4 @@
-import {Component, Inject} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {NgClass} from '@angular/common';
 import {MAT_SNACK_BAR_DATA, MatSnackBarRef} from '@angular/material/snack-bar';
 import {MatIcon} from '@angular/material/icon';
@@ -13,8 +13,8 @@ import {MatIcon} from '@angular/material/icon';
   styleUrl: './toast.css'
 })
 export class Toast {
-  constructor(@Inject(MAT_SNACK_BAR_DATA) public data: { message: string; type: string },
-              private snackRef: MatSnackBarRef<Toast>) {}
+  readonly data = inject<{ message: string; type: string }>(MAT_SNACK_BAR_DATA);
+  private readonly snackRef = inject<MatSnackBarRef<Toast>>(MatSnackBarRef);
 
   close(): void {
     this.snackRef.dismiss();

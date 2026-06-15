@@ -77,7 +77,7 @@
           <h3 class="section-title">Hoy</h3>
           <div class="chat-list">
             @for (chat of grouped().hoy; track chat.id) {
-              <ng-container *ngTemplateOutlet="chatItem; context: { $implicit: chat }"></ng-container>
+              <ng-container *ngTemplateOutlet="chatItem; context: { $implicit: chat }" />
             }
           </div>
         </div>
@@ -88,7 +88,7 @@
           <h3 class="section-title">Ayer</h3>
           <div class="chat-list">
             @for (chat of grouped().ayer; track chat.id) {
-              <ng-container *ngTemplateOutlet="chatItem; context: { $implicit: chat }"></ng-container>
+              <ng-container *ngTemplateOutlet="chatItem; context: { $implicit: chat }" />
             }
           </div>
         </div>
@@ -99,7 +99,7 @@
           <h3 class="section-title">7 días anteriores</h3>
           <div class="chat-list">
             @for (chat of grouped().semana; track chat.id) {
-              <ng-container *ngTemplateOutlet="chatItem; context: { $implicit: chat }"></ng-container>
+              <ng-container *ngTemplateOutlet="chatItem; context: { $implicit: chat }" />
             }
           </div>
         </div>
@@ -110,7 +110,7 @@
           <h3 class="section-title">Más antiguos</h3>
           <div class="chat-list">
             @for (chat of grouped().anteriores; track chat.id) {
-              <ng-container *ngTemplateOutlet="chatItem; context: { $implicit: chat }"></ng-container>
+              <ng-container *ngTemplateOutlet="chatItem; context: { $implicit: chat }" />
             }
           </div>
         </div>

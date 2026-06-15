@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { take } from 'rxjs';
+import { map, take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import type { MembershipDto } from '@aura-types/aura-chat-service.types';
@@ -13,39 +14,43 @@ import type { MembershipDto } from '@aura-types/aura-chat-service.types';
   templateUrl: './user-invitations.html',
   styleUrl: './user-invitations.css',
 })
-export class UserInvitations implements OnInit {
+export class UserInvitations {
   private readonly http = inject(AuraChatServiceHttp);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  readonly memberships = signal<MembershipDto[]>([]);
-  readonly loading = signal(true);
   readonly filter = signal<'pending' | 'all'>('pending');
   readonly actioningId = signal<number | null>(null);
 
-  ngOnInit(): void {
-    this.load();
+  // Lista read-only: rxResource re-ejecuta el stream cada vez que cambia
+  // `filter` y cancela el request anterior. value()/isLoading() reemplazan los
+  // signals manuales; value es writable, así que el decline optimista funciona.
+  private readonly membershipsResource = rxResource({
+    params: () => this.filter(),
+    stream: ({ params }) => {
+      const query = params === 'pending'
+        ? { status: 'pending', page_size: 50 }
+        : { page_size: 50 };
+      return this.http.listMyMemberships(query).pipe(map((page) => [...page.results]));
+    },
+    defaultValue: [] as MembershipDto[],
+  });
+
+  readonly memberships = this.membershipsResource.value;
+  readonly loading = this.membershipsResource.isLoading;
+
+  constructor() {
+    // Mostrar fallo de carga como toast (effect válido: sincroniza con una API imperativa).
+    effect(() => {
+      if (this.membershipsResource.error()) {
+        this.toast.show('No se pudieron cargar las invitaciones.', 'error');
+      }
+    });
   }
 
   setFilter(f: 'pending' | 'all'): void {
     if (this.filter() === f) return;
-    this.filter.set(f);
-    this.load();
-  }
-
-  load(): void {
-    this.loading.set(true);
-    const query = this.filter() === 'pending' ? { status: 'pending', page_size: 50 } : { page_size: 50 };
-    this.http.listMyMemberships(query).pipe(take(1)).subscribe({
-      next: (page) => {
-        this.memberships.set([...page.results]);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.toast.show('No se pudieron cargar las invitaciones.', 'error');
-        this.loading.set(false);
-      },
-    });
+    this.filter.set(f); // rxResource re-fetchea solo
   }
 
   accept(m: MembershipDto): void {

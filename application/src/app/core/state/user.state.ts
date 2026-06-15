@@ -3,9 +3,10 @@ import type { AuthValidateUserDto } from '@core/types/aura-auth-service.types';
 
 @Injectable({ providedIn: 'root' })
 export class UserState {
-  readonly user = signal<AuthValidateUserDto | null>(null);
+  private readonly _user = signal<AuthValidateUserDto | null>(null);
+  readonly user = this._user.asReadonly();
 
   setUser(user: AuthValidateUserDto | null): void {
-    this.user.set(user);
+    this._user.set(user);
   }
 }

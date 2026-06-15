@@ -17,8 +17,10 @@ export class ChatService {
     this._sidebarReload$.next();
   }
 
-  readonly sessionViewerDisplayName = signal('');
-  readonly sessionViewerMemberId = signal<number | null>(null);
+  private readonly _sessionViewerDisplayName = signal('');
+  readonly sessionViewerDisplayName = this._sessionViewerDisplayName.asReadonly();
+  private readonly _sessionViewerMemberId = signal<number | null>(null);
+  readonly sessionViewerMemberId = this._sessionViewerMemberId.asReadonly();
 
   readonly activeChatContext = computed(() => this.activeChat());
 
@@ -46,13 +48,13 @@ export class ChatService {
   }
 
   setSessionIdentity(displayName: string, memberId: number | null = null): void {
-    this.sessionViewerDisplayName.set(displayName?.trim() ?? '');
-    this.sessionViewerMemberId.set(memberId);
+    this._sessionViewerDisplayName.set(displayName?.trim() ?? '');
+    this._sessionViewerMemberId.set(memberId);
   }
 
   resetSessionViewer(): void {
-    this.sessionViewerDisplayName.set('');
-    this.sessionViewerMemberId.set(null);
+    this._sessionViewerDisplayName.set('');
+    this._sessionViewerMemberId.set(null);
   }
 
   reset(): void {

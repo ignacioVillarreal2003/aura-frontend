@@ -26,11 +26,11 @@
 
   <main class="user-content">
     <div class="user-main-outlet">
-      <router-outlet></router-outlet>
+      <router-outlet />
     </div>
   </main>
 
   @if (showLogoutModal()) {
-    <app-user-logout-modal (close)="onCloseLogoutModal()" (confirm)="onConfirmLogout()"></app-user-logout-modal>
+    <app-user-logout-modal (close)="onCloseLogoutModal()" (confirm)="onConfirmLogout()" />
   }
 </div>

@@ -1,4 +1,4 @@
-import {Component, ElementRef} from '@angular/core';
+import {Component, ElementRef, inject} from '@angular/core';
 
 @Component({
   selector: 'app-background-2',
@@ -24,7 +24,7 @@ export class Background2 {
 
   private lerpFactor = 0.005;
 
-  constructor(private elRef: ElementRef) {}
+  private readonly elRef = inject(ElementRef);
 
   ngOnInit() {
     this.initPositions();
