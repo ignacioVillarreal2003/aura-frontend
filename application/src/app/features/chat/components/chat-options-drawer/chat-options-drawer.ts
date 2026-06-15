@@ -4,6 +4,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
   untracked,
@@ -225,8 +226,18 @@ export class ChatOptionsDrawer {
   readonly contextChatId = computed(() => this.contextChat()?.id ?? null);
   readonly contextChatTitle = computed(() => this.contextChat()?.name ?? '');
 
-  private readonly _pinned = signal(false);
-  private _pinnedInitForId: number | null = null;
+  // Writable state derived from the active chat: resets to the source's
+  // is_pinned when switching chats, but preserves the user's manual pin/unpin
+  // while staying on the same chat.
+  private readonly _pinned = linkedSignal<ChatRef | null, boolean>({
+    source: this.contextChat,
+    computation: (chat, previous) => {
+      if (previous && (chat?.id ?? null) === (previous.source?.id ?? null)) {
+        return previous.value;
+      }
+      return chat?.is_pinned ?? false;
+    },
+  });
   readonly isChatPinned = computed(() => this._pinned());
 
   readonly isChatArchived = computed(() => this.contextChat()?.archived_at != null);
@@ -242,14 +253,6 @@ export class ChatOptionsDrawer {
   });
 
   constructor() {
-    effect(() => {
-      const chat = this.contextChat();
-      const chatId = chat?.id ?? null;
-      if (chatId !== this._pinnedInitForId) {
-        this._pinnedInitForId = chatId;
-        untracked(() => this._pinned.set(chat?.is_pinned ?? false));
-      }
-    });
     effect(() => {
       if (!this.isOpen()) {
         untracked(() => {
