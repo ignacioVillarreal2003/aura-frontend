@@ -46,3 +46,29 @@ button {
 
   --topbar-height: 120px;
 }
+
+/* ── Transiciones de ruta (View Transitions API) ─────────────────────────
+   Cross-fade sutil + leve desplazamiento de la vista entrante. Es un
+   progressive enhancement: en navegadores sin soporte la app navega igual,
+   sin animación. Definido en estilos globales (no scoped) como pide Angular. */
+@keyframes route-fade-out {
+  to { opacity: 0; }
+}
+@keyframes route-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+::view-transition-old(root) {
+  animation: 90ms cubic-bezier(0.4, 0, 1, 1) both route-fade-out;
+}
+::view-transition-new(root) {
+  animation: 210ms cubic-bezier(0, 0, 0.2, 1) 60ms both route-fade-in;
+}
+
+/* Respeta la preferencia de movimiento reducido: sin animación de transición. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
