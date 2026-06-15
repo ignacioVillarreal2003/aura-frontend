@@ -3,6 +3,7 @@ import {
   ElementRef,
   OnDestroy,
   effect,
+  inject,
   input,
 } from '@angular/core';
 
@@ -22,14 +23,12 @@ import {
 export class TokenMaterializeDirective implements OnDestroy {
   readonly active = input(false, { alias: 'tokenMaterialize' });
 
-  private readonly el: HTMLElement;
+  private readonly el = inject(ElementRef<HTMLElement>).nativeElement;
   private observer: MutationObserver | null = null;
   private prevLen = 0;
   private busy = false;
 
-  constructor(elRef: ElementRef<HTMLElement>) {
-    this.el = elRef.nativeElement;
-
+  constructor() {
     // React to `active` toggling: signal inputs don't fire ngOnChanges, so an
     // effect plays the role of the previous ngOnInit + ngOnChanges logic.
     effect(() => {
