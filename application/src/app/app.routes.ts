@@ -6,6 +6,7 @@ export const routes: Routes = [
 
   {
     path: 'login',
+    title: 'Iniciar sesión',
     loadComponent: () =>
       import('./features/authentication/pages/login-page/login-page').then(m => m.LoginPage)
   },
@@ -20,6 +21,7 @@ export const routes: Routes = [
   // ── Artifact viewers (full-screen, no sidebar) ──────────────────
   {
     path: 'report/:id',
+    title: 'Reporte',
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/report-editor/report-editor').then(
@@ -28,6 +30,7 @@ export const routes: Routes = [
   },
   {
     path: 'checklist/:id',
+    title: 'Checklist',
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/checklist-editor/checklist-editor').then(
@@ -36,6 +39,7 @@ export const routes: Routes = [
   },
   {
     path: 'quiz/:id',
+    title: 'Quiz',
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/quiz-editor/quiz-editor').then(
@@ -44,6 +48,7 @@ export const routes: Routes = [
   },
   {
     path: 'timeline/:id',
+    title: 'Línea de tiempo',
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/timeline-editor/timeline-editor').then(
@@ -52,6 +57,7 @@ export const routes: Routes = [
   },
   {
     path: 'lessons-learned/:id',
+    title: 'Lecciones aprendidas',
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/lessons-learned-editor/lessons-learned-editor').then(
@@ -60,6 +66,7 @@ export const routes: Routes = [
   },
   {
     path: 'decision-brief/:id',
+    title: 'Resumen de decisión',
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/decision-brief-editor/decision-brief-editor').then(
@@ -68,6 +75,7 @@ export const routes: Routes = [
   },
   {
     path: 'document-summary/:id',
+    title: 'Resumen de documento',
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/document-summary-editor/document-summary-editor').then(
@@ -76,6 +84,7 @@ export const routes: Routes = [
   },
   {
     path: 'document-action/:id',
+    title: 'Acción de documento',
     canActivate: [authenticationGuard],
     loadComponent: () =>
       import('./features/chat/components/document-action-editor/document-action-editor').then(
@@ -92,6 +101,7 @@ export const routes: Routes = [
 
   {
     path: 'share/:token',
+    title: 'Chat compartido',
     loadComponent: () =>
       import('./features/chat/components/public-share/public-share').then(
         (m) => m.PublicShare

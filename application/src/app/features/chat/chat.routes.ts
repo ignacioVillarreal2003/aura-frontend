@@ -9,11 +9,13 @@ export const chatShellRoutes: Routes = [
       { path: '', redirectTo: 'chat-home', pathMatch: 'full' },
       {
         path: 'chat-home',
+        title: 'Inicio',
         loadComponent: () =>
           import('./components/chat-home/chat-home').then((m) => m.ChatHome),
       },
       {
         path: 'chats',
+        title: 'Chats',
         loadComponent: () =>
           import('./components/chat-search/chat-search').then(
             (m) => m.ChatSearch
@@ -21,11 +23,13 @@ export const chatShellRoutes: Routes = [
       },
       {
         path: 'chat/:id',
+        title: 'Chat',
         loadComponent: () =>
           import('./components/chat-session/chat-session').then((m) => m.ChatSession),
       },
       {
         path: 'assistants',
+        title: 'Asistentes',
         loadComponent: () =>
           import('./components/herramientas/asistentes-hub').then(
             (m) => m.AsistentesHub
@@ -33,6 +37,7 @@ export const chatShellRoutes: Routes = [
       },
       {
         path: 'document-search',
+        title: 'Documentos',
         loadComponent: () =>
           import('./components/document-search/document-search').then(
             (m) => m.DocumentSearch
@@ -40,6 +45,7 @@ export const chatShellRoutes: Routes = [
       },
       {
         path: 'feedback-analytics',
+        title: 'Analíticas',
         loadComponent: () =>
           import('./components/feedback-analytics/feedback-analytics').then(
             (m) => m.FeedbackAnalytics
