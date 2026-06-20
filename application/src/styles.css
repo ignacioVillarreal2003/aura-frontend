@@ -10,6 +10,14 @@ html, body {
   height: 100%;
 }
 
+/* Lienzo base del documento. Coincide con --surface-page del tema oscuro
+   (el tema por defecto, declarado en index.html). Cubre el primer pintado
+   antes de que el tema se aplique sobre <body>, el overscroll y el fondo
+   raíz de las View Transitions, evitando cualquier destello blanco. */
+html {
+  background-color: rgb(21, 21, 21);
+}
+
 body {
   margin: 0;
   font-family: var(--font-prose, 'Manrope', sans-serif);

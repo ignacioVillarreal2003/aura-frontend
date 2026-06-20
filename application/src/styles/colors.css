@@ -151,6 +151,9 @@ body.theme-light .auth-page__title {
 }
 
 body.theme-light {
+  /* Lienzo base: evita el flash blanco mientras carga el chunk de la ruta
+     o durante el cross-fade de las View Transitions. */
+  background-color: var(--surface-page);
   --background: rgb(231, 229, 228);
   --foreground: rgb(30, 41, 59);
   --card: rgb(245, 245, 244);
@@ -216,6 +219,9 @@ body.theme-light {
 }
 
 body.theme-dark {
+  /* Lienzo base: evita el flash blanco mientras carga el chunk de la ruta
+     o durante el cross-fade de las View Transitions. */
+  background-color: var(--surface-page);
   --background: rgb(30, 27, 24);
   --foreground: rgb(226, 232, 240);
   --card: rgb(44, 40, 37);
