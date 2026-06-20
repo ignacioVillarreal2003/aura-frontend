@@ -1,0 +1,124 @@
+.cd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(20px);
+  animation: cd-fade 0.15s ease;
+}
+
+.cd-panel {
+  width: 100%;
+  max-width: 420px;
+  padding: 1.5rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-xl);
+  animation: cd-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cd-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.cd-header__icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-surface);
+  color: var(--accent-fg);
+  font-size: 1.1rem;
+}
+
+.cd-header__icon--danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--destructive);
+}
+
+.cd-header__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cd-message {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.cd-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.cd-btn {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.cd-btn--ghost {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.cd-btn--ghost:hover {
+  background: var(--overlay-hover);
+  color: var(--text-primary);
+}
+
+.cd-btn--primary {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+.cd-btn--danger {
+  background: var(--destructive);
+  color: #fff;
+}
+
+.cd-btn--primary:hover,
+.cd-btn--danger:hover {
+  filter: brightness(1.08);
+}
+
+.cd-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@keyframes cd-fade {
+  from { opacity: 0; }
+}
+
+@keyframes cd-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-overlay,
+  .cd-panel {
+    animation: none;
+  }
+}

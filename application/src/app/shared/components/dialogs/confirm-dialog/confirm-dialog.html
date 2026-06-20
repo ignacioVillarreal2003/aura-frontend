@@ -1,0 +1,33 @@
+<div class="cd-overlay" (click)="cancel.emit()" role="presentation">
+  <div class="cd-panel"
+       (click)="$event.stopPropagation()"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="cd-title">
+
+    <div class="cd-header">
+      <div class="cd-header__icon" [class.cd-header__icon--danger]="danger()" aria-hidden="true">
+        <i class="pi {{ icon() }}"></i>
+      </div>
+      <h2 id="cd-title" class="cd-header__title">{{ title() }}</h2>
+    </div>
+
+    @if (message()) {
+      <p class="cd-message">{{ message() }}</p>
+    }
+
+    <div class="cd-footer">
+      <button type="button" class="cd-btn cd-btn--ghost" (click)="cancel.emit()">
+        {{ cancelLabel() }}
+      </button>
+      <button type="button"
+              class="cd-btn"
+              [class.cd-btn--danger]="danger()"
+              [class.cd-btn--primary]="!danger()"
+              (click)="confirm.emit()">
+        {{ confirmLabel() }}
+      </button>
+    </div>
+
+  </div>
+</div>
