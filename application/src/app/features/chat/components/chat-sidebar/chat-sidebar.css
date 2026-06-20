@@ -267,6 +267,15 @@
   flex-shrink: 0;
 }
 
+/* Slot líder de ancho fijo (= avatar) para los íconos principales: deja todas
+   las etiquetas alineadas en una sola columna, incluido el perfil con su
+   círculo "TL". El glyph se centra en el slot; su tamaño no cambia.
+   :first-child excluye badges intermedios como el candado de chat bloqueado. */
+.sidebar-link > i:first-child {
+  width: var(--sidebar-avatar-size);
+  text-align: center;
+}
+
 .sidebar-link.is-active i {
   color: var(--accent-fg);
 }
@@ -443,7 +452,7 @@
 
 .user-email {
   font-weight: 500;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -482,7 +491,7 @@
   display: grid;
   place-items: center;
   font-weight: 700;
-  font-size: 0.625rem;
+  font-size: 0.875rem;
   line-height: 1;
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
@@ -508,11 +517,21 @@
 
 /* Notification bell badge */
 .notif-bell-wrap {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  /* Mismo slot que el avatar para alinear el texto del footer con el resto. */
+  width: var(--sidebar-avatar-size);
+  height: var(--sidebar-avatar-size);
+}
+
+/* Caja al tamaño real del ícono: ancla el badge al glyph, no al slot. */
+.notif-bell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 1rem;
   height: 1rem;
 }

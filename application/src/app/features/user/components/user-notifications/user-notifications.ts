@@ -273,12 +273,11 @@ export class UserNotifications implements OnInit, OnDestroy {
   }
 
   getSenderInitials(n: NotificationDto): string {
-    return this.getSenderDisplay(n)
-      .split(' ')
-      .map(w => w[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    // Separa por espacios y separadores de username (. _ -): "ten.lopez" → "TL".
+    const parts = this.getSenderDisplay(n).trim().split(/[\s._-]+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 
   /** First segment of the event type (`chat`, `auth`, `document`, `admin`, `system`) — used for avatar styling. */

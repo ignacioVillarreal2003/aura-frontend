@@ -1652,7 +1652,10 @@ export class ChatSession implements OnDestroy {
   }
 
   private initialsFromDisplayName(raw: string): string {
-    const parts = raw.trim().split(/\s+/).filter(Boolean);
+    // Separa por espacios y por los separadores típicos de username (. _ -),
+    // así "ten.lopez" rinde "TL" (inicial del nombre + inicial del apellido)
+    // en lugar de "TE".
+    const parts = raw.trim().split(/[\s._-]+/).filter(Boolean);
     if (parts.length === 0) return '?';
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
