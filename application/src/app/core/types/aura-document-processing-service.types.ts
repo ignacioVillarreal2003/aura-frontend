@@ -25,6 +25,19 @@ export interface DocumentQueryChatDocumentDto {
   readonly updated_at: string | null;
 }
 
+/**
+ * Proyección liviana del estado de procesamiento de un documento.
+ * GET /document-query/document/{id}/status — pensada para hacer polling del
+ * pipeline asíncrono de ingesta sin traer el documento completo.
+ */
+export interface DocumentStatusDto {
+  readonly status: string;
+  readonly enrichment_status: string;
+  readonly graph_status: string;
+  readonly processing_started_at: string | null;
+  readonly processing_finished_at: string | null;
+}
+
 export interface DocumentQueryListByChatResponseDto {
   readonly documents: readonly DocumentQueryChatDocumentDto[];
 }
