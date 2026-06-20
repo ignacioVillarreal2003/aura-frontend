@@ -745,7 +745,11 @@ export class ChatOptionsDrawer {
   }
 
   userInitials(name: string): string {
-    return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+    // Separa por espacios y separadores de username (. _ -): "ten.lopez" → "TL".
+    const parts = name.trim().split(/[\s._-]+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 
   closeUserSearch(): void {
@@ -956,7 +960,7 @@ export class ChatOptionsDrawer {
     const u = this.memberUserMap().get(member.member_id);
     if (u) {
       const name = (u.name?.trim() || u.username).toUpperCase();
-      const parts = name.split(/\s+/);
+      const parts = name.split(/[\s._-]+/).filter(Boolean);
       if (parts.length >= 2) return parts[0][0] + parts[parts.length - 1][0];
       return name.slice(0, 2);
     }
