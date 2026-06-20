@@ -3,7 +3,9 @@
   flex-direction: column;
   flex: 1 0 auto;
   min-height: 0;
-  background: var(--bg-primary, #0f0f11);
+  /* Transparente para mostrar el mismo --surface-page que el resto del área
+     de usuario (.user-content); antes usaba --bg-primary y se veía más claro. */
+  background: transparent;
   color: var(--text-primary, #fafaf9);
 }
 
