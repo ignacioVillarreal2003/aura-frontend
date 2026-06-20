@@ -348,6 +348,125 @@ input:checked + .toggle-slider:before {
   color: var(--text-primary);
 }
 
+.manage-btn:disabled,
+.danger-btn:disabled,
+.export-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Vista de chats archivados (Control de datos) ────────────── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  margin-right: 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: opacity 0.18s ease;
+}
+
+/* Mismo color que el texto del título (anula el acento de .user-settings-title i). */
+.back-btn i {
+  color: inherit;
+  font-size: 1.5rem;
+}
+
+.back-btn:hover {
+  opacity: 0.65;
+}
+
+.back-btn:focus-visible {
+  outline: none;
+  border-radius: 6px;
+  box-shadow: var(--focus-ring);
+}
+
+.archived-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.archived-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 10rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.archived-empty-state i {
+  font-size: 2.5rem;
+  color: var(--text-tertiary);
+}
+
+.archived-empty-state p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.archived-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.archived-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.archived-item__main {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.archived-item__icon {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.archived-item__main:hover .archived-item__name {
+  color: var(--accent-fg);
+}
+
+.archived-item__name {
+  min-width: 0;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manage-btn--sm {
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.825rem;
+}
+
 .danger-btn {
   background: transparent;
   border: 1px solid var(--destructive);

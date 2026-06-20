@@ -68,40 +68,92 @@
       </div>
     }
     @case ('data-control') {
-      <header class="user-settings-header">
-        <h1 class="user-settings-title">
-          <i class="pi pi-database" aria-hidden="true"></i>
-          Control de datos
-        </h1>
-      </header>
-      <div class="user-settings-body">
-        <div class="data-control-section">
-          <div class="data-control-item">
-            <div class="data-control-info">
-              <span class="data-control-label">Chats archivados</span>
+      @if (showArchived()) {
+        <header class="user-settings-header">
+          <h1 class="user-settings-title">
+            <button type="button" class="back-btn" (click)="closeArchived()" aria-label="Volver">
+              <i class="pi pi-arrow-left" aria-hidden="true"></i>
+            </button>
+            Chats archivados
+          </h1>
+        </header>
+        <div class="user-settings-body">
+          @if (loadingArchived()) {
+            <div class="archived-status">
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              Cargando…
             </div>
-            <button type="button" class="manage-btn">Administrar</button>
-          </div>
-          <div class="data-control-item">
-            <div class="data-control-info">
-              <span class="data-control-label">Archivar todos los chats</span>
+          } @else if (archivedChats().length === 0) {
+            <div class="archived-empty-state">
+              <i class="pi pi-inbox" aria-hidden="true"></i>
+              <p>No tenés chats archivados.</p>
             </div>
-            <button type="button" class="manage-btn">Archivar todo</button>
-          </div>
-          <div class="data-control-item">
-            <div class="data-control-info">
-              <span class="data-control-label">Eliminar todos los chats</span>
+          } @else {
+            <ul class="archived-list">
+              @for (chat of archivedChats(); track chat.id) {
+                <li class="archived-item">
+                  <a class="archived-item__main" [routerLink]="['/main-container', 'chat', chat.id]">
+                    <i class="pi pi-comments archived-item__icon" aria-hidden="true"></i>
+                    <span class="archived-item__name">{{ chat.name }}</span>
+                  </a>
+                  <button type="button" class="manage-btn manage-btn--sm"
+                          [disabled]="unarchivingId() === chat.id"
+                          (click)="unarchive(chat)">
+                    {{ unarchivingId() === chat.id ? 'Desarchivando…' : 'Desarchivar' }}
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      } @else {
+        <header class="user-settings-header">
+          <h1 class="user-settings-title">
+            <i class="pi pi-database" aria-hidden="true"></i>
+            Control de datos
+          </h1>
+        </header>
+        <div class="user-settings-body">
+          <div class="data-control-section">
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Chats archivados</span>
+              </div>
+              <button type="button" class="manage-btn" (click)="openArchived()">Administrar</button>
             </div>
-            <button type="button" class="danger-btn">Eliminar todo</button>
-          </div>
-          <div class="data-control-item">
-            <div class="data-control-info">
-              <span class="data-control-label">Exportar datos</span>
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Archivar todos los chats</span>
+              </div>
+              <button type="button" class="manage-btn" [disabled]="archivingAll()" (click)="archiveAll()">
+                {{ archivingAll() ? 'Archivando…' : 'Archivar todo' }}
+              </button>
             </div>
-            <button type="button" class="export-btn">Exportar</button>
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Eliminar todos los chats</span>
+              </div>
+              <button type="button" class="danger-btn">Eliminar todo</button>
+            </div>
+            <div class="data-control-item">
+              <div class="data-control-info">
+                <span class="data-control-label">Exportar datos</span>
+              </div>
+              <button type="button" class="export-btn">Exportar</button>
+            </div>
           </div>
         </div>
-      </div>
+      }
+
+      @if (confirmArchiveAllOpen()) {
+        <app-confirm-dialog
+          title="Archivar todos los chats"
+          message="Se archivarán todos tus chats activos. Vas a poder desarchivarlos después desde «Chats archivados»."
+          confirmLabel="Archivar todo"
+          icon="pi-box"
+          (confirm)="confirmArchiveAll()"
+          (cancel)="cancelArchiveAll()" />
+      }
     }
   }
 </div>
