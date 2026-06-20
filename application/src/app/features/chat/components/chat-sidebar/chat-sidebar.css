@@ -491,7 +491,9 @@
   display: grid;
   place-items: center;
   font-weight: 700;
-  font-size: 0.875rem;
+  /* Mismo tamaño que las iniciales del avatar en el chat (.user-message-avatar__text)
+     para mantener consistencia en toda la app. */
+  font-size: 11px;
   line-height: 1;
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);

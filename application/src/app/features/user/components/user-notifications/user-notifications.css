@@ -64,6 +64,14 @@
   text-align: center;
 }
 
+/* ── Inbox ──────────────────────────────────────────────────────────────────── */
+.inbox-section {
+  display: flex;
+  flex-direction: column;
+  /* Separa el header (filtros/acciones) del listado para que no quede pegado. */
+  gap: 1.5rem;
+}
+
 /* ── Inbox header ───────────────────────────────────────────────────────────── */
 .inbox-header {
   display: flex;
