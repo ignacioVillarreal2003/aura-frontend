@@ -9,6 +9,7 @@ import type {
   DocumentQueryListByChatResponseDto,
   DocumentSearchRequestDto,
   DocumentSearchResponseDto,
+  DocumentStatusDto,
 } from '@aura-types/aura-document-processing-service.types';
 import {
   DOCUMENT_PROCESSING_UPLOAD_FIELD_NAME,
@@ -24,6 +25,13 @@ export class AuraDocumentProcessingServiceHttp {
   getDocument(documentId: number): Observable<DocumentQueryChatDocumentDto> {
     return this.http.get<DocumentQueryChatDocumentDto>(
       `${this.base}/document-query/document/${documentId}`,
+    );
+  }
+
+  /** Proyección liviana del estado, para hacer polling del pipeline de ingesta. */
+  getDocumentStatus(documentId: number): Observable<DocumentStatusDto> {
+    return this.http.get<DocumentStatusDto>(
+      `${this.base}/document-query/document/${documentId}/status`,
     );
   }
 

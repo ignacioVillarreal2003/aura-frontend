@@ -699,7 +699,7 @@ export class ChatSession implements OnDestroy {
     timer(1500, 2500).pipe(
       takeUntilDestroyed(this.destroyRef),
       takeUntil(stop$),
-      switchMap(() => this.documents.getDocument(docId)),
+      switchMap(() => this.documents.getDocumentStatus(docId)),
     ).subscribe({
       next: (doc) => {
         this.sessionDocuments.update(docs =>
