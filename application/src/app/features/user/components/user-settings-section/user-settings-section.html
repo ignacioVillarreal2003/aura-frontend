@@ -59,9 +59,11 @@
               </button>
             </div>
           </div>
-          <button type="button" class="change-password-btn" (click)="store.onPasswordChange()">
+          <button type="button" class="change-password-btn"
+                  [disabled]="changingPassword()"
+                  (click)="changePassword()">
             <i class="pi pi-key"></i>
-            Cambiar contraseña
+            {{ changingPassword() ? 'Cambiando…' : 'Cambiar contraseña' }}
           </button>
         </div>
         </div>

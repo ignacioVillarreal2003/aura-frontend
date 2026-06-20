@@ -104,10 +104,7 @@ export class UserSettingsState {
     this._passwordFields.update((s) => ({ ...s, [field]: value }));
   }
 
-  onPasswordChange(): void {
-    const { current, new: newPwd, confirm } = this.passwordFields();
-    if (!current || !newPwd || !confirm) return;
-    if (newPwd !== confirm) return;
+  resetPasswordForm(): void {
     this._passwordFields.set({ current: '', new: '', confirm: '' });
     this._showPasswords.set({ current: false, new: false, confirm: false });
   }

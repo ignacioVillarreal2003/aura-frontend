@@ -21,6 +21,11 @@ export interface AuthLogoutResponseDto {
   readonly detail: string;
 }
 
+export interface ChangePasswordBody {
+  readonly current_password: string;
+  readonly new_password: string;
+}
+
 export interface AuthValidateUserDto {
   readonly id: number;
   readonly email: string;

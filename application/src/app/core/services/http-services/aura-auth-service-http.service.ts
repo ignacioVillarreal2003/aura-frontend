@@ -9,6 +9,7 @@ import type {
   AuthRefreshBody,
   AuthTokenPairDto,
   AuthValidateUserDto,
+  ChangePasswordBody,
   UserLookupResponseDto,
 } from '@aura-types/aura-auth-service.types';
 
@@ -27,6 +28,10 @@ export class AuraAuthServiceHttp {
 
   logout(body: AuthLogoutBody): Observable<AuthLogoutResponseDto> {
     return this.http.post<AuthLogoutResponseDto>(`${this.base}/auth/logout`, body);
+  }
+
+  changePassword(body: ChangePasswordBody): Observable<AuthLogoutResponseDto> {
+    return this.http.post<AuthLogoutResponseDto>(`${this.base}/auth/change-password`, body);
   }
 
   validate(): Observable<AuthValidateUserDto> {
