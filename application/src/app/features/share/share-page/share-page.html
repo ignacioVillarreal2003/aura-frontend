@@ -1,0 +1,76 @@
+<div class="share">
+  <header class="share__topbar">
+    <h1 class="share__title">Conversación compartida</h1>
+  </header>
+
+  <main class="share__main">
+    <div class="share__container">
+      @if (loading()) {
+        <div class="share__state">
+          <div class="share__spinner" aria-hidden="true"></div>
+          <p class="share__state-text">Cargando conversación…</p>
+        </div>
+      } @else if (error()) {
+        <div class="share__state">
+          <span class="share__state-icon share__state-icon--error" aria-hidden="true">
+            <i class="pi pi-exclamation-triangle"></i>
+          </span>
+          <p class="share__state-title">No se pudo abrir el enlace</p>
+          <p class="share__state-text">{{ error() }}</p>
+        </div>
+      } @else if (messageCount() === 0) {
+        <div class="share__state">
+          <span class="share__state-icon" aria-hidden="true">
+            <i class="pi pi-comments"></i>
+          </span>
+          <p class="share__state-title">Conversación vacía</p>
+          <p class="share__state-text">Este chat no tiene mensajes para mostrar.</p>
+        </div>
+      } @else {
+        <div class="share__messages">
+          @for (msg of messages(); track msg.id) {
+            <div
+              class="message"
+              [class.user-message]="msg.sender_type === 'user'"
+              [class.assistant-message]="msg.sender_type === 'assistant'">
+              @if (msg.sender_type === 'assistant') {
+                <div class="message-avatar assistant-avatar" aria-hidden="true">
+                  <i class="pi pi-sparkles"></i>
+                </div>
+              } @else {
+                <div class="message-avatar user-message-avatar" aria-hidden="true">
+                  <i class="pi pi-user"></i>
+                </div>
+              }
+              <div class="message-content">
+                <div class="message-bubble">
+                  @if (msg.sender_type === 'assistant') {
+                    <div class="message-text message-text--md" [innerHTML]="msg.message | markdown"></div>
+                  } @else {
+                    <div class="message-text">{{ msg.message }}</div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (nextUrl()) {
+          <button
+            type="button"
+            class="share__load-more"
+            [disabled]="loadingMore()"
+            (click)="loadMore()">
+            @if (loadingMore()) {
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              Cargando…
+            } @else {
+              <i class="pi pi-chevron-down" aria-hidden="true"></i>
+              Cargar más mensajes
+            }
+          </button>
+        }
+      }
+    </div>
+  </main>
+</div>

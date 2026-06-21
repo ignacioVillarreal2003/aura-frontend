@@ -107,12 +107,9 @@ export const routes: Routes = [
   },
 
   {
-    path: 'share/:token',
-    title: 'Chat compartido',
-    loadComponent: () =>
-      import('./features/chat/components/public-share/public-share').then(
-        (m) => m.PublicShare
-      ),
+    path: 'share',
+    loadChildren: () =>
+      import('./features/share/share.routes').then((m) => m.SHARE_ROUTES),
   },
 
   { path: '**', redirectTo: 'login' }

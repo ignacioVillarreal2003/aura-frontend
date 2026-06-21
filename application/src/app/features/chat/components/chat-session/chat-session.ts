@@ -100,6 +100,15 @@ interface ChatMessage {
   readonly messageId?: number;
 }
 
+/** A unique source document behind an AI answer (fragments collapsed by document). */
+interface SourceDocument {
+  readonly id: number;
+  readonly name: string;
+  readonly type: string | null;
+  readonly category: string | null;
+  readonly matched: number;
+}
+
 @Component({
   selector: 'app-chat-session',
   standalone: true,
@@ -370,6 +379,7 @@ export class ChatSession implements OnDestroy {
         thread_reply_count: artifact.thread_reply_count,
         artifactType: 'MESSAGE',
         messageId: artifact.message.id,
+        fragments: artifact.fragments as ChatFragment[] | null,
       };
     }
     return {
@@ -1619,12 +1629,43 @@ export class ChatSession implements OnDestroy {
     }
   }
 
-  hasFragments(id: number): boolean {
-    return (this.messageFragments().get(id)?.length ?? 0) > 0;
+  /** Unique source documents per message id (fragments collapsed by document). */
+  readonly sourceDocsByMessage = computed(() => {
+    const out = new Map<number, SourceDocument[]>();
+    this.messageFragments().forEach((frags, msgId) => {
+      out.set(msgId, this._dedupeSourceDocuments(frags));
+    });
+    return out;
+  });
+
+  private _dedupeSourceDocuments(frags: readonly ChatFragment[]): SourceDocument[] {
+    const byDoc = new Map<number, { id: number; name: string; type: string | null; category: string | null; matched: number }>();
+    for (const f of frags) {
+      const doc = f.document;
+      const docId = doc?.id ?? f.document_id;
+      if (docId == null) continue;
+      const existing = byDoc.get(docId);
+      if (existing) {
+        existing.matched += 1;
+      } else {
+        byDoc.set(docId, {
+          id: docId,
+          name: doc?.name ?? `Documento ${docId}`,
+          type: doc?.type ?? null,
+          category: doc?.category ?? null,
+          matched: 1,
+        });
+      }
+    }
+    return [...byDoc.values()];
   }
 
-  getFragments(id: number): readonly ChatFragment[] {
-    return this.messageFragments().get(id) ?? [];
+  hasFragments(id: number): boolean {
+    return (this.sourceDocsByMessage().get(id)?.length ?? 0) > 0;
+  }
+
+  getSourceDocuments(id: number): readonly SourceDocument[] {
+    return this.sourceDocsByMessage().get(id) ?? [];
   }
 
   isFragmentsExpanded(id: number): boolean {
@@ -1637,6 +1678,38 @@ export class ChatSession implements OnDestroy {
       if (n.has(id)) n.delete(id); else n.add(id);
       return n;
     });
+  }
+
+  readonly downloadingSourceId = signal<number | null>(null);
+
+  sourceDocIcon(doc: SourceDocument): string {
+    const t = (doc.type ?? '').toLowerCase();
+    if (t.includes('pdf')) return 'pi-file-pdf';
+    if (t.includes('word') || t.includes('doc')) return 'pi-file-word';
+    if (t.includes('sheet') || t.includes('excel') || t.includes('csv') || t.includes('xls')) return 'pi-file-excel';
+    return 'pi-file';
+  }
+
+  downloadSourceDocument(doc: SourceDocument): void {
+    if (this.downloadingSourceId() !== null) return;
+    this.downloadingSourceId.set(doc.id);
+    this.documents.downloadDocument(doc.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          this.downloadingSourceId.set(null);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = doc.name;
+          a.click();
+          URL.revokeObjectURL(url);
+        },
+        error: () => {
+          this.downloadingSourceId.set(null);
+          this.toast.show('No se pudo descargar el documento.', 'error');
+        },
+      });
   }
 
   private _resolveMessageUsers(msgs: readonly ChatMessage[]): void {

@@ -1,18 +1,18 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
-import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
+import { MarkdownPipe } from '../../../shared/pipes/markdown.pipe';
 import type { MessageDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
-  selector: 'app-public-share',
+  selector: 'app-share-page',
   standalone: true,
   imports: [CommonModule, MarkdownPipe],
-  templateUrl: './public-share.html',
-  styleUrl: './public-share.css',
+  templateUrl: './share-page.html',
+  styleUrls: ['./share-page.css'],
 })
-export class PublicShare implements OnInit {
+export class SharePage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(AuraChatServiceHttp);
 
@@ -21,6 +21,9 @@ export class PublicShare implements OnInit {
   readonly loadingMore = signal(false);
   readonly nextUrl = signal<string | null>(null);
   readonly error = signal<string | null>(null);
+
+  readonly messageCount = computed(() => this.messages().length);
+
   token = '';
 
   ngOnInit(): void {

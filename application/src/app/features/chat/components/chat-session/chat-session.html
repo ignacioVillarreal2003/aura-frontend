@@ -97,6 +97,7 @@
                   <span class="message-time">{{ formatTime(message.created_at) }}</span>
                 </div>
                 @if (streamingAssistantId() !== message.id) {
+                  <div class="message-toolbar">
                   <div class="message-actions" role="toolbar" [attr.aria-label]="'Acciones del mensaje'">
                     <button
                       type="button"
@@ -187,24 +188,18 @@
                   @if (message.sender_type === 'assistant' && hasFragments(message.id)) {
                     <button
                       type="button"
-                      class="fragments-toggle"
+                      class="sources-pill"
+                      [class.is-open]="isFragmentsExpanded(message.id)"
+                      [attr.aria-expanded]="isFragmentsExpanded(message.id)"
                       (click)="toggleFragments(message.id)">
-                      <i [ngClass]="['pi', isFragmentsExpanded(message.id) ? 'pi-chevron-up' : 'pi-chevron-down']" aria-hidden="true"></i>
-                      Ver fuentes ({{ getFragments(message.id).length }})
+                      <i class="pi pi-book sources-pill__icon" aria-hidden="true"></i>
+                      <span>Fuentes</span>
+                      <i class="pi pi-chevron-down sources-pill__chevron" aria-hidden="true"></i>
                     </button>
-                    @if (isFragmentsExpanded(message.id)) {
-                      <div class="fragments-panel">
-                        @for (frag of getFragments(message.id); track frag.id) {
-                          <div class="fragment-item">
-                            <span class="fragment-doc">
-                              <i class="pi pi-file" aria-hidden="true"></i>
-                              {{ frag.document.name }}
-                            </span>
-                            <p class="fragment-content">{{ frag.content.length > 280 ? (frag.content | slice:0:280) + '…' : frag.content }}</p>
-                          </div>
-                        }
-                      </div>
-                    }
+                  }
+                  </div>
+                  @if (message.sender_type === 'assistant' && hasFragments(message.id)) {
+                    <ng-container *ngTemplateOutlet="sourcesBlock; context: { $implicit: message.id }" />
                   }
                 }
               </div>
@@ -239,6 +234,7 @@
                   }
                   <div class="artifact-card__footer">
                     <span class="artifact-card__time">{{ formatTime(message.created_at) }}</span>
+                    <div class="artifact-card__footer-right">
                     <div class="artifact-card__actions">
                       <button
                         type="button"
@@ -324,29 +320,23 @@
                         <i class="pi pi-trash" aria-hidden="true"></i>
                       </button>
                     </div>
+                    @if (hasFragments(message.id)) {
+                      <button
+                        type="button"
+                        class="sources-pill"
+                        [class.is-open]="isFragmentsExpanded(message.id)"
+                        [attr.aria-expanded]="isFragmentsExpanded(message.id)"
+                        (click)="toggleFragments(message.id)">
+                        <i class="pi pi-book sources-pill__icon" aria-hidden="true"></i>
+                        <span>Fuentes</span>
+                        <i class="pi pi-chevron-down sources-pill__chevron" aria-hidden="true"></i>
+                      </button>
+                    }
+                    </div>
                   </div>
                 </div>
                 @if (hasFragments(message.id)) {
-                  <button
-                    type="button"
-                    class="fragments-toggle"
-                    (click)="toggleFragments(message.id)">
-                    <i [ngClass]="['pi', isFragmentsExpanded(message.id) ? 'pi-chevron-up' : 'pi-chevron-down']" aria-hidden="true"></i>
-                    Ver fuentes ({{ getFragments(message.id).length }})
-                  </button>
-                  @if (isFragmentsExpanded(message.id)) {
-                    <div class="fragments-panel">
-                      @for (frag of getFragments(message.id); track frag.id) {
-                        <div class="fragment-item">
-                          <span class="fragment-doc">
-                            <i class="pi pi-file" aria-hidden="true"></i>
-                            {{ frag.document.name }}
-                          </span>
-                          <p class="fragment-content">{{ frag.content.length > 280 ? (frag.content | slice:0:280) + '…' : frag.content }}</p>
-                        </div>
-                      }
-                    </div>
-                  }
+                  <ng-container *ngTemplateOutlet="sourcesBlock; context: { $implicit: message.id }" />
                 }
               </div>
             </div>
@@ -598,3 +588,45 @@
     </div>
   }
 </div>
+
+<ng-template #sourcesBlock let-messageId>
+  @if (isFragmentsExpanded(messageId)) {
+    <div class="sources">
+      <div class="sources__header">
+        <i class="pi pi-book" aria-hidden="true"></i>
+        <span>Fuentes · {{ getSourceDocuments(messageId).length }} {{ getSourceDocuments(messageId).length === 1 ? 'documento' : 'documentos' }}</span>
+      </div>
+      <div class="sources__panel" role="list">
+        @for (doc of getSourceDocuments(messageId); track doc.id) {
+          <div class="source-doc" role="listitem">
+            <span class="source-doc__icon" aria-hidden="true">
+              <i class="pi" [ngClass]="sourceDocIcon(doc)"></i>
+            </span>
+            <span class="source-doc__main">
+              <span class="source-doc__name" [title]="doc.name">{{ doc.name }}</span>
+              <span class="source-doc__meta">
+                @if (doc.category) {
+                  <span>{{ doc.category }}</span>
+                  <span class="source-doc__dot" aria-hidden="true">·</span>
+                }
+                <span>{{ doc.matched }} {{ doc.matched === 1 ? 'fragmento' : 'fragmentos' }}</span>
+              </span>
+            </span>
+            <button
+              type="button"
+              class="source-doc__download"
+              [disabled]="downloadingSourceId() !== null"
+              [attr.aria-label]="'Descargar ' + doc.name"
+              (click)="downloadSourceDocument(doc)">
+              @if (downloadingSourceId() === doc.id) {
+                <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              } @else {
+                <i class="pi pi-download" aria-hidden="true"></i>
+              }
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</ng-template>
