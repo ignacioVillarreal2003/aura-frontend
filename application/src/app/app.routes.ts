@@ -93,6 +93,13 @@ export const routes: Routes = [
   },
 
   {
+    path: 'documents',
+    canActivate: [authenticationGuard],
+    loadChildren: () =>
+      import('./features/documents/documents.routes').then((m) => m.DOCUMENTS_ROUTES),
+  },
+
+  {
     path: 'user',
     canActivate: [authenticationGuard],
     loadChildren: () =>

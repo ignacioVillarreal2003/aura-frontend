@@ -36,14 +36,6 @@ export const chatShellRoutes: Routes = [
           ),
       },
       {
-        path: 'document-search',
-        title: 'Documentos',
-        loadComponent: () =>
-          import('./components/document-search/document-search').then(
-            (m) => m.DocumentSearch
-          ),
-      },
-      {
         path: 'feedback-analytics',
         title: 'Analíticas',
         loadComponent: () =>

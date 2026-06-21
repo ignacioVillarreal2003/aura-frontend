@@ -1,0 +1,137 @@
+<div class="ds-page" #scrollRoot>
+
+  <header class="ds-header">
+    <div class="ds-searchbar">
+      <div class="ds-search">
+        <i class="pi pi-search ds-search__icon" aria-hidden="true"></i>
+        <input
+          type="text"
+          class="ds-search__input"
+          placeholder="Buscar por contenido: tema, frase o idea…"
+          [attr.maxlength]="maxQueryChars"
+          [value]="query()"
+          (input)="onQueryInput($any($event.target).value)"
+          (keydown.escape)="clearQuery()"
+          aria-label="Buscar documentos por contenido"
+        />
+        @if (query().length > 0) {
+          <button
+            type="button"
+            class="ds-search__clear"
+            aria-label="Limpiar búsqueda"
+            (click)="clearQuery()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+
+      <div class="ds-modes" role="group" aria-label="Modo de búsqueda">
+        @for (m of modes; track m.id) {
+          <button
+            type="button"
+            class="ds-modes__btn"
+            [class.is-active]="mode() === m.id"
+            [attr.aria-pressed]="mode() === m.id"
+            [title]="m.hint"
+            (click)="selectMode(m.id)">
+            <i class="pi" [ngClass]="m.icon" aria-hidden="true"></i>
+            <span class="ds-modes__label">{{ m.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </header>
+
+  @if (searched()) {
+
+    @if (loading()) {
+      <div class="ds-results" aria-hidden="true">
+        @for (_ of [1, 2, 3, 4, 5]; track $index) {
+          <div class="ds-row ds-row--skeleton"></div>
+        }
+      </div>
+    } @else if (failed()) {
+      <div class="ds-alert" role="alert">
+        <span>No se pudo completar la búsqueda.</span>
+        <button type="button" class="ds-alert__retry" (click)="retry()">
+          Reintentar búsqueda
+        </button>
+      </div>
+    } @else if (results().length === 0) {
+      <div class="ds-empty">
+        <i class="pi pi-inbox ds-empty__icon" aria-hidden="true"></i>
+        <p class="ds-empty__title">Sin coincidencias para "{{ query().trim() }}"</p>
+        <p class="ds-empty__text">
+          Probá con otras palabras o cambiá el modo de búsqueda. "Significado" compara
+          el sentido del texto; "Palabras" busca los términos exactos.
+        </p>
+      </div>
+    } @else {
+      <div class="ds-results" role="list">
+        @for (r of results(); track r.document.id) {
+          <article class="ds-row" role="listitem">
+            <i class="pi ds-row__icon" [ngClass]="documentIcon(r)" aria-hidden="true"></i>
+
+            <div class="ds-row__main">
+              <h2 class="ds-row__name" [title]="r.document.name">{{ r.document.name }}</h2>
+              <p class="ds-row__meta">
+                @if (r.document.category) {
+                  <span>{{ r.document.category }}</span>
+                }
+                @if (formatFileSize(r.document.file_size_bytes)) {
+                  <span>{{ formatFileSize(r.document.file_size_bytes) }}</span>
+                }
+                <span>{{ r.document.created_at | date: 'dd/MM/yyyy' }}</span>
+              </p>
+            </div>
+
+            <span
+              class="ds-row__match"
+              [title]="r.matched_fragments === 1
+                ? '1 fragmento coincide con la búsqueda'
+                : r.matched_fragments + ' fragmentos coinciden con la búsqueda'">
+              <strong>{{ relevancePercent(r) }}%</strong>
+              <span class="ds-row__match-label">{{ matchLabel() }}</span>
+            </span>
+
+            <button
+              type="button"
+              class="ds-row__download"
+              [disabled]="downloadingId() !== null"
+              [attr.aria-label]="'Descargar ' + r.document.name"
+              (click)="downloadDocument(r)">
+              @if (downloadingId() === r.document.id) {
+                <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              } @else {
+                <i class="pi pi-download" aria-hidden="true"></i>
+              }
+              <span class="ds-row__download-text">Descargar</span>
+            </button>
+          </article>
+        }
+      </div>
+
+      @if (loadingMore()) {
+        <div class="ds-loadmore" role="status" aria-live="polite">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          <span>Cargando más…</span>
+        </div>
+      }
+
+      @if (hasMore() && !loadingMore()) {
+        <div class="ds-sentinel" #sentinel aria-hidden="true"></div>
+      }
+    }
+
+  } @else {
+    <div class="ds-empty">
+      <i class="pi pi-search ds-empty__icon" aria-hidden="true"></i>
+      <p class="ds-empty__title">Buscador de documentos por contenido</p>
+      <p class="ds-empty__text">
+        No hace falta recordar el nombre del archivo. Escribí de qué trata
+        y aparecerán los documentos más parecidos, listos para descargar.
+      </p>
+    </div>
+  }
+
+</div>

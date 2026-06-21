@@ -81,10 +81,6 @@ export class ChatPage {
       this.activeId.set('assistants');
       return;
     }
-    if (url.includes('/main-container/document-search')) {
-      this.activeId.set('document-search');
-      return;
-    }
     if (url.includes('/main-container/chat-home')) {
       this.activeId.set('chat-home');
       return;

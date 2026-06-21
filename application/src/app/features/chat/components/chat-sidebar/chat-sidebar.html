@@ -52,8 +52,7 @@
       <button
         type="button"
         class="sidebar-link"
-        [class.is-active]="activeId() === 'document-search'"
-        [routerLink]="['/main-container', 'document-search']">
+        routerLink="/documents">
         <i class="pi pi-file" aria-hidden="true"></i>
         <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Documentos</span>
       </button>

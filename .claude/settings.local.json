@@ -22,7 +22,11 @@
       "Bash(Select-Object FullName, PSIsContainer)",
       "Bash(Sort-Object FullName)",
       "Bash(python *)",
-      "Bash(npx ng *)"
+      "Bash(npx ng *)",
+      "Skill(impeccable)",
+      "Bash(node .claude/skills/impeccable/scripts/context.mjs)",
+      "Bash(.venv/Scripts/python.exe -c \"import pgvector, pydantic_settings; print\\('deps ok'\\)\")",
+      "Bash(.venv/Scripts/python.exe -m pytest test/test_document_search_service.py test/test_document_download_controller.py -q)"
     ]
   }
 }
