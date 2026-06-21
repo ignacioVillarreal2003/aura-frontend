@@ -1,11 +1,9 @@
 import {
   Component,
   DestroyRef,
-  ElementRef,
-  effect,
+  computed,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -14,10 +12,7 @@ import { debounceTime, distinctUntilChanged, take } from 'rxjs/operators';
 
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
 import { ToastService } from '@core/components/toast-service';
-import {
-  DOCUMENT_SEARCH_DEFAULT_PAGE_SIZE,
-  DOCUMENT_SEARCH_MAX_QUERY_CHARS,
-} from '@aura-types/aura-document-processing-service.types';
+import { DOCUMENT_SEARCH_MAX_QUERY_CHARS } from '@aura-types/aura-document-processing-service.types';
 import type {
   DocumentSearchMode,
   DocumentSearchResultDto,
@@ -25,13 +20,14 @@ import type {
 
 const MIN_QUERY_CHARS = 2;
 const SEARCH_DEBOUNCE_MS = 400;
-const PAGE_SIZE = DOCUMENT_SEARCH_DEFAULT_PAGE_SIZE;
+const PAGE_SIZE = 8;
 
 interface SearchMode {
   readonly id: DocumentSearchMode;
   readonly label: string;
   readonly icon: string;
   readonly hint: string;
+  readonly shortHint: string;
 }
 
 @Component({
@@ -54,14 +50,20 @@ export class DocumentSearch {
       label: 'Significado',
       icon: 'pi-sparkles',
       hint: 'Búsqueda inteligente: combina significado y palabras clave, reordenada por relevancia con un reranker.',
+      shortHint: 'Busca por el sentido del texto, aunque no uses las palabras exactas.',
     },
     {
       id: 'bm25',
       label: 'Palabras',
       icon: 'pi-align-left',
       hint: 'Búsqueda BM25: relevancia léxica por las palabras exactas de la consulta.',
+      shortHint: 'Busca los términos exactos que escribís.',
     },
   ];
+
+  readonly activeMode = computed(
+    () => this.modes.find((m) => m.id === this.mode()) ?? this.modes[0],
+  );
 
   readonly query = signal('');
   readonly mode = signal<DocumentSearchMode>('vector');
@@ -79,9 +81,6 @@ export class DocumentSearch {
 
   private readonly queryInput$ = new Subject<string>();
 
-  private readonly scrollRoot = viewChild<ElementRef<HTMLElement>>('scrollRoot');
-  private readonly sentinel = viewChild<ElementRef<HTMLElement>>('sentinel');
-
   constructor() {
     this.queryInput$
       .pipe(
@@ -90,20 +89,6 @@ export class DocumentSearch {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.startNewSearch());
-
-    effect((onCleanup) => {
-      const sentinelEl = this.sentinel()?.nativeElement;
-      if (!sentinelEl) return;
-      const rootEl = this.scrollRoot()?.nativeElement ?? null;
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((e) => e.isIntersecting)) this.loadMore();
-        },
-        { root: rootEl, rootMargin: '300px 0px' },
-      );
-      observer.observe(sentinelEl);
-      onCleanup(() => observer.disconnect());
-    });
   }
 
   onQueryInput(value: string): void {

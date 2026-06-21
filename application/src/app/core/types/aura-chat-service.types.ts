@@ -887,47 +887,7 @@ export interface DocumentActionGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
-// ── Assistants ─────────────────────────────────────────────────────────────────
-
-export interface AssistantDto {
-  readonly id: number;
-  readonly name: string;
-  readonly description: string;
-  readonly avatar_emoji: string;
-  readonly is_active: boolean;
-  readonly created_at: IsoDateTimeString;
-}
-
-export interface AssistantAdminDto extends AssistantDto {
-  readonly system_prompt: string;
-  readonly created_by: number;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
-}
-
-export interface CreateAssistantBody {
-  readonly name: string;
-  readonly description?: string;
-  readonly system_prompt: string;
-  readonly avatar_emoji?: string;
-  readonly is_active?: boolean;
-}
-
-export interface UpdateAssistantBody {
-  readonly name?: string;
-  readonly description?: string;
-  readonly system_prompt?: string;
-  readonly avatar_emoji?: string;
-  readonly is_active?: boolean;
-}
-
-export interface StartChatResponseDto {
-  readonly chat_id: number;
-  readonly chat_name: string;
-  readonly is_new: boolean;
-}
-
-export type AuraChatAiMode = 'document_question' | 'general_chat' | 'rag_agent' | 'agent';
+export type AuraChatAiMode = 'document_question' | 'general_chat' | 'rag_agent';
 
 export const AURA_CHAT_AI_MODE_DEFAULT: AuraChatAiMode = 'document_question';
 

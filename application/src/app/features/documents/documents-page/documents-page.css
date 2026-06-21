@@ -19,7 +19,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.75rem 2rem 0.5rem;
+  padding: 1.75rem 2rem;
   background-color: var(--surface-page);
   box-sizing: border-box;
 }

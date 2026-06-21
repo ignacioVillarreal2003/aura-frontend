@@ -40,6 +40,11 @@
         }
       </div>
     </div>
+
+    <p class="ds-mode-hint" aria-live="polite">
+      <i class="pi" [ngClass]="activeMode().icon" aria-hidden="true"></i>
+      <span><strong>{{ activeMode().label }}:</strong> {{ activeMode().shortHint }}</span>
+    </p>
   </header>
 
   @if (searched()) {
@@ -111,15 +116,21 @@
         }
       </div>
 
-      @if (loadingMore()) {
-        <div class="ds-loadmore" role="status" aria-live="polite">
-          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-          <span>Cargando más…</span>
-        </div>
-      }
-
-      @if (hasMore() && !loadingMore()) {
-        <div class="ds-sentinel" #sentinel aria-hidden="true"></div>
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="ds-load-more"
+          (click)="loadMore()"
+          [disabled]="loadingMore()"
+          aria-label="Cargar más documentos">
+          @if (loadingMore()) {
+            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+            Cargando…
+          } @else {
+            <i class="pi pi-chevron-down" aria-hidden="true"></i>
+            Cargar más
+          }
+        </button>
       }
     }
 

@@ -1,0 +1,357 @@
+<div class="session-input-composer">
+  <div class="session-composer-surface">
+    @if (attachedDocs().length > 0) {
+      <div class="session-doc-chips" role="list" aria-label="Documentos adjuntos">
+        @for (doc of attachedDocs(); track doc.id) {
+          <div
+            class="session-doc-chip"
+            [class.session-doc-chip--processing]="doc.status === 'processing'"
+            [class.session-doc-chip--failed]="doc.status === 'failed'"
+            role="listitem">
+            @if (doc.status === 'processing') {
+              <i class="pi pi-spin pi-spinner session-doc-chip__icon" aria-hidden="true"></i>
+            } @else if (doc.status === 'failed') {
+              <i class="pi pi-exclamation-circle session-doc-chip__icon session-doc-chip__icon--error" aria-hidden="true"></i>
+            } @else {
+              <i class="pi pi-file-check session-doc-chip__icon session-doc-chip__icon--ok" aria-hidden="true"></i>
+            }
+            <span class="session-doc-chip__name" [title]="doc.name">{{ doc.name.length > 28 ? (doc.name | slice:0:28) + '…' : doc.name }}</span>
+            <button
+              type="button"
+              class="session-doc-chip__remove"
+              [attr.aria-label]="'Quitar ' + doc.name"
+              (click)="onRemoveDoc(doc)">
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    @if (composerMode() !== 'chat' && composerMode() !== 'document-summary' && composerMode() !== 'document-action') {
+      <div class="gen-inline-controls">
+        @if (composerMode() === 'report') {
+          <select
+            class="gen-type-select"
+            [value]="genReportType()"
+            [disabled]="busy()"
+            (change)="onGenTypeChange($any($event.target).value)"
+            aria-label="Tipo de informe">
+            @for (opt of reportTypes; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        }
+        <div class="gen-mode-pills">
+          <button
+            type="button"
+            class="gen-mode-pill"
+            [class.gen-mode-pill--active]="genMode() === 'direct'"
+            [disabled]="busy()"
+            (click)="genMode.set('direct')"
+            title="Solo usa lo que ingresás">
+            <i class="pi pi-pencil" aria-hidden="true"></i>
+            Directo
+          </button>
+          <button
+            type="button"
+            class="gen-mode-pill"
+            [class.gen-mode-pill--active]="genMode() === 'rag'"
+            [disabled]="busy()"
+            (click)="genMode.set('rag')"
+            title="Recupera fragmentos del chat">
+            <i class="pi pi-database" aria-hidden="true"></i>
+            Con documentos
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (composerMode() === 'document-action') {
+      <div class="gen-inline-controls">
+        <select
+          class="gen-type-select"
+          [value]="genDocumentActionType()"
+          [disabled]="busy()"
+          (change)="genDocumentActionType.set($any($event.target).value)"
+          aria-label="Tipo de acción">
+          <option value="">Acción automática</option>
+          <option value="summarize">Resumir</option>
+          <option value="essay">Ensayo</option>
+          <option value="key_points">Puntos clave</option>
+          <option value="compare">Comparar</option>
+          <option value="analyze">Analizar</option>
+          <option value="explain">Explicar</option>
+          <option value="report">Informe</option>
+        </select>
+        @if (!hasDocs()) {
+          <span class="gen-doc-hint"><i class="pi pi-info-circle" aria-hidden="true"></i> Adjuntá documentos con el botón +</span>
+        } @else if (hasProcessingDocs()) {
+          <span class="gen-doc-hint"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando…</span>
+        } @else {
+          <span class="gen-doc-hint gen-doc-hint--ok"><i class="pi pi-check" aria-hidden="true"></i> {{ attachedDocs().length }} doc{{ attachedDocs().length !== 1 ? 's' : '' }}</span>
+        }
+      </div>
+    }
+
+    @if (composerMode() === 'document-summary') {
+      <div class="gen-inline-controls">
+        @if (!hasDocs()) {
+          <div class="gen-doc-empty">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            <span>Adjuntá documentos con el botón <strong>+</strong> para generar un resumen.</span>
+          </div>
+        } @else if (hasProcessingDocs()) {
+          <div class="gen-doc-hint">
+            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+            <span>Procesando documentos, aguardá un momento…</span>
+          </div>
+        } @else {
+          <div class="gen-doc-ready">
+            <i class="pi pi-check-circle" aria-hidden="true"></i>
+            <span><strong>{{ attachedDocs().length }}</strong> documento{{ attachedDocs().length !== 1 ? 's' : '' }} listos para resumir.</span>
+          </div>
+        }
+      </div>
+    }
+
+    @if (composerMode() === 'chat') {
+      <label class="chat-session-visually-hidden" for="chat-composer-message">Mensaje</label>
+      <textarea
+        #messageBox
+        id="chat-composer-message"
+        name="chatComposerMessage"
+        class="message-input"
+        rows="1"
+        [placeholder]="chatPlaceholder()"
+        [ngModel]="text()"
+        (ngModelChange)="onMessageInput($event)"
+        (keydown)="onChatEnterKey($event)"
+      ></textarea>
+    } @else if (composerMode() === 'document-summary') {
+      <!-- no textarea for summary mode; documents drive the generation -->
+    } @else {
+      <textarea
+        class="message-input gen-message-input"
+        rows="3"
+        [placeholder]="genTextareaPlaceholder()"
+        [value]="genMessage()"
+        [disabled]="busy()"
+        (input)="genMessage.set($any($event.target).value)"
+        (keydown.enter)="onGenEnterKey($event)"
+      ></textarea>
+    }
+
+    <div class="session-composer-footer">
+      <input
+        #fileInput
+        type="file"
+        class="session-file-input"
+        multiple
+        accept=".pdf,.doc,.docx,.txt,.md,image/*"
+        (change)="onFilesSelected($event)"
+        aria-hidden="true"
+        tabindex="-1"
+      />
+
+      @if (composerMode() === 'chat' && showAiModeSelector()) {
+        <div class="composer-mode-selector ai-mode-selector">
+          @if (aiModeDropdownOpen()) {
+            <div class="mode-backdrop" (click)="aiModeDropdownOpen.set(false)"></div>
+          }
+          <button
+            type="button"
+            class="composer-mode-trigger ai-mode-trigger"
+            [class.composer-mode-trigger--active]="aiMode() !== 'document_question'"
+            [disabled]="busy()"
+            (click)="toggleAiModeDropdown()"
+            [attr.aria-expanded]="aiModeDropdownOpen()"
+            [attr.title]="activeAiMode().hint"
+            aria-label="Cambiar modo de IA">
+            <i [ngClass]="['pi', activeAiMode().icon]" aria-hidden="true"></i>
+            <span>{{ activeAiMode().label }}</span>
+            <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="aiModeDropdownOpen()" aria-hidden="true"></i>
+          </button>
+          @if (aiModeDropdownOpen()) {
+            <div class="mode-dropdown-menu ai-mode-menu" role="menu">
+              @for (m of availableAiModes(); track m.value) {
+                <button
+                  type="button"
+                  class="mode-dropdown-item ai-mode-item"
+                  role="menuitem"
+                  [class.mode-dropdown-item--active]="aiMode() === m.value"
+                  [attr.title]="m.hint"
+                  (click)="setAiMode(m.value)">
+                  <i [ngClass]="['pi', m.icon]" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">{{ m.label }}</span>
+                    <span class="ai-mode-item__hint">{{ m.hint }}</span>
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (canUseTools()) {
+        <div class="composer-mode-selector">
+          @if (modeDropdownOpen()) {
+            <div class="mode-backdrop" (click)="modeDropdownOpen.set(false)"></div>
+          }
+          <button
+            type="button"
+            class="composer-mode-trigger"
+            [class.composer-mode-trigger--active]="composerMode() !== 'chat'"
+            [disabled]="busy()"
+            (click)="toggleModeDropdown()"
+            [attr.aria-expanded]="modeDropdownOpen()"
+            aria-label="Cambiar modo">
+            <i [ngClass]="['pi', composerModeLabel().icon]" aria-hidden="true"></i>
+            <span>{{ composerModeLabel().label }}</span>
+            <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="modeDropdownOpen()" aria-hidden="true"></i>
+          </button>
+          @if (modeDropdownOpen()) {
+            <div class="mode-dropdown-menu" role="menu">
+              <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'chat'" (click)="setComposerMode('chat')">
+                <i class="pi pi-comments" aria-hidden="true"></i>
+                <span class="ai-mode-item__text">
+                  <span class="ai-mode-item__label">Chat</span>
+                  <span class="ai-mode-item__hint">Conversación libre con IA</span>
+                </span>
+              </button>
+              <div class="mode-dropdown-section-header" aria-hidden="true">Herramientas IA</div>
+              @if (canReport()) {
+                <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'report'" (click)="setComposerMode('report')">
+                  <i class="pi pi-file-edit" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">Informe</span>
+                    <span class="ai-mode-item__hint">Generá un informe estructurado</span>
+                  </span>
+                </button>
+              }
+              @if (canChecklist()) {
+                <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'checklist'" (click)="setComposerMode('checklist')">
+                  <i class="pi pi-check-square" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">Checklist</span>
+                    <span class="ai-mode-item__hint">Creá una lista de verificación</span>
+                  </span>
+                </button>
+              }
+              @if (canQuiz()) {
+                <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'quiz'" (click)="setComposerMode('quiz')">
+                  <i class="pi pi-question-circle" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">Quiz</span>
+                    <span class="ai-mode-item__hint">Generá preguntas de evaluación</span>
+                  </span>
+                </button>
+              }
+              @if (canTimeline()) {
+                <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'timeline'" (click)="setComposerMode('timeline')">
+                  <i class="pi pi-calendar" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">Línea de tiempo</span>
+                    <span class="ai-mode-item__hint">Construí una cronología de eventos</span>
+                  </span>
+                </button>
+              }
+              @if (canLessonsLearned()) {
+                <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'lessons-learned'" (click)="setComposerMode('lessons-learned')">
+                  <i class="pi pi-book" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">Lecciones aprendidas</span>
+                    <span class="ai-mode-item__hint">Registrá aprendizajes del proyecto</span>
+                  </span>
+                </button>
+              }
+              @if (canDecisionBrief()) {
+                <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'decision-brief'" (click)="setComposerMode('decision-brief')">
+                  <i class="pi pi-bolt" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">Brief de decisión</span>
+                    <span class="ai-mode-item__hint">Analizá opciones y criterios</span>
+                  </span>
+                </button>
+              }
+              @if (canDocumentSummary()) {
+                <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'document-summary'" (click)="setComposerMode('document-summary')">
+                  <i class="pi pi-align-left" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">Resumen de documentos</span>
+                    <span class="ai-mode-item__hint">Resumí los documentos adjuntos</span>
+                  </span>
+                </button>
+              }
+              @if (canDocumentAction()) {
+                <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'document-action'" (click)="setComposerMode('document-action')">
+                  <i class="pi pi-cog" aria-hidden="true"></i>
+                  <span class="ai-mode-item__text">
+                    <span class="ai-mode-item__label">Acción sobre documentos</span>
+                    <span class="ai-mode-item__hint">Procesá documentos con IA</span>
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <button
+        type="button"
+        class="session-attach"
+        aria-label="Adjuntar archivo"
+        [disabled]="busy()"
+        (click)="onAttachClick(fileInput)">
+        <i class="pi pi-plus" aria-hidden="true"></i>
+        @if (attachedDocs().length > 0) {
+          <span class="session-attach-badge">{{ attachedDocs().length }}</span>
+        }
+      </button>
+
+      @if (voiceEnabled() && voiceState() !== 'idle') {
+        <div class="voice-recording-bar">
+          @if (voiceState() === 'recording') {
+            <span class="voice-recording-dot" aria-hidden="true"></span>
+            <span class="voice-recording-time">{{ recordingLabel }}</span>
+            <button type="button" class="voice-cancel-btn" (click)="cancelRecording()" aria-label="Cancelar grabación">
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="voice-stop-btn" (click)="stopRecording()" aria-label="Detener y enviar">
+              <i class="pi pi-stop-circle" aria-hidden="true"></i>
+            </button>
+          } @else {
+            <i class="pi pi-spin pi-spinner voice-processing-icon" aria-hidden="true"></i>
+            <span class="voice-processing-label">
+              {{ composerMode() === 'chat' ? 'Transcribiendo…' : 'Generando…' }}
+            </span>
+          }
+        </div>
+      } @else {
+        <span class="session-composer-spacer" aria-hidden="true"></span>
+      }
+
+      @if (voiceEnabled() && voiceState() === 'idle') {
+        <button
+          type="button"
+          class="voice-btn"
+          [class.voice-btn--gen]="composerMode() !== 'chat'"
+          [attr.aria-label]="composerMode() === 'chat' ? 'Grabar audio' : 'Grabar contenido por voz'"
+          [disabled]="voiceDisabled()"
+          (click)="startRecording()">
+          <i class="pi pi-microphone" aria-hidden="true"></i>
+        </button>
+      }
+
+      <button
+        type="button"
+        class="send-button"
+        [attr.aria-label]="composerMode() === 'chat' ? 'Enviar mensaje' : 'Generar'"
+        [disabled]="!canSubmit()"
+        (click)="onPrimaryAction()">
+        <i class="pi" [ngClass]="sendIcon()" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</div>

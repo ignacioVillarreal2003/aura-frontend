@@ -1,5 +1,8 @@
 <section class="chats-panel" aria-label="Lista de chats">
   <header class="chats-panel-header">
+    <div class="chats-panel-avatar" aria-hidden="true">
+      <i class="pi pi-comments"></i>
+    </div>
     <h2 class="chats-panel-title">Chats</h2>
   </header>
 
@@ -51,15 +54,16 @@
     </div>
   }
 
-  <a class="chat-home-nav-button" [routerLink]="['/main-container', 'chat-home']">
-    <i class="pi pi-pencil"></i>
-    <span>Nuevo chat</span>
-  </a>
-
   <div class="chat-history">
     @if (loading()) {
-      <div class="loading-state">
-        <i class="pi pi-spin pi-spinner loading-state__icon" aria-hidden="true"></i>
+      <div class="chat-list" aria-hidden="true">
+        @for (row of skeletonRows; track $index) {
+          <div class="chat-skeleton">
+            <span class="chat-skeleton__icon"></span>
+            <span class="chat-skeleton__line chat-skeleton__line--title"></span>
+            <span class="chat-skeleton__line chat-skeleton__line--meta"></span>
+          </div>
+        }
       </div>
     } @else if (
       grouped().hoy.length === 0 &&
@@ -68,8 +72,16 @@
       grouped().anteriores.length === 0
     ) {
       <div class="empty-state">
-        <i class="pi pi-search empty-state__icon" aria-hidden="true"></i>
-        <p class="empty-state__text">No se encontraron chats.</p>
+        <span class="empty-state__icon" aria-hidden="true">
+          <i class="pi pi-inbox"></i>
+        </span>
+        @if (searchQuery || activeTagFiltersArray().length > 0) {
+          <p class="empty-state__title">Sin coincidencias</p>
+          <p class="empty-state__text">Probá con otro nombre o quitá algún filtro.</p>
+        } @else {
+          <p class="empty-state__title">Todavía no hay chats</p>
+          <p class="empty-state__text">Cuando inicies una conversación, va a aparecer acá.</p>
+        }
       </div>
     } @else {
       @if (grouped().hoy.length > 0) {
@@ -137,23 +149,41 @@
 </section>
 
 <ng-template #chatItem let-chat>
-  <a class="chat-item" [routerLink]="['/main-container', 'chat', chat.id]">
-    <i class="pi pi-comments chat-icon" aria-hidden="true"></i>
-    <div class="chat-item-body">
-      <span class="chat-title">{{ chat.title }}</span>
-      @if (chat.tags.length > 0) {
-        <div class="chat-item-tags">
-          @for (tag of chat.tags; track tag) {
-            <span
-              class="chat-item-tag"
-              [class.chat-item-tag--active]="isTagActive(tag)"
-              (click)="$event.preventDefault(); $event.stopPropagation(); toggleTagFilter(tag)"
-              [attr.aria-label]="'Filtrar por ' + tag">
-              #{{ tag }}
-            </span>
-          }
-        </div>
+  <a
+    class="chat-item"
+    [class.chat-item--unread]="chat.unread > 0"
+    [routerLink]="['/main-container', 'chat', chat.id]">
+    <span class="chat-item__icon" aria-hidden="true">
+      <i class="pi pi-comments"></i>
+    </span>
+
+    <span class="chat-item__title">{{ chat.title }}</span>
+
+    @if (chat.unread > 0) {
+      <span class="chat-item__unread-dot" [title]="chat.unread + ' sin leer'" aria-label="Mensajes sin leer"></span>
+    }
+
+    <span class="chat-item__right">
+      @for (tag of chat.tags.slice(0, 2); track tag) {
+        <span
+          class="chat-tag"
+          role="button"
+          [class.chat-tag--active]="isTagActive(tag)"
+          (click)="$event.preventDefault(); $event.stopPropagation(); toggleTagFilter(tag)"
+          [attr.aria-label]="'Filtrar por ' + tag">
+          <span class="chat-tag__hash" aria-hidden="true">#</span>{{ tag }}
+        </span>
       }
-    </div>
+      @if (chat.tags.length > 2) {
+        <span class="chat-tag chat-tag--more" [title]="chat.tags.join(', ')">+{{ chat.tags.length - 2 }}</span>
+      }
+      @if (chat.isLocked) {
+        <i class="pi pi-lock chat-item__flag chat-item__flag--lock" title="Bloqueado" aria-label="Bloqueado"></i>
+      }
+      @if (chat.isPinned) {
+        <i class="pi pi-thumbtack chat-item__flag chat-item__flag--pin" title="Fijado" aria-label="Fijado"></i>
+      }
+      <time class="chat-item__time">{{ chat.time }}</time>
+    </span>
   </a>
 </ng-template>

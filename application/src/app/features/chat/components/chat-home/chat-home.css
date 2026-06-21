@@ -30,7 +30,7 @@
 
 .chat-home-center {
   width: 100%;
-  max-width: 52rem;
+  max-width: 65rem;
   margin-inline: auto;
   margin-block: auto;
   display: flex;
@@ -42,6 +42,14 @@
   flex: 0 1 auto;
 }
 
+/* The shared composer must fill the column width (its own surface caps + centers
+   itself), not shrink-to-content under the column's `align-items: center`. */
+.chat-home-center app-chat-composer {
+  width: 100%;
+  align-self: stretch;
+  text-align: left;
+}
+
 .welcome-section {
   width: 100%;
   max-width: 36rem;
@@ -49,22 +57,27 @@
 
 .welcome-title {
   font-family: var(--font-ui, 'Sora', sans-serif);
-  font-size: clamp(1.5rem, 4vw, 2.25rem);
-  font-weight: 500;
-  color: var(--text-primary);
-  margin: 0 0 0.5rem;
-  line-height: 1.25;
+  font-size: clamp(1.85rem, 4.5vw, 2.75rem);
+  font-weight: 600;
+  margin: 0 0 0.65rem;
+  line-height: 1.12;
   text-wrap: balance;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.03em;
+  background: linear-gradient(115deg, var(--text-primary) 30%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .welcome-subtitle {
   font-family: var(--font-ui, 'Sora', sans-serif);
-  font-size: var(--text-body-sm, 0.9375rem);
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
   font-weight: 400;
   color: var(--text-secondary);
-  margin: 0;
+  margin: 0 auto;
+  max-width: 30rem;
   line-height: 1.6;
+  text-wrap: balance;
 }
 
 .chat-home-visually-hidden {

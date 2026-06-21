@@ -73,10 +73,27 @@ button {
   animation: 210ms cubic-bezier(0, 0, 0.2, 1) 60ms both route-fade-in;
 }
 
+/* El composer de chat se comparte entre "nuevo chat" (centrado) y un chat
+   específico (abajo): el navegador interpola su posición/tamaño (morph) mientras
+   el resto de la página hace el cross-fade del root. */
+::view-transition-group(chat-composer) {
+  animation-duration: 460ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+::view-transition-old(chat-composer),
+::view-transition-new(chat-composer) {
+  /* El contenido es casi idéntico en ambos lados: cross-fade suave para que se
+     perciba como un solo elemento deslizándose. */
+  animation-duration: 460ms;
+}
+
 /* Respeta la preferencia de movimiento reducido: sin animación de transición. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
-  ::view-transition-new(root) {
+  ::view-transition-new(root),
+  ::view-transition-group(chat-composer),
+  ::view-transition-old(chat-composer),
+  ::view-transition-new(chat-composer) {
     animation: none;
   }
 }

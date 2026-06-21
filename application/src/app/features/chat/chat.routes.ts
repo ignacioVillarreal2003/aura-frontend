@@ -28,14 +28,6 @@ export const chatShellRoutes: Routes = [
           import('./components/chat-session/chat-session').then((m) => m.ChatSession),
       },
       {
-        path: 'assistants',
-        title: 'Asistentes',
-        loadComponent: () =>
-          import('./components/herramientas/asistentes-hub').then(
-            (m) => m.AsistentesHub
-          ),
-      },
-      {
         path: 'feedback-analytics',
         title: 'Analíticas',
         loadComponent: () =>
