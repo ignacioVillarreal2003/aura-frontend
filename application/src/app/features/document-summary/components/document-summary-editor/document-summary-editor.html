@@ -1,0 +1,40 @@
+<div class="ds-root">
+  @if (loading()) {
+    <div class="ds-loading">
+      <i class="pi pi-spin pi-spinner ds-loading__spinner" aria-hidden="true"></i>
+      <p class="ds-loading__text">Cargando resumen…</p>
+    </div>
+  } @else if (summary(); as s) {
+    <app-artifact-header
+      [title]="s.title"
+      [description]="'Resumen generado a partir de ' + s.document_ids.length + (s.document_ids.length === 1 ? ' documento.' : ' documentos.')"
+      [exporting]="exportingAs()"
+      (back)="goBack()"
+      (exportRequested)="export($event)"
+    />
+
+    <div class="ds-meta">
+      <span class="ds-meta__chip">
+        <i class="pi pi-file" aria-hidden="true"></i>
+        {{ s.document_ids.length }} documento{{ s.document_ids.length !== 1 ? 's' : '' }}
+      </span>
+      <span class="ds-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ s.created_at | date:'dd/MM/yyyy HH:mm' }}
+      </span>
+    </div>
+
+    <div class="ds-editor">
+      <div class="ds-preview">
+        @if (s.summary.trim()) {
+          <div class="ds-preview__body" [innerHTML]="s.summary | markdown"></div>
+        } @else {
+          <div class="ds-preview__empty">
+            <i class="pi pi-file-edit" aria-hidden="true"></i>
+            <p>Sin contenido.</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,68 @@
+<div
+  class="ct"
+  tabindex="0"
+  (keydown)="onKeydown($event)"
+>
+  <!-- ── Dial radial ──────────────────────────────────────────── -->
+  <div class="ct-dial-wrap">
+    <div class="ct-dial" [style.transform]="'rotate(' + dialRotation() + 'deg)'">
+      @for (dot of dots(); track dot.item.id; let i = $index) {
+        <button
+          type="button"
+          class="ct-dot"
+          [class.ct-dot--active]="i === activeIndex()"
+          [style.transform]="
+            'rotate(' + dot.baseAngle + 'deg) translateX(var(--ct-radius))'
+          "
+          (mouseenter)="setActive(i)"
+          (click)="setActive(i)"
+          [attr.aria-label]="dot.item.year + ' · ' + dot.item.title"
+          [attr.aria-current]="i === activeIndex() ? 'true' : null"
+        >
+          <span
+            class="ct-dot__inner"
+            [style.transform]="
+              'translate(-50%, -50%) rotate(' + labelRotation(dot.baseAngle) + 'deg)'
+            "
+          >
+            <span class="ct-dot__pt"></span>
+            <span class="ct-dot__year">{{ dot.item.year }}</span>
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ── Contenido grande ─────────────────────────────────────── -->
+  <div class="ct-content">
+    <span class="ct-index">
+      {{ activeIndex() + 1 | number: '2.0-0' }}
+      <span class="ct-index__sep">/</span>
+      {{ items().length | number: '2.0-0' }}
+    </span>
+
+    @for (item of activeList(); track item.id) {
+      <div class="ct-card">
+        @if (item.year) {
+          <div class="ct-card__year">{{ item.year }}</div>
+        }
+        <h2 class="ct-card__title">{{ item.title }}</h2>
+        @if (item.description) {
+          <p class="ct-card__desc">{{ item.description }}</p>
+        }
+      </div>
+    }
+
+    <!-- Flechas de navegación -->
+    @if (items().length > 1) {
+      <div class="ct-nav">
+        <button type="button" class="ct-nav__btn" (click)="prev()" aria-label="Evento anterior">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="ct-nav__btn" (click)="next()" aria-label="Evento siguiente">
+          <i class="pi pi-arrow-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    }
+  </div>
+</div>

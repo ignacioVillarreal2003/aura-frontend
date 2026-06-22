@@ -26,68 +26,55 @@ export const routes: Routes = [
       import('./features/report/report.routes').then((m) => m.REPORT_ROUTES),
   },
 
-  // ── Artifact viewers (full-screen, no sidebar) ──────────────────
+  // ── Artifact viewers (full-screen, own features) ────────────────
   {
-    path: 'checklist/:id',
-    title: 'Checklist',
+    path: 'checklist',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/checklist-editor/checklist-editor').then(
-        (m) => m.ChecklistEditor
+    loadChildren: () =>
+      import('./features/checklist/checklist.routes').then((m) => m.CHECKLIST_ROUTES),
+  },
+  {
+    path: 'quiz',
+    canActivate: [authenticationGuard],
+    loadChildren: () =>
+      import('./features/quiz/quiz.routes').then((m) => m.QUIZ_ROUTES),
+  },
+  {
+    path: 'timeline',
+    canActivate: [authenticationGuard],
+    loadChildren: () =>
+      import('./features/timeline/timeline.routes').then((m) => m.TIMELINE_ROUTES),
+  },
+  {
+    path: 'lessons-learned',
+    canActivate: [authenticationGuard],
+    loadChildren: () =>
+      import('./features/lessons-learned/lessons-learned.routes').then(
+        (m) => m.LESSONS_LEARNED_ROUTES
       ),
   },
   {
-    path: 'quiz/:id',
-    title: 'Quiz',
+    path: 'decision-brief',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/quiz-editor/quiz-editor').then(
-        (m) => m.QuizEditor
+    loadChildren: () =>
+      import('./features/decision-brief/decision-brief.routes').then(
+        (m) => m.DECISION_BRIEF_ROUTES
       ),
   },
   {
-    path: 'timeline/:id',
-    title: 'Línea de tiempo',
+    path: 'document-summary',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/timeline-editor/timeline-editor').then(
-        (m) => m.TimelineEditor
+    loadChildren: () =>
+      import('./features/document-summary/document-summary.routes').then(
+        (m) => m.DOCUMENT_SUMMARY_ROUTES
       ),
   },
   {
-    path: 'lessons-learned/:id',
-    title: 'Lecciones aprendidas',
+    path: 'document-action',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/lessons-learned-editor/lessons-learned-editor').then(
-        (m) => m.LessonsLearnedEditor
-      ),
-  },
-  {
-    path: 'decision-brief/:id',
-    title: 'Resumen de decisión',
-    canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/decision-brief-editor/decision-brief-editor').then(
-        (m) => m.DecisionBriefEditor
-      ),
-  },
-  {
-    path: 'document-summary/:id',
-    title: 'Resumen de documento',
-    canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/document-summary-editor/document-summary-editor').then(
-        (m) => m.DocumentSummaryEditor
-      ),
-  },
-  {
-    path: 'document-action/:id',
-    title: 'Acción de documento',
-    canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/document-action-editor/document-action-editor').then(
-        (m) => m.DocumentActionEditor
+    loadChildren: () =>
+      import('./features/document-action/document-action.routes').then(
+        (m) => m.DOCUMENT_ACTION_ROUTES
       ),
   },
 

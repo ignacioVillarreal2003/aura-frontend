@@ -1,0 +1,44 @@
+<header class="ah">
+  <!-- Línea 1: título + salir -->
+  <div class="ah__top">
+    <h1 class="ah__title" [title]="title()">{{ title() }}</h1>
+
+    <button type="button" class="ah__back" (click)="back.emit()">
+      <i class="pi pi-arrow-left" aria-hidden="true"></i>
+      <span>Volver</span>
+    </button>
+  </div>
+
+  <!-- Línea 2: descripción + exportar -->
+  <div class="ah__sub">
+    @if (description()) {
+      <p class="ah__desc">{{ description() }}</p>
+    } @else {
+      <span class="ah__desc ah__desc--placeholder" aria-hidden="true"></span>
+    }
+
+    <div class="ah__exports">
+      <button
+        type="button"
+        class="ah__export"
+        title="Exportar como PDF"
+        [disabled]="exporting() !== null"
+        (click)="exportRequested.emit('pdf')"
+      >
+        <i [ngClass]="['pi', exporting() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
+        <span>Exportar PDF</span>
+      </button>
+
+      <button
+        type="button"
+        class="ah__export"
+        title="Exportar como Markdown"
+        [disabled]="exporting() !== null"
+        (click)="exportRequested.emit('markdown')"
+      >
+        <i [ngClass]="['pi', exporting() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-file']" aria-hidden="true"></i>
+        <span>Exportar Markdown</span>
+      </button>
+    </div>
+  </div>
+</header>

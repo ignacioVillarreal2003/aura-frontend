@@ -1,0 +1,128 @@
+<div class="db-root">
+  @if (loading()) {
+    <div class="db-loading">
+      <i class="pi pi-spin pi-spinner db-loading__spinner" aria-hidden="true"></i>
+      <p class="db-loading__text">Cargando decisión…</p>
+    </div>
+  } @else if (brief(); as b) {
+
+    <!-- ── Top bar ──────────────────────────────────────────── -->
+    <app-artifact-header
+      [title]="b.title"
+      [description]="b.problem"
+      [exporting]="exportingAs()"
+      (back)="goBack()"
+      (exportRequested)="export($event)"
+    />
+
+    <!-- ── Meta strip ──────────────────────────────────────── -->
+    <div class="db-meta">
+      <span class="db-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ b.created_at | date: 'mediumDate' }}
+      </span>
+      <span class="db-meta__chip">
+        <i class="pi pi-bolt" aria-hidden="true"></i>
+        {{ (b.retrieve_context || b.process_documents) ? 'Con documentos' : 'Directo' }}
+      </span>
+      <span class="db-meta__chip">
+        <i class="pi pi-list" aria-hidden="true"></i>
+        {{ sortedOptions().length }} opción{{ sortedOptions().length !== 1 ? 'es' : '' }}
+      </span>
+    </div>
+
+    <!-- ── Body ────────────────────────────────────────────── -->
+    <div class="db-body">
+
+      <!-- Context -->
+      @if (b.context) {
+        <div class="db-section">
+          <div class="db-section__label">
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+            Contexto
+          </div>
+          <p class="db-section__text">{{ b.context }}</p>
+        </div>
+      }
+
+      @if (b.risks) {
+        <div class="db-section">
+          <div class="db-section__label db-section__label--risk">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            Riesgos
+          </div>
+          <p class="db-section__text">{{ b.risks }}</p>
+        </div>
+      }
+
+      <!-- Options -->
+      <div class="db-section">
+        <div class="db-section__label db-section__label--options">
+          <i class="pi pi-list" aria-hidden="true"></i>
+          Opciones evaluadas
+        </div>
+
+        @if (sortedOptions().length === 0) {
+          <div class="db-empty">
+            <i class="pi pi-list db-empty__icon" aria-hidden="true"></i>
+            <p>Sin opciones.</p>
+          </div>
+        }
+
+        <div class="db-options-grid">
+          @for (opt of sortedOptions(); track opt.id; let oi = $index) {
+            <div class="db-option" [class.db-option--recommended]="opt.is_recommended">
+              <div class="db-option__header">
+                <span class="db-option__num">{{ oi + 1 }}</span>
+                @if (opt.is_recommended) {
+                  <span class="db-option__rec-badge">
+                    <i class="pi pi-star-fill" aria-hidden="true"></i>
+                    Recomendada
+                  </span>
+                }
+              </div>
+
+              <div class="db-field">
+                <span class="db-label">Título</span>
+                <p class="db-option__text">{{ opt.title }}</p>
+              </div>
+
+              <div class="db-option__pros-cons">
+                @if (opt.pros) {
+                  <div class="db-pros-panel">
+                    <div class="db-pros-panel__header db-pros-panel__header--pros">
+                      <i class="pi pi-plus-circle" aria-hidden="true"></i>
+                      Ventajas
+                    </div>
+                    <p class="db-option__text">{{ opt.pros }}</p>
+                  </div>
+                }
+                @if (opt.cons) {
+                  <div class="db-pros-panel">
+                    <div class="db-pros-panel__header db-pros-panel__header--cons">
+                      <i class="pi pi-minus-circle" aria-hidden="true"></i>
+                      Desventajas
+                    </div>
+                    <p class="db-option__text">{{ opt.cons }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Final recommendation -->
+      @if (b.recommendation) {
+        <div class="db-section db-section--final">
+          <div class="db-section__label db-section__label--final">
+            <i class="pi pi-check-circle" aria-hidden="true"></i>
+            Recomendación final
+          </div>
+          <p class="db-section__text">{{ b.recommendation }}</p>
+        </div>
+      }
+
+    </div>
+  }
+</div>

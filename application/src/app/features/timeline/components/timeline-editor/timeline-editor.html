@@ -1,0 +1,44 @@
+<div class="te-root">
+  @if (loading()) {
+    <div class="te-loading">
+      <i class="pi pi-spin pi-spinner te-loading__spinner" aria-hidden="true"></i>
+      <p class="te-loading__text">Cargando línea de tiempo…</p>
+    </div>
+  } @else if (timeline(); as t) {
+
+    <!-- ── Top bar ──────────────────────────────────────────── -->
+    <app-artifact-header
+      [title]="t.title"
+      [description]="t.summary"
+      [exporting]="exportingAs()"
+      (back)="goBack()"
+      (exportRequested)="export($event)"
+    />
+
+    <!-- ── Meta strip ──────────────────────────────────────── -->
+    <div class="te-meta">
+      <span class="te-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ t.created_at | date: 'mediumDate' }}
+      </span>
+      <span class="te-meta__chip">
+        <i class="pi pi-flag" aria-hidden="true"></i>
+        {{ sortedEvents().length }} evento{{ sortedEvents().length !== 1 ? 's' : '' }}
+      </span>
+    </div>
+
+    <!-- ── Body ────────────────────────────────────────────── -->
+    <div class="te-body">
+
+      @if (sortedEvents().length === 0) {
+        <div class="te-empty">
+          <i class="pi pi-calendar-times te-empty__icon" aria-hidden="true"></i>
+          <p>Esta línea de tiempo todavía no tiene eventos.</p>
+        </div>
+      } @else {
+        <app-circular-timeline [items]="timelineItems()" />
+      }
+
+    </div>
+  }
+</div>
