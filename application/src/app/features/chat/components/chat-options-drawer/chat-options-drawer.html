@@ -664,7 +664,7 @@
                         <i class="pi pi-calendar" aria-hidden="true"></i>
                         {{ r.created_at | date: 'shortDate' }}
                       </span>
-                      <span class="drawer-report-card__meta">{{ r.mode === 'rag' ? 'Con documentos' : 'Directo' }}</span>
+                      <span class="drawer-report-card__meta">{{ (r.retrieve_context || r.process_documents) ? 'Con documentos' : 'Directo' }}</span>
                       <div class="drawer-report-card__actions">
                         <button type="button" class="drawer-icon-btn" title="Ver / Editar" (click)="openReport(r.id)">
                           <i class="pi pi-external-link" aria-hidden="true"></i>
@@ -748,7 +748,7 @@
                         <i class="pi pi-calendar" aria-hidden="true"></i>
                         {{ c.created_at | date: 'shortDate' }}
                       </span>
-                      <span class="drawer-report-card__meta">{{ c.mode === 'rag' ? 'Con documentos' : 'Directo' }}</span>
+                      <span class="drawer-report-card__meta">{{ (c.retrieve_context || c.process_documents) ? 'Con documentos' : 'Directo' }}</span>
                       <span class="drawer-checklist-progress">
                         <span
                           class="drawer-checklist-progress__bar"

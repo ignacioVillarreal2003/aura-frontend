@@ -50,7 +50,7 @@
       <span class="ce-meta__sep" aria-hidden="true">·</span>
       <span class="ce-meta__item">
         <i class="pi pi-bolt" aria-hidden="true"></i>
-        {{ c.mode === 'rag' ? 'Con documentos' : 'Directo' }}
+        {{ (c.retrieve_context || c.process_documents) ? 'Con documentos' : 'Directo' }}
       </span>
       <span class="ce-meta__spacer"></span>
       <span class="ce-meta__progress">{{ checkedCount() }}/{{ totalCount() }}</span>

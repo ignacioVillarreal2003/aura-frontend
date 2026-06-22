@@ -1,0 +1,30 @@
+<div class="rd-scroll">
+  <div class="rd-wrap">
+
+    <!-- Meta -->
+    <div class="rd-meta">
+      <span class="rd-meta__item">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ report.created_at | date: 'd MMM yyyy · HH:mm' }}
+      </span>
+    </div>
+
+    <!-- Lead / description -->
+    @if (report.description) {
+      <p class="rd-lead">{{ report.description }}</p>
+    }
+
+    <!-- Document -->
+    @if (report.content.trim()) {
+      <article class="rd-doc">
+        <div class="rd-doc__body" [innerHTML]="report.content | markdown"></div>
+      </article>
+    } @else {
+      <div class="rd-empty">
+        <i class="pi pi-file-edit" aria-hidden="true"></i>
+        <p>Sin contenido.</p>
+      </div>
+    }
+
+  </div>
+</div>

@@ -4,17 +4,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
-import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
+import { ReportDocument } from '../components/report-document/report-document';
 import type { ReportDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
-  selector: 'app-report-editor',
+  selector: 'app-report-page',
   standalone: true,
-  imports: [CommonModule, MarkdownPipe],
-  templateUrl: './report-editor.html',
-  styleUrl: './report-editor.css',
+  imports: [CommonModule, ReportDocument],
+  templateUrl: './report-page.html',
+  styleUrl: './report-page.css',
 })
-export class ReportEditor implements OnInit {
+export class ReportPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(AuraChatServiceHttp);

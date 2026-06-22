@@ -42,11 +42,14 @@ export interface ComposerDoc {
 export interface ComposerChatSubmit {
   readonly text: string;
   readonly aiMode: AuraChatAiMode;
+  readonly retrieveContext: boolean | null;
+  readonly processDocuments: boolean | null;
 }
 
 export interface ComposerGenerate {
   readonly mode: ComposerToolMode;
-  readonly genMode: 'direct' | 'rag';
+  readonly retrieveContext: boolean | null;
+  readonly processDocuments: boolean | null;
   readonly reportType: ReportType;
   readonly documentActionType: DocumentActionType | '';
   readonly message: string;
@@ -57,7 +60,8 @@ export interface ComposerAudio {
   readonly blob: Blob;
   readonly mimeType: string;
   readonly mode: ComposerMode;
-  readonly genMode: 'direct' | 'rag';
+  readonly retrieveContext: boolean | null;
+  readonly processDocuments: boolean | null;
   readonly reportType: ReportType;
   readonly aiMode: AuraChatAiMode;
 }
@@ -76,10 +80,21 @@ const AI_MODES: readonly AiModeOption[] = [
   { value: 'rag_agent', label: 'Agente RAG', icon: 'pi-sitemap', hint: 'Pipeline RAG avanzado con razonamiento.', permission: 'LLM_AGENT' },
 ];
 
-const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: string }[] = [
-  { value: 'SITREP', label: 'SITREP — Situación', placeholder: 'Describí la situación, unidades involucradas, área de operaciones…' },
-  { value: 'INTSUM', label: 'INTSUM — Inteligencia', placeholder: 'Describí la amenaza, período cubierto, eventos relevantes…' },
-  { value: 'OPORD', label: 'OPORD — Operaciones', placeholder: 'Describí la misión, situación, plan de ejecución…' },
+const REPORT_TYPES: readonly { value: ReportType; label: string; short: string; placeholder: string }[] = [
+  { value: 'SITREP', label: 'SITREP · Situación', short: 'SITREP', placeholder: 'Describí la situación, unidades involucradas, área de operaciones…' },
+  { value: 'INTSUM', label: 'INTSUM · Inteligencia', short: 'INTSUM', placeholder: 'Describí la amenaza, período cubierto, eventos relevantes…' },
+  { value: 'OPORD', label: 'OPORD · Operaciones', short: 'OPORD', placeholder: 'Describí la misión, situación, plan de ejecución…' },
+];
+
+const DOCUMENT_ACTIONS: readonly { value: DocumentActionType | ''; label: string; icon: string }[] = [
+  { value: '', label: 'Acción automática', icon: 'pi-bolt' },
+  { value: 'summarize', label: 'Resumir', icon: 'pi-align-left' },
+  { value: 'essay', label: 'Ensayo', icon: 'pi-pencil' },
+  { value: 'key_points', label: 'Puntos clave', icon: 'pi-list' },
+  { value: 'compare', label: 'Comparar', icon: 'pi-arrows-h' },
+  { value: 'analyze', label: 'Analizar', icon: 'pi-chart-bar' },
+  { value: 'explain', label: 'Explicar', icon: 'pi-comment' },
+  { value: 'report', label: 'Informe', icon: 'pi-file-edit' },
 ];
 
 /**
@@ -127,11 +142,25 @@ export class ChatComposer implements OnDestroy {
 
   // ── Static config ──────────────────────────────────────────────
   readonly reportTypes = REPORT_TYPES;
+  readonly documentActions = DOCUMENT_ACTIONS;
+  readonly actionMenuOpen = signal(false);
+  readonly activeDocumentAction = computed(
+    () => DOCUMENT_ACTIONS.find((a) => a.value === this.genDocumentActionType()) ?? DOCUMENT_ACTIONS[0],
+  );
 
   // ── Composer state ─────────────────────────────────────────────
   readonly composerMode = signal<ComposerMode>('chat');
   readonly genMessage = signal('');
-  readonly genMode = signal<'direct' | 'rag'>('direct');
+  /**
+   * Context toggles. `false` = no enviar (el backend usa su default); `true` =
+   * enviar explícitamente. Off-by-default mantiene el comportamiento de `null`.
+   */
+  readonly retrieveContext = signal(false);
+  readonly processDocuments = signal(false);
+  readonly contextMenuOpen = signal(false);
+  readonly activeContextCount = computed(
+    () => (this.retrieveContext() ? 1 : 0) + (this.processDocuments() ? 1 : 0),
+  );
   readonly genReportType = signal<ReportType>('SITREP');
   readonly genDocumentActionType = signal<DocumentActionType | ''>('');
   readonly modeDropdownOpen = signal(false);
@@ -234,17 +263,39 @@ export class ChatComposer implements OnDestroy {
   setComposerMode(mode: ComposerMode): void {
     this.composerMode.set(mode);
     this.genMessage.set('');
-    this.genMode.set('direct');
     this.genDocumentActionType.set('');
     this.modeDropdownOpen.set(false);
+    this.actionMenuOpen.set(false);
     this.composerModeChange.emit(mode);
     if (mode === 'chat') {
       setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
     }
   }
 
-  onGenTypeChange(value: string): void {
-    this.genReportType.set(value as ReportType);
+  toggleActionMenu(): void {
+    this.actionMenuOpen.update((v) => !v);
+  }
+
+  setDocumentAction(value: DocumentActionType | ''): void {
+    this.genDocumentActionType.set(value);
+    this.actionMenuOpen.set(false);
+  }
+
+  toggleContextMenu(): void {
+    this.contextMenuOpen.update((v) => !v);
+  }
+
+  toggleRetrieveContext(): void {
+    this.retrieveContext.update((v) => !v);
+  }
+
+  toggleProcessDocuments(): void {
+    this.processDocuments.update((v) => !v);
+  }
+
+  /** Off → `null` (let the backend decide); on → `true`. */
+  private contextValue(on: boolean): boolean | null {
+    return on ? true : null;
   }
 
   toggleAiModeDropdown(): void {
@@ -266,10 +317,13 @@ export class ChatComposer implements OnDestroy {
   resetToChat(): void {
     this.composerMode.set('chat');
     this.genMessage.set('');
-    this.genMode.set('direct');
+    this.retrieveContext.set(false);
+    this.processDocuments.set(false);
+    this.contextMenuOpen.set(false);
     this.genDocumentActionType.set('');
     this.modeDropdownOpen.set(false);
     this.aiModeDropdownOpen.set(false);
+    this.actionMenuOpen.set(false);
   }
 
   // ── Text input ─────────────────────────────────────────────────
@@ -292,7 +346,8 @@ export class ChatComposer implements OnDestroy {
   }
 
   onChatEnterKey(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    // Shift/Alt + Enter inserta un salto de línea; Enter solo envía.
+    if (event.key === 'Enter' && !event.shiftKey && !event.altKey) {
       event.preventDefault();
       this.onPrimaryAction();
     }
@@ -300,7 +355,7 @@ export class ChatComposer implements OnDestroy {
 
   onGenEnterKey(event: Event): void {
     const ke = event as KeyboardEvent;
-    if (!ke.shiftKey) {
+    if (!ke.shiftKey && !ke.altKey) {
       ke.preventDefault();
       this.onPrimaryAction();
     }
@@ -326,12 +381,18 @@ export class ChatComposer implements OnDestroy {
   onPrimaryAction(): void {
     if (!this.canSubmit()) return;
     if (this.composerMode() === 'chat') {
-      this.submitChat.emit({ text: this.text().trim(), aiMode: this.aiMode() });
+      this.submitChat.emit({
+        text: this.text().trim(),
+        aiMode: this.aiMode(),
+        retrieveContext: this.contextValue(this.retrieveContext()),
+        processDocuments: this.contextValue(this.processDocuments()),
+      });
       return;
     }
     this.generate.emit({
       mode: this.composerMode() as ComposerToolMode,
-      genMode: this.genMode(),
+      retrieveContext: this.contextValue(this.retrieveContext()),
+      processDocuments: this.contextValue(this.processDocuments()),
       reportType: this.genReportType(),
       documentActionType: this.genDocumentActionType(),
       message: this.genMessage().trim(),
@@ -411,7 +472,8 @@ export class ChatComposer implements OnDestroy {
       blob,
       mimeType: this._recordingMimeType,
       mode: this.composerMode(),
-      genMode: this.genMode(),
+      retrieveContext: this.contextValue(this.retrieveContext()),
+      processDocuments: this.contextValue(this.processDocuments()),
       reportType: this.genReportType(),
       aiMode: this.aiMode(),
     });

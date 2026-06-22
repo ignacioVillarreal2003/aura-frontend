@@ -33,7 +33,7 @@
       </span>
       <span class="db-meta__chip">
         <i class="pi pi-bolt" aria-hidden="true"></i>
-        {{ b.mode === 'rag' ? 'RAG' : 'Directo' }}
+        {{ (b.retrieve_context || b.process_documents) ? 'Con documentos' : 'Directo' }}
       </span>
       <span class="db-meta__chip">
         <i class="pi pi-list" aria-hidden="true"></i>

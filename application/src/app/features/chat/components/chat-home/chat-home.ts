@@ -21,7 +21,8 @@ import { ChatComposerHandoffService } from '../chat-composer/chat-composer-hando
 interface PendingGeneration {
   mode: Exclude<ComposerMode, 'chat'>;
   type?: ReportType;
-  genMode: 'direct' | 'rag';
+  retrieveContext: boolean | null;
+  processDocuments: boolean | null;
   message: string;
 }
 
@@ -85,6 +86,8 @@ export class ChatHome {
       if (payload.aiMode !== AURA_CHAT_AI_MODE_DEFAULT) {
         routerState['pendingAiMode'] = payload.aiMode;
       }
+      if (payload.retrieveContext) routerState['pendingRetrieveContext'] = true;
+      if (payload.processDocuments) routerState['pendingProcessDocuments'] = true;
     }
     this.createChatAndNavigate(payload.text, routerState);
   }
@@ -92,7 +95,8 @@ export class ChatHome {
   onGenerate(payload: ComposerGenerate): void {
     const gen: PendingGeneration = {
       mode: payload.mode,
-      genMode: payload.genMode,
+      retrieveContext: payload.retrieveContext,
+      processDocuments: payload.processDocuments,
       message: payload.message,
       ...(payload.mode === 'report' ? { type: payload.reportType } : {}),
     };

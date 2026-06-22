@@ -28,87 +28,81 @@
       </div>
     }
 
-    @if (composerMode() !== 'chat' && composerMode() !== 'document-summary' && composerMode() !== 'document-action') {
+    @if (composerMode() === 'report') {
       <div class="gen-inline-controls">
-        @if (composerMode() === 'report') {
-          <select
-            class="gen-type-select"
-            [value]="genReportType()"
-            [disabled]="busy()"
-            (change)="onGenTypeChange($any($event.target).value)"
-            aria-label="Tipo de informe">
-            @for (opt of reportTypes; track opt.value) {
-              <option [value]="opt.value">{{ opt.label }}</option>
-            }
-          </select>
-        }
-        <div class="gen-mode-pills">
-          <button
-            type="button"
-            class="gen-mode-pill"
-            [class.gen-mode-pill--active]="genMode() === 'direct'"
-            [disabled]="busy()"
-            (click)="genMode.set('direct')"
-            title="Solo usa lo que ingresás">
-            <i class="pi pi-pencil" aria-hidden="true"></i>
-            Directo
-          </button>
-          <button
-            type="button"
-            class="gen-mode-pill"
-            [class.gen-mode-pill--active]="genMode() === 'rag'"
-            [disabled]="busy()"
-            (click)="genMode.set('rag')"
-            title="Recupera fragmentos del chat">
-            <i class="pi pi-database" aria-hidden="true"></i>
-            Con documentos
-          </button>
+        <div class="gen-segmented" role="group" aria-label="Tipo de informe">
+          @for (opt of reportTypes; track opt.value) {
+            <button
+              type="button"
+              class="gen-segmented__btn"
+              [class.gen-segmented__btn--active]="genReportType() === opt.value"
+              [disabled]="busy()"
+              [title]="opt.label"
+              (click)="genReportType.set(opt.value)">
+              {{ opt.short }}
+            </button>
+          }
         </div>
       </div>
     }
 
     @if (composerMode() === 'document-action') {
       <div class="gen-inline-controls">
-        <select
-          class="gen-type-select"
-          [value]="genDocumentActionType()"
-          [disabled]="busy()"
-          (change)="genDocumentActionType.set($any($event.target).value)"
-          aria-label="Tipo de acción">
-          <option value="">Acción automática</option>
-          <option value="summarize">Resumir</option>
-          <option value="essay">Ensayo</option>
-          <option value="key_points">Puntos clave</option>
-          <option value="compare">Comparar</option>
-          <option value="analyze">Analizar</option>
-          <option value="explain">Explicar</option>
-          <option value="report">Informe</option>
-        </select>
+        <div class="gen-select">
+          @if (actionMenuOpen()) {
+            <div class="mode-backdrop" (click)="actionMenuOpen.set(false)"></div>
+          }
+          <button
+            type="button"
+            class="gen-select__trigger"
+            [disabled]="busy()"
+            [attr.aria-expanded]="actionMenuOpen()"
+            (click)="toggleActionMenu()">
+            <i [ngClass]="['pi', activeDocumentAction().icon]" aria-hidden="true"></i>
+            <span>{{ activeDocumentAction().label }}</span>
+            <i class="pi pi-chevron-up gen-select__chevron" [class.gen-select__chevron--open]="actionMenuOpen()" aria-hidden="true"></i>
+          </button>
+          @if (actionMenuOpen()) {
+            <div class="gen-select__menu" role="menu">
+              @for (a of documentActions; track a.value) {
+                <button
+                  type="button"
+                  class="gen-select__item"
+                  role="menuitem"
+                  [class.gen-select__item--active]="genDocumentActionType() === a.value"
+                  (click)="setDocumentAction(a.value)">
+                  <i [ngClass]="['pi', a.icon]" aria-hidden="true"></i>
+                  <span>{{ a.label }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
         @if (!hasDocs()) {
-          <span class="gen-doc-hint"><i class="pi pi-info-circle" aria-hidden="true"></i> Adjuntá documentos con el botón +</span>
+          <span class="gen-doc-pill gen-doc-pill--warn"><i class="pi pi-paperclip" aria-hidden="true"></i> Adjuntá con +</span>
         } @else if (hasProcessingDocs()) {
-          <span class="gen-doc-hint"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando…</span>
+          <span class="gen-doc-pill"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando…</span>
         } @else {
-          <span class="gen-doc-hint gen-doc-hint--ok"><i class="pi pi-check" aria-hidden="true"></i> {{ attachedDocs().length }} doc{{ attachedDocs().length !== 1 ? 's' : '' }}</span>
+          <span class="gen-doc-pill gen-doc-pill--ok"><i class="pi pi-check-circle" aria-hidden="true"></i> {{ attachedDocs().length }} doc{{ attachedDocs().length !== 1 ? 's' : '' }}</span>
         }
       </div>
     }
 
     @if (composerMode() === 'document-summary') {
-      <div class="gen-inline-controls">
+      <div class="gen-inline-controls gen-inline-controls--centered">
         @if (!hasDocs()) {
-          <div class="gen-doc-empty">
-            <i class="pi pi-info-circle" aria-hidden="true"></i>
+          <div class="gen-doc-state gen-doc-state--empty">
+            <span class="gen-doc-state__icon" aria-hidden="true"><i class="pi pi-paperclip"></i></span>
             <span>Adjuntá documentos con el botón <strong>+</strong> para generar un resumen.</span>
           </div>
         } @else if (hasProcessingDocs()) {
-          <div class="gen-doc-hint">
-            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          <div class="gen-doc-state">
+            <span class="gen-doc-state__icon" aria-hidden="true"><i class="pi pi-spin pi-spinner"></i></span>
             <span>Procesando documentos, aguardá un momento…</span>
           </div>
         } @else {
-          <div class="gen-doc-ready">
-            <i class="pi pi-check-circle" aria-hidden="true"></i>
+          <div class="gen-doc-state gen-doc-state--ok">
+            <span class="gen-doc-state__icon" aria-hidden="true"><i class="pi pi-check-circle"></i></span>
             <span><strong>{{ attachedDocs().length }}</strong> documento{{ attachedDocs().length !== 1 ? 's' : '' }} listos para resumir.</span>
           </div>
         }
@@ -162,7 +156,6 @@
           <button
             type="button"
             class="composer-mode-trigger ai-mode-trigger"
-            [class.composer-mode-trigger--active]="aiMode() !== 'document_question'"
             [disabled]="busy()"
             (click)="toggleAiModeDropdown()"
             [attr.aria-expanded]="aiModeDropdownOpen()"
@@ -202,7 +195,6 @@
           <button
             type="button"
             class="composer-mode-trigger"
-            [class.composer-mode-trigger--active]="composerMode() !== 'chat'"
             [disabled]="busy()"
             (click)="toggleModeDropdown()"
             [attr.aria-expanded]="modeDropdownOpen()"
@@ -309,6 +301,56 @@
           <span class="session-attach-badge">{{ attachedDocs().length }}</span>
         }
       </button>
+
+      <div class="context-menu">
+        @if (contextMenuOpen()) {
+          <div class="mode-backdrop" (click)="contextMenuOpen.set(false)"></div>
+        }
+        <button
+          type="button"
+          class="context-trigger"
+          [class.context-trigger--active]="activeContextCount() > 0"
+          [disabled]="busy()"
+          [attr.aria-expanded]="contextMenuOpen()"
+          aria-label="Opciones de contexto"
+          title="Contexto de la respuesta"
+          (click)="toggleContextMenu()">
+          <i class="pi pi-sliders-h" aria-hidden="true"></i>
+          @if (activeContextCount() > 0) {
+            <span class="context-trigger__badge">{{ activeContextCount() }}</span>
+          }
+        </button>
+        @if (contextMenuOpen()) {
+          <div class="context-popover" role="group" aria-label="Contexto de la respuesta">
+            <button
+              type="button"
+              class="context-option"
+              [class.context-option--active]="retrieveContext()"
+              [attr.aria-pressed]="retrieveContext()"
+              (click)="toggleRetrieveContext()">
+              <span class="context-option__icon" aria-hidden="true"><i class="pi pi-database"></i></span>
+              <span class="context-option__text">
+                <span class="context-option__label">Recuperar contexto</span>
+                <span class="context-option__hint">Busca en los documentos del chat (RAG)</span>
+              </span>
+              <span class="context-switch" [class.context-switch--on]="retrieveContext()" aria-hidden="true"></span>
+            </button>
+            <button
+              type="button"
+              class="context-option"
+              [class.context-option--active]="processDocuments()"
+              [attr.aria-pressed]="processDocuments()"
+              (click)="toggleProcessDocuments()">
+              <span class="context-option__icon" aria-hidden="true"><i class="pi pi-file"></i></span>
+              <span class="context-option__text">
+                <span class="context-option__label">Procesar documentos</span>
+                <span class="context-option__hint">Lee el contenido completo de los adjuntos</span>
+              </span>
+              <span class="context-switch" [class.context-switch--on]="processDocuments()" aria-hidden="true"></span>
+            </button>
+          </div>
+        }
+      </div>
 
       @if (voiceEnabled() && voiceState() !== 'idle') {
         <div class="voice-recording-bar">

@@ -213,7 +213,6 @@
                 <div class="artifact-card">
                   <div class="artifact-card__header">
                     <span class="artifact-card__type-badge">{{ artifactTypeLabel(message.artifactType) }}</span>
-                    <span class="artifact-card__status" [ngClass]="'artifact-card__status--' + (message.artifactStatus ?? 'draft')">{{ artifactStatusLabel(message.artifactStatus) }}</span>
                   </div>
                   <h4 class="artifact-card__title">{{ message.artifactTitle }}</h4>
                   @if (message.artifactDescription) {

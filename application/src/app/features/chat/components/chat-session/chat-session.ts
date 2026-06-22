@@ -38,20 +38,14 @@ import type {
   AuraChatWsServerMessage,
   ChatDetailDto,
   ChatFragment,
-  ChecklistMode,
-  DecisionBriefMode,
   DocumentActionType,
   FeedbackReason,
   FeedbackValue,
-  LessonsLearnedMode,
   MessageSenderType,
   PageNumberResult,
   PinnedArtifactDto,
-  QuizMode,
-  ReportMode,
   ReportType,
   ThreadReplyDto,
-  TimelineMode,
 } from '@aura-types/aura-chat-service.types';
 import { AURA_CHAT_AI_MODE_DEFAULT } from '@aura-types/aura-chat-service.types';
 import { ChatService } from '@core/services/chat/chat.service';
@@ -208,6 +202,10 @@ export class ChatSession implements OnDestroy {
   readonly docDropOverlayVisible = signal(false);
   readonly sessionDocuments = signal<DocumentItem[]>([]);
 
+  /** Context toggles carried from the home composer for the first message (null = backend default). */
+  private _pendingChatOptions: { retrieveContext: boolean | null; processDocuments: boolean | null } =
+    { retrieveContext: null, processDocuments: null };
+
   private readonly _docPolls = new Map<number, Subject<void>>();
   private deltaBuffer = '';
   private rafHandle: number | null = null;
@@ -248,6 +246,7 @@ export class ChatSession implements OnDestroy {
             this.aiMode.set(pendingAiMode);
             this.composer()?.presetAiMode(pendingAiMode);
           }
+          this._pendingChatOptions = this.consumePendingChatFlagsFromHistory();
 
           this._olderMessagesUrl = null;
           this.hasMoreMessages.set(false);
@@ -290,7 +289,8 @@ export class ChatSession implements OnDestroy {
               if (gen) {
                 setTimeout(() => this.generateTool({
                   mode: gen.mode,
-                  genMode: gen.genMode,
+                  retrieveContext: gen.retrieveContext,
+                  processDocuments: gen.processDocuments,
                   reportType: gen.type ?? 'SITREP',
                   documentActionType: '',
                   message: gen.message,
@@ -420,7 +420,7 @@ export class ChatSession implements OnDestroy {
   }
 
   onComposerSubmitChat(payload: ComposerChatSubmit): void {
-    this.sendChatMessage(payload.text, payload.aiMode);
+    this.sendChatMessage(payload.text, payload.aiMode, payload.retrieveContext, payload.processDocuments);
   }
 
   generateTool(payload: ComposerGenerate): void {
@@ -429,11 +429,14 @@ export class ChatSession implements OnDestroy {
     if (!message && composerMode !== 'document-summary') return;
 
     const chatId = this.chatId ?? undefined;
-    const mode = payload.genMode;
+    const ctx = {
+      retrieve_context: payload.retrieveContext,
+      process_documents: payload.processDocuments,
+    };
     this.genLoading.set(true);
 
     const onSuccess = (
-      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string },
       type: ArtifactType,
       toastMsg: string,
       fragments?: readonly ChatFragment[] | null,
@@ -450,7 +453,7 @@ export class ChatSession implements OnDestroy {
     };
 
     if (composerMode === 'checklist') {
-      this.http.generateChecklist({ mode: mode as ChecklistMode, message, chat_id: chatId })
+      this.http.generateChecklist({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.checklist, 'CHECKLIST', 'Checklist generada.', res.fragments as unknown as ChatFragment[]),
@@ -460,7 +463,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'quiz') {
-      this.http.generateQuiz({ mode: mode as QuizMode, message, chat_id: chatId })
+      this.http.generateQuiz({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.quiz, 'QUIZ', 'Quiz generado.', res.fragments as unknown as ChatFragment[]),
@@ -470,7 +473,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'timeline') {
-      this.http.generateTimeline({ mode: mode as TimelineMode, message, chat_id: chatId })
+      this.http.generateTimeline({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.timeline, 'TIMELINE', 'Línea de tiempo generada.', res.fragments as unknown as ChatFragment[]),
@@ -480,7 +483,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'lessons-learned') {
-      this.http.generateLessonsLearned({ mode: mode as LessonsLearnedMode, message, chat_id: chatId })
+      this.http.generateLessonsLearned({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.lessons_learned, 'LESSONS_LEARNED', 'Lecciones aprendidas generadas.', res.fragments as unknown as ChatFragment[]),
@@ -490,7 +493,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'decision-brief') {
-      this.http.generateDecisionBrief({ mode: mode as DecisionBriefMode, message, chat_id: chatId })
+      this.http.generateDecisionBrief({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.decision_brief, 'DECISION_BRIEF', 'Brief de decisión generado.', res.fragments as unknown as ChatFragment[]),
@@ -502,12 +505,12 @@ export class ChatSession implements OnDestroy {
     if (composerMode === 'document-summary') {
       const docIds = this.sessionDocuments().map((d) => d.id);
       if (docIds.length === 0) { onError('Subí al menos un documento antes de generar un resumen.'); return; }
-      this.http.generateDocumentSummary({ document_ids: docIds, chat_id: chatId! })
+      this.http.generateDocumentSummary({ document_ids: docIds, chat_id: chatId!, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => {
             this.sessionDocuments.set([]);
-            onSuccess(res.document_summary as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_SUMMARY', 'Resumen generado.', res.fragments as unknown as ChatFragment[]);
+            onSuccess(res.document_summary as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string }, 'DOCUMENT_SUMMARY', 'Resumen generado.', res.fragments as unknown as ChatFragment[]);
           },
           error: () => onError('No se pudo generar el resumen.'),
         });
@@ -523,12 +526,13 @@ export class ChatSession implements OnDestroy {
         instruction: message,
         action: actionType || null,
         chat_id: chatId!,
+        ...ctx,
       })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => {
             this.sessionDocuments.set([]);
-            onSuccess(res.document_action as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_ACTION', 'Acción generada.', res.fragments as unknown as ChatFragment[]);
+            onSuccess(res.document_action as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string }, 'DOCUMENT_ACTION', 'Acción generada.', res.fragments as unknown as ChatFragment[]);
           },
           error: () => onError('No se pudo generar la acción.'),
         });
@@ -536,7 +540,7 @@ export class ChatSession implements OnDestroy {
     }
 
     // report (default)
-    this.http.generateReport({ type: payload.reportType, mode: mode as ReportMode, message, chat_id: chatId })
+    this.http.generateReport({ type: payload.reportType, message, chat_id: chatId, ...ctx })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => onSuccess(res.report, 'REPORT', 'Informe generado.', res.fragments as unknown as ChatFragment[]),
@@ -545,7 +549,7 @@ export class ChatSession implements OnDestroy {
   }
 
   private _pushGeneratedArtifact(
-    resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+    resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string },
     type: ArtifactType,
     fragments?: readonly ChatFragment[] | null,
   ): void {
@@ -565,7 +569,6 @@ export class ChatSession implements OnDestroy {
         artifactType: type,
         artifactTitle: resource.title,
         artifactStatus: 'draft' as ArtifactStatus,
-        artifactMode: resource.mode as ArtifactMode,
         artifactLinkedId: resource.id,
         fragments: fragments ?? null,
       },
@@ -754,6 +757,12 @@ export class ChatSession implements OnDestroy {
   }
 
   // ── Voice (recorded by the composer; routed here) ──────────────
+  /** Append the context flags to a generation FormData, omitting nulls (server default). */
+  private _appendAudioContext(fd: FormData, audio: ComposerAudio): void {
+    if (audio.retrieveContext != null) fd.append('retrieve_context', String(audio.retrieveContext));
+    if (audio.processDocuments != null) fd.append('process_documents', String(audio.processDocuments));
+  }
+
   onAudioCaptured(audio: ComposerAudio): void {
     const chatId = this.chatId;
     if (!chatId) { this.composer()?.finishVoiceProcessing(); return; }
@@ -764,7 +773,7 @@ export class ChatSession implements OnDestroy {
     const done = () => this.composer()?.finishVoiceProcessing();
 
     const voiceSuccess = (
-      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string },
       type: ArtifactType,
       toastMsg: string,
       fragments?: readonly ChatFragment[] | null,
@@ -777,7 +786,7 @@ export class ChatSession implements OnDestroy {
 
     if (audio.mode === 'report') {
       formData.append('type', audio.reportType);
-      formData.append('mode', audio.genMode);
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateReport(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -789,7 +798,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (audio.mode === 'checklist') {
-      formData.append('mode', audio.genMode);
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateChecklist(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -801,7 +810,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (audio.mode === 'quiz') {
-      formData.append('mode', audio.genMode);
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateQuiz(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -813,7 +822,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (audio.mode === 'timeline') {
-      formData.append('mode', audio.genMode);
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateTimeline(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -825,7 +834,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (audio.mode === 'lessons-learned') {
-      formData.append('mode', audio.genMode);
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateLessonsLearned(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -837,7 +846,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (audio.mode === 'decision-brief') {
-      formData.append('mode', audio.genMode);
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateDecisionBrief(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -863,7 +872,10 @@ export class ChatSession implements OnDestroy {
             this.toast.show('Sin conexión en tiempo real. Reconectá e intentá de nuevo.', 'error');
             return;
           }
-          this.socket.sendUserMessage(text, audio.aiMode);
+          this.socket.sendUserMessage(text, audio.aiMode, {
+            retrieveContext: audio.retrieveContext,
+            processDocuments: audio.processDocuments,
+          });
         },
         error: () => { done(); this.toast.show('No se pudo transcribir el audio.', 'error'); },
       });
@@ -891,7 +903,12 @@ export class ChatSession implements OnDestroy {
       || this.sessionDocuments().some(d => d.status === 'uploaded');
   }
 
-  sendChatMessage(rawText: string, aiMode: AuraChatAiMode): void {
+  sendChatMessage(
+    rawText: string,
+    aiMode: AuraChatAiMode,
+    retrieveContext: boolean | null = null,
+    processDocuments: boolean | null = null,
+  ): void {
     const text = rawText.trim();
     if (!text || !this.chat || this.sendBlocked()) return;
 
@@ -901,7 +918,11 @@ export class ChatSession implements OnDestroy {
     if (docIds.length > 0) this.sessionDocuments.set([]);
 
     if (this.socket) {
-      this.socket.sendUserMessage(text, aiMode, docIds.length > 0 ? docIds : undefined);
+      this.socket.sendUserMessage(text, aiMode, {
+        documentIds: docIds.length > 0 ? docIds : undefined,
+        retrieveContext,
+        processDocuments,
+      });
       setTimeout(() => this.scrollToBottom(), 50);
       return;
     }
@@ -909,7 +930,13 @@ export class ChatSession implements OnDestroy {
     if (!this.chatId) return;
     this.isTyping.set(true);
     this.http
-      .sendMessageJson(this.chatId, { chat_id: this.chatId!, message: text, mode: aiMode })
+      .sendMessageJson(this.chatId, {
+        chat_id: this.chatId!,
+        message: text,
+        mode: aiMode,
+        retrieve_context: retrieveContext,
+        process_documents: processDocuments,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
@@ -1548,15 +1575,6 @@ export class ChatSession implements OnDestroy {
     return labels[type] ?? type;
   }
 
-  artifactStatusLabel(status: string | null | undefined): string {
-    switch (status) {
-      case 'draft':    return 'Borrador';
-      case 'final':    return 'Final';
-      case 'archived': return 'Archivado';
-      default:         return status ?? '';
-    }
-  }
-
   artifactTypeIcon(type: ArtifactType): string {
     const icons: Record<ArtifactType, string> = {
       MESSAGE: 'pi-comment',
@@ -1759,10 +1777,24 @@ export class ChatSession implements OnDestroy {
     return validModes.some((m) => m === raw) ? (raw as AuraChatAiMode) : undefined;
   }
 
+  private consumePendingChatFlagsFromHistory(): { retrieveContext: boolean | null; processDocuments: boolean | null } {
+    const navState = history.state as { pendingRetrieveContext?: unknown; pendingProcessDocuments?: unknown } | null;
+    const flags = {
+      retrieveContext: navState?.pendingRetrieveContext === true ? true : null,
+      processDocuments: navState?.pendingProcessDocuments === true ? true : null,
+    };
+    if (navState && ('pendingRetrieveContext' in navState || 'pendingProcessDocuments' in navState)) {
+      const { pendingRetrieveContext: _r, pendingProcessDocuments: _p, ...rest } = navState;
+      history.replaceState(rest, '');
+    }
+    return flags;
+  }
+
   private consumePendingGenerationFromHistory(): {
     mode: 'report' | 'checklist' | 'quiz' | 'timeline' | 'lessons-learned' | 'decision-brief' | 'document-summary' | 'document-action';
     type?: ReportType;
-    genMode: 'direct' | 'rag';
+    retrieveContext: boolean | null;
+    processDocuments: boolean | null;
     message: string;
   } | undefined {
     const navState = history.state as Record<string, unknown> | null;
@@ -1775,10 +1807,12 @@ export class ChatSession implements OnDestroy {
     const g = raw as Record<string, unknown>;
     const validModes = ['report', 'checklist', 'quiz', 'timeline', 'lessons-learned', 'decision-brief', 'document-summary', 'document-action'] as const;
     if (!validModes.includes(g['mode'] as typeof validModes[number])) return undefined;
+    const triState = (v: unknown): boolean | null => (v === true ? true : v === false ? false : null);
     return {
       mode: g['mode'] as typeof validModes[number],
       type: g['type'] as ReportType | undefined,
-      genMode: (g['genMode'] === 'rag' ? 'rag' : 'direct'),
+      retrieveContext: triState(g['retrieveContext']),
+      processDocuments: triState(g['processDocuments']),
       message: String(g['message'] ?? ''),
     };
   }
@@ -1816,7 +1850,11 @@ export class ChatSession implements OnDestroy {
     }
 
     if (pending?.trim()) {
-      conn.sendUserMessage(pending.trim(), this.aiMode());
+      conn.sendUserMessage(pending.trim(), this.aiMode(), {
+        retrieveContext: this._pendingChatOptions.retrieveContext,
+        processDocuments: this._pendingChatOptions.processDocuments,
+      });
+      this._pendingChatOptions = { retrieveContext: null, processDocuments: null };
     }
   }
 

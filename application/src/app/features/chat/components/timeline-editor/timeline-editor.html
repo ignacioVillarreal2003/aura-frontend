@@ -33,7 +33,7 @@
       </span>
       <span class="te-meta__chip">
         <i class="pi pi-bolt" aria-hidden="true"></i>
-        {{ t.mode === 'rag' ? 'RAG' : 'Directo' }}
+        {{ (t.retrieve_context || t.process_documents) ? 'Con documentos' : 'Directo' }}
       </span>
       <span class="te-meta__chip">
         <i class="pi pi-list" aria-hidden="true"></i>

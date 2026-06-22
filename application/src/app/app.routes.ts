@@ -18,16 +18,15 @@ export const routes: Routes = [
       import('./features/chat/chat.routes').then((m) => m.chatShellRoutes),
   },
 
-  // ── Artifact viewers (full-screen, no sidebar) ──────────────────
+  // ── Reports (full-screen, own feature) ──────────────────────────
   {
-    path: 'report/:id',
-    title: 'Reporte',
+    path: 'report',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/report-editor/report-editor').then(
-        (m) => m.ReportEditor
-      ),
+    loadChildren: () =>
+      import('./features/report/report.routes').then((m) => m.REPORT_ROUTES),
   },
+
+  // ── Artifact viewers (full-screen, no sidebar) ──────────────────
   {
     path: 'checklist/:id',
     title: 'Checklist',
