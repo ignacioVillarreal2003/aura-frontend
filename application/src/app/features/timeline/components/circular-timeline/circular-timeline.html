@@ -52,17 +52,17 @@
         }
       </div>
     }
-
-    <!-- Flechas de navegación -->
-    @if (items().length > 1) {
-      <div class="ct-nav">
-        <button type="button" class="ct-nav__btn" (click)="prev()" aria-label="Evento anterior">
-          <i class="pi pi-arrow-left" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="ct-nav__btn" (click)="next()" aria-label="Evento siguiente">
-          <i class="pi pi-arrow-right" aria-hidden="true"></i>
-        </button>
-      </div>
-    }
   </div>
+
+  <!-- Flechas de navegación (fijas arriba a la derecha) -->
+  @if (items().length > 1) {
+    <div class="ct-nav">
+      <button type="button" class="ct-nav__btn" (click)="prev()" aria-label="Evento anterior">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="ct-nav__btn" (click)="next()" aria-label="Evento siguiente">
+        <i class="pi pi-arrow-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
 </div>

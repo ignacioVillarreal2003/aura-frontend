@@ -180,11 +180,14 @@
   white-space: pre-wrap;
 }
 
-/* Flechas de navegación */
+/* Flechas de navegación (fijas arriba a la derecha del contenedor) */
 .ct-nav {
+  position: absolute;
+  top: clamp(20px, 4vh, 40px);
+  right: clamp(24px, 5vw, 56px);
   display: flex;
   gap: 10px;
-  margin-top: clamp(26px, 4.5vh, 44px);
+  z-index: 2;
 }
 .ct-nav__btn {
   display: flex;
