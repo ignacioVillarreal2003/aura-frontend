@@ -15,19 +15,16 @@
       (exportRequested)="export($event)"
     />
 
-    <!-- ── Meta strip ────────────────────────────────────────── -->
+    <!-- ── Meta strip (estilo timeline) ───────────────────────── -->
     <div class="ce-meta">
-      <span class="ce-meta__item">
+      <span class="ce-meta__chip">
         <i class="pi pi-calendar" aria-hidden="true"></i>
-        {{ c.created_at | date: 'd MMM yyyy' }}
+        {{ c.created_at | date: 'mediumDate' }}
       </span>
-      <span class="ce-meta__sep" aria-hidden="true">·</span>
-      <span class="ce-meta__item">
-        <i class="pi pi-bolt" aria-hidden="true"></i>
-        {{ (c.retrieve_context || c.process_documents) ? 'Con documentos' : 'Directo' }}
+      <span class="ce-meta__chip ce-meta__chip--progress">
+        <i class="pi pi-check-square" aria-hidden="true"></i>
+        {{ checkedCount() }}/{{ totalCount() }} verificados
       </span>
-      <span class="ce-meta__spacer"></span>
-      <span class="ce-meta__progress">{{ checkedCount() }}/{{ totalCount() }}</span>
     </div>
 
     <!-- ── Progress bar ─────────────────────────────────────── -->
@@ -35,7 +32,7 @@
       <div class="ce-progress-bar__fill" [style.width.%]="progressPct()"></div>
     </div>
 
-    <!-- ── Body (scrollable) ─────────────────────────────────── -->
+    <!-- ── Body ──────────────────────────────────────────────── -->
     <div class="ce-body">
 
       @if (sortedSections().length === 0) {
@@ -45,40 +42,49 @@
         </div>
       }
 
-      <div class="ce-sections-list">
+      <div class="ce-sections">
         @for (group of sortedSections(); track group.id) {
+          <section class="ce-section">
+            <header class="ce-section__head">
+              <span class="ce-section__name">{{ group.title }}</span>
+              <span class="ce-section__count">{{ group.items.length }}</span>
+            </header>
 
-          <div class="ce-section-block">
-            <!-- Section header -->
-            <div class="ce-section-header">
-              <span class="ce-section-name">{{ group.title }}</span>
-              <span class="ce-section-count">{{ group.items.length }}</span>
-            </div>
-
-            <!-- Items list -->
-            <div class="ce-section-items">
+            <div class="ce-items">
               @if (group.items.length === 0) {
-                <p class="ce-section-empty">Sin ítems.</p>
+                <p class="ce-items__empty">Sin ítems.</p>
               }
-
               @for (item of group.items; track item.id) {
-                <div class="ce-item" [class.ce-item--done]="item.is_checked">
-                  <div class="ce-item__top">
-                    <i [ngClass]="['pi', item.is_checked ? 'pi-check-circle' : 'pi-circle', 'ce-item__toggle']" aria-hidden="true"></i>
-                    <span class="ce-item__text" [class.ce-item__text--done]="item.is_checked">{{ item.text }}</span>
-                  </div>
-                  @if (item.notes) {
-                    <div class="ce-item__notes-row">
-                      <span class="ce-item__notes-input">{{ item.notes }}</span>
-                    </div>
-                  }
-                </div>
+                <button
+                  type="button"
+                  class="ce-item"
+                  [class.ce-item--done]="item.is_checked"
+                  [disabled]="isToggling(item.id)"
+                  (click)="toggleItem(item)"
+                  [attr.aria-pressed]="item.is_checked"
+                >
+                  <i
+                    [ngClass]="['pi', item.is_checked ? 'pi-check-circle' : 'pi-circle', 'ce-item__check']"
+                    aria-hidden="true"
+                  ></i>
+                  <span class="ce-item__text">{{ item.text }}</span>
+                </button>
               }
             </div>
-          </div>
+          </section>
         }
       </div>
-
     </div>
+
+    <!-- ── Consulta original (al fondo) ──────────────────────── -->
+    @if (c.query) {
+      <div class="ce-query">
+        <div class="ce-query__title">
+          <i class="pi pi-search ce-query__icon" aria-hidden="true"></i>
+          <span>Consulta original</span>
+        </div>
+        <p class="ce-query__text">{{ c.query }}</p>
+      </div>
+    }
   }
 </div>

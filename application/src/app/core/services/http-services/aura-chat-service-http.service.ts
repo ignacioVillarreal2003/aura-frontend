@@ -16,6 +16,7 @@ import type {
   ChatListQueryParams,
   ChecklistDto,
   ChecklistGenerateResponseDto,
+  ChecklistItemDto,
   ChecklistListItemDto,
   CreateChatBody,
   CursorPageResult,
@@ -486,6 +487,13 @@ export class AuraChatServiceHttp {
 
   getChecklist(checklistId: number): Observable<ChecklistDto> {
     return this.http.get<ChecklistDto>(`${this.base}/checklists/${checklistId}/`);
+  }
+
+  updateChecklistItem(checklistId: number, itemId: number | string, isChecked: boolean): Observable<ChecklistItemDto> {
+    return this.http.patch<ChecklistItemDto>(
+      `${this.base}/checklists/${checklistId}/items/${itemId}/`,
+      { is_checked: isChecked },
+    );
   }
 
   deleteChecklist(checklistId: number): Observable<void> {

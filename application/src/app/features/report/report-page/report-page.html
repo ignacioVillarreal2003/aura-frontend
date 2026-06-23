@@ -7,46 +7,41 @@
     </div>
   } @else if (report(); as r) {
 
-    <!-- Top bar -->
-    <header class="rp-bar">
-      <div class="rp-bar__left">
-        <button type="button" class="rp-back" (click)="goBack()">
-          <i class="pi pi-arrow-left" aria-hidden="true"></i>
-          <span>Volver</span>
-        </button>
-        <div class="rp-vdivider" aria-hidden="true"></div>
-        <span class="rp-type-badge rp-type-badge--{{ r.type.toLowerCase() }}">{{ r.type }}</span>
-        <span class="rp-title" [title]="r.title">{{ r.title }}</span>
-      </div>
+    <!-- ── Top bar ─────────────────────────────────────────── -->
+    <app-artifact-header
+      [title]="r.title"
+      [description]="r.description"
+      [exporting]="exportingAs()"
+      (back)="goBack()"
+      (exportRequested)="export($event)"
+    />
 
-      <div class="rp-bar__right">
-        <button
-          type="button"
-          class="rp-icon-btn"
-          title="Exportar como PDF"
-          [disabled]="exportingAs() !== null"
-          (click)="export('pdf')"
-        >
-          <i [ngClass]="['pi', exportingAs() === 'pdf' ? 'pi-spin pi-spinner' : 'pi-file-pdf']" aria-hidden="true"></i>
-          <span>PDF</span>
-        </button>
-        <button
-          type="button"
-          class="rp-icon-btn"
-          title="Exportar como Markdown"
-          [disabled]="exportingAs() !== null"
-          (click)="export('markdown')"
-        >
-          <i [ngClass]="['pi', exportingAs() === 'markdown' ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
-          <span>.md</span>
-        </button>
-      </div>
-    </header>
+    <!-- ── Meta strip (estilo timeline) ───────────────────────── -->
+    <div class="rp-meta">
+      <span class="rp-meta__chip rp-meta__chip--type">
+        <i class="pi pi-file" aria-hidden="true"></i>
+        {{ r.type }}
+      </span>
+      <span class="rp-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ r.created_at | date: 'mediumDate' }}
+      </span>
+    </div>
 
-    <!-- Document -->
-    <main class="rp-body">
+    <!-- ── Document ───────────────────────────────────────────── -->
+    <div class="rp-body">
       <app-report-document [report]="r" />
-    </main>
+    </div>
 
+    <!-- ── Consulta original (al fondo) ──────────────────────── -->
+    @if (r.query) {
+      <div class="rp-query">
+        <div class="rp-query__title">
+          <i class="pi pi-search rp-query__icon" aria-hidden="true"></i>
+          <span>Consulta original</span>
+        </div>
+        <p class="rp-query__text">{{ r.query }}</p>
+      </div>
+    }
   }
 </div>

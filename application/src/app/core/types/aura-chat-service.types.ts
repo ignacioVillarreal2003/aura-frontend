@@ -564,7 +564,6 @@ export interface ChecklistItemDto {
   readonly id: string;
   readonly text: string;
   readonly is_checked: boolean;
-  readonly notes: string;
   readonly position: number;
 }
 
@@ -830,8 +829,8 @@ export interface DocumentSummaryDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
+  readonly description: string;
   readonly summary: string;
-  readonly document_ids: readonly number[];
   readonly source_chat_id: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
@@ -842,7 +841,6 @@ export interface DocumentSummaryListItemDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly source_chat_id: number;
-  readonly document_ids: readonly number[];
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
@@ -872,8 +870,8 @@ export interface DocumentActionDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
+  readonly description: string;
   readonly result: string;
-  readonly document_ids: readonly number[];
   readonly instruction: string;
   readonly action: DocumentActionType | null;
   readonly source_chat_id: number;
@@ -886,7 +884,6 @@ export interface DocumentActionListItemDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly source_chat_id: number;
-  readonly document_ids: readonly number[];
   readonly instruction: string;
   readonly action: DocumentActionType | null;
   readonly created_by: number;

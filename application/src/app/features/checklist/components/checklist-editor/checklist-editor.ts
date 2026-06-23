@@ -5,7 +5,7 @@ import { take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import { ArtifactHeader } from '../../../../shared/components/artifact-header/artifact-header';
-import type { ChecklistDto } from '@aura-types/aura-chat-service.types';
+import type { ChecklistDto, ChecklistItemDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
   selector: 'app-checklist-editor',
@@ -23,6 +23,8 @@ export class ChecklistEditor implements OnInit {
   readonly checklist = signal<ChecklistDto | null>(null);
   readonly loading = signal(true);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
+  /** IDs de ítems con una actualización de is_checked en vuelo. */
+  readonly togglingIds = signal<ReadonlySet<string>>(new Set());
 
   readonly checkedCount = computed(() => {
     const c = this.checklist();
@@ -65,6 +67,49 @@ export class ChecklistEditor implements OnInit {
         void this.router.navigate(['/main-container', 'chat-home']);
       },
     });
+  }
+
+  isToggling(itemId: string): boolean {
+    return this.togglingIds().has(itemId);
+  }
+
+  toggleItem(item: ChecklistItemDto): void {
+    const c = this.checklist();
+    if (!c || this.isToggling(item.id)) return;
+    const next = !item.is_checked;
+
+    this.patchItem(item.id, next);          // optimista
+    this.setToggling(item.id, true);
+
+    this.http.updateChecklistItem(c.id, item.id, next).pipe(take(1)).subscribe({
+      next: (updated) => {
+        this.patchItem(item.id, updated.is_checked);
+        this.setToggling(item.id, false);
+      },
+      error: () => {
+        this.patchItem(item.id, !next);     // rollback
+        this.setToggling(item.id, false);
+        this.toast.show('No se pudo actualizar el ítem.', 'error');
+      },
+    });
+  }
+
+  private patchItem(itemId: string, isChecked: boolean): void {
+    const c = this.checklist();
+    if (!c) return;
+    this.checklist.set({
+      ...c,
+      sections: c.sections.map((s) => ({
+        ...s,
+        items: s.items.map((it) => (it.id === itemId ? { ...it, is_checked: isChecked } : it)),
+      })),
+    });
+  }
+
+  private setToggling(itemId: string, on: boolean): void {
+    const next = new Set(this.togglingIds());
+    if (on) next.add(itemId); else next.delete(itemId);
+    this.togglingIds.set(next);
   }
 
   goBack(): void {

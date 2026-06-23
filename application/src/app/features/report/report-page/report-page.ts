@@ -5,12 +5,13 @@ import { take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import { ReportDocument } from '../components/report-document/report-document';
+import { ArtifactHeader } from '../../../shared/components/artifact-header/artifact-header';
 import type { ReportDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
   selector: 'app-report-page',
   standalone: true,
-  imports: [CommonModule, ReportDocument],
+  imports: [CommonModule, ReportDocument, ArtifactHeader],
   templateUrl: './report-page.html',
   styleUrl: './report-page.css',
 })
