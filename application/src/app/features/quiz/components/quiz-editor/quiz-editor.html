@@ -1,8 +1,8 @@
-<div class="qe-root">
+<div class="qz-root">
   @if (loading()) {
-    <div class="qe-loading">
-      <i class="pi pi-spin pi-spinner qe-loading__spinner" aria-hidden="true"></i>
-      <p class="qe-loading__text">Cargando quiz…</p>
+    <div class="qz-loading">
+      <i class="pi pi-spin pi-spinner qz-loading__spinner" aria-hidden="true"></i>
+      <p class="qz-loading__text">Cargando quiz…</p>
     </div>
   } @else if (quiz(); as q) {
 
@@ -16,79 +16,109 @@
     />
 
     <!-- ── Meta strip ──────────────────────────────────────── -->
-    <div class="qe-meta">
-      <span class="qe-meta__chip">
+    <div class="qz-meta">
+      <span class="qz-meta__chip">
         <i class="pi pi-calendar" aria-hidden="true"></i>
         {{ q.created_at | date: 'mediumDate' }}
       </span>
-      <span class="qe-meta__chip">
-        <i class="pi pi-bolt" aria-hidden="true"></i>
-        {{ (q.retrieve_context || q.process_documents) ? 'Con documentos' : 'Directo' }}
-      </span>
-      <span class="qe-meta__chip">
+      <span class="qz-meta__chip">
         <i class="pi pi-question-circle" aria-hidden="true"></i>
-        {{ sortedQuestions().length }} pregunta{{ sortedQuestions().length !== 1 ? 's' : '' }}
+        {{ answeredCount() }}/{{ total() }} respondidas
       </span>
-      @if (q.pass_score != null) {
-        <span class="qe-meta__chip">
-          <i class="pi pi-star" aria-hidden="true"></i>
-          Mínimo: {{ q.pass_score }}%
-        </span>
-      }
+      <span class="qz-meta__chip qz-meta__chip--score">
+        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        {{ correctCount() }}/{{ total() }} correctas · {{ scorePct() }}%
+      </span>
+      <span class="qz-meta__spacer"></span>
+      <button
+        type="button"
+        class="qz-reset"
+        [disabled]="resetting() || answeredCount() === 0"
+        (click)="reset()"
+      >
+        <i [ngClass]="['pi', resetting() ? 'pi-spin pi-spinner' : 'pi-refresh']" aria-hidden="true"></i>
+        Reiniciar
+      </button>
     </div>
 
-    <!-- ── Body ────────────────────────────────────────────── -->
-    <div class="qe-body">
-
-      @if (q.instructions) {
-        <div class="qe-config-row">
-          <div class="qe-field qe-field--grow">
-            <span class="qe-label">Instrucciones</span>
-            <p class="qe-instructions-text">{{ q.instructions }}</p>
-          </div>
-        </div>
-      }
-
-      @if (sortedQuestions().length === 0) {
-        <div class="qe-empty">
-          <i class="pi pi-question-circle qe-empty__icon" aria-hidden="true"></i>
+    <!-- ── Body: carrusel de preguntas ───────────────────────── -->
+    <div class="qz-body">
+      @if (total() === 0) {
+        <div class="qz-empty">
+          <i class="pi pi-question-circle qz-empty__icon" aria-hidden="true"></i>
           <p>Sin preguntas.</p>
         </div>
-      }
-
-      @for (qq of sortedQuestions(); track qq.id; let qi = $index) {
-        <div class="qe-question">
-          <div class="qe-question__header">
-            <span class="qe-question__num">{{ qi + 1 }}</span>
-            <span class="qe-kind-badge">
-              <i [ngClass]="['pi', kindIcon(qq.kind)]" aria-hidden="true"></i>
-              {{ kindLabel(qq.kind) }}
-            </span>
-          </div>
-
-          <p class="qe-question__text-view">{{ qq.text }}</p>
-
-          <!-- Options -->
-          @if (qq.options.length > 0) {
-            <div class="qe-options">
-              @for (opt of qq.options; track opt.id; let oi = $index) {
-                <div class="qe-option">
-                  <i class="pi pi-circle qe-option__icon" aria-hidden="true"></i>
-                  <span class="qe-option__text">{{ opt.text }}</span>
-                </div>
-              }
-            </div>
+      } @else {
+        <div class="qz-stage">
+          @if (total() > 1) {
+            <button type="button" class="qz-nav qz-nav--prev" (click)="prev()" aria-label="Pregunta anterior">
+              <i class="pi pi-arrow-left" aria-hidden="true"></i>
+            </button>
           }
 
-          @if (qq.explanation) {
-            <p class="qe-question__explanation-view">
-              <i class="pi pi-info-circle" aria-hidden="true"></i>
-              {{ qq.explanation }}
-            </p>
+          <span class="qz-index">
+            {{ displayIndex() + 1 | number: '2.0-0' }}
+            <span class="qz-index__sep">/</span>
+            {{ total() | number: '2.0-0' }}
+          </span>
+
+          @for (item of activeList(); track item.id) {
+            <article class="qz-card">
+              <h2 class="qz-card__question">{{ item.text }}</h2>
+
+              <div class="qz-options">
+                @for (opt of item.options; track opt.id) {
+                  <button
+                    type="button"
+                    class="qz-option"
+                    [attr.data-state]="optionState(item, opt)"
+                    [disabled]="isAnswered(item) || answering()"
+                    (click)="selectOption(item, opt)"
+                  >
+                    <i class="pi qz-option__icon"
+                       [ngClass]="{
+                         'pi-circle': optionState(item, opt) === 'idle' || optionState(item, opt) === 'muted',
+                         'pi-check-circle': optionState(item, opt) === 'correct',
+                         'pi-times-circle': optionState(item, opt) === 'wrong'
+                       }"
+                       aria-hidden="true"></i>
+                    <span class="qz-option__text">{{ opt.text }}</span>
+                  </button>
+                }
+              </div>
+
+              @if (isAnswered(item) && item.explanation) {
+                <div class="qz-expl">
+                  <button type="button" class="qz-expl__toggle" (click)="toggleExplanation()">
+                    <i [ngClass]="['pi', showExplanation() ? 'pi-eye-slash' : 'pi-eye']" aria-hidden="true"></i>
+                    {{ showExplanation() ? 'Ocultar explicación' : 'Ver explicación' }}
+                  </button>
+                  @if (showExplanation()) {
+                    <p class="qz-expl__text">{{ item.explanation }}</p>
+                  }
+                </div>
+              }
+            </article>
+          }
+
+          @if (total() > 1) {
+            <button type="button" class="qz-nav qz-nav--next" (click)="next()" aria-label="Pregunta siguiente">
+              <i class="pi pi-arrow-right" aria-hidden="true"></i>
+            </button>
           }
         </div>
       }
-
     </div>
+
+    <!-- ── Consulta original (al fondo) ──────────────────────── -->
+    @if (q.query) {
+      <div class="qz-query">
+        <div class="qz-query__title">
+          <i class="pi pi-search qz-query__icon" aria-hidden="true"></i>
+          <span>Consulta original</span>
+        </div>
+        <p class="qz-query__text">{{ q.query }}</p>
+      </div>
+    }
   }
 </div>

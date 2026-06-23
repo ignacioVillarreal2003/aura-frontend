@@ -49,6 +49,7 @@ import type {
   MessageDto,
   PageNumberResult,
   PinnedArtifactDto,
+  QuizAnswerResultDto,
   QuizDto,
   QuizGenerateResponseDto,
   QuizListItemDto,
@@ -522,6 +523,17 @@ export class AuraChatServiceHttp {
 
   getQuiz(quizId: number): Observable<QuizDto> {
     return this.http.get<QuizDto>(`${this.base}/quizzes/${quizId}/`);
+  }
+
+  answerQuizQuestion(quizId: number, questionId: number, optionId: number): Observable<QuizAnswerResultDto> {
+    return this.http.patch<QuizAnswerResultDto>(
+      `${this.base}/quizzes/${quizId}/questions/${questionId}/answer/`,
+      { option_id: optionId },
+    );
+  }
+
+  resetQuiz(quizId: number): Observable<QuizDto> {
+    return this.http.post<QuizDto>(`${this.base}/quizzes/${quizId}/reset/`, {});
   }
 
   deleteQuiz(quizId: number): Observable<void> {

@@ -629,6 +629,8 @@ export interface QuizQuestionDto {
   readonly explanation: string;
   readonly position: number;
   readonly options: readonly QuizOptionDto[];
+  readonly selected_option_id: number | null;
+  readonly correct_option_ids: readonly number[];
 }
 
 export interface QuizDto {
@@ -638,14 +640,28 @@ export interface QuizDto {
   readonly description: string;
   readonly query: string;
   readonly instructions: string;
-  readonly pass_score: number | null;
   readonly retrieve_context: boolean | null;
   readonly process_documents: boolean | null;
   readonly document_ids: readonly number[];
   readonly questions: readonly QuizQuestionDto[];
+  readonly total_questions: number;
+  readonly answered_count: number;
+  readonly correct_count: number;
+  readonly score_pct: number;
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
+}
+
+export interface QuizAnswerResultDto {
+  readonly question_id: number;
+  readonly selected_option_id: number;
+  readonly is_correct: boolean;
+  readonly correct_option_ids: readonly number[];
+  readonly answered_count: number;
+  readonly correct_count: number;
+  readonly total_questions: number;
+  readonly score_pct: number;
 }
 
 export interface QuizListItemDto {
@@ -654,7 +670,6 @@ export interface QuizListItemDto {
   readonly title: string;
   readonly retrieve_context: boolean | null;
   readonly process_documents: boolean | null;
-  readonly pass_score: number | null;
   readonly source_chat_id: number | null;
   readonly question_count: number;
   readonly created_by: number;
