@@ -9,7 +9,7 @@
     <!-- ── Top bar ──────────────────────────────────────────── -->
     <app-artifact-header
       [title]="d.title"
-      [description]="d.context"
+      [description]="d.description"
       [exporting]="exportingAs()"
       (back)="goBack()"
       (exportRequested)="export($event)"
@@ -35,54 +35,27 @@
       </span>
     </div>
 
-    <!-- ── Body ────────────────────────────────────────────── -->
+    <!-- ── Body: carrusel de cards (contenido principal) ────── -->
     <div class="ll-body">
-
-      <div class="ll-section-label">
-        <i class="pi pi-book" aria-hidden="true"></i>
-        Lecciones
-      </div>
-
       @if (sortedItems().length === 0) {
         <div class="ll-empty">
           <i class="pi pi-book ll-empty__icon" aria-hidden="true"></i>
           <p>Sin lecciones.</p>
         </div>
+      } @else {
+        <app-lessons-learned-cards [items]="sortedItems()" />
       }
-
-      @for (item of sortedItems(); track item.id; let ii = $index) {
-        <div class="ll-item" [ngClass]="'ll-item--' + item.category">
-          <div class="ll-item__header">
-            <span class="ll-item__num">{{ ii + 1 }}</span>
-            <span class="ll-item__badge" [ngClass]="'ll-item__badge--' + item.category">
-              <i [ngClass]="['pi', categoryIcon(item.category)]" aria-hidden="true"></i>
-              {{ categoryLabel(item.category) }}
-            </span>
-          </div>
-
-          <div class="ll-item__fields">
-            <div class="ll-field ll-field--no-margin">
-              <span class="ll-label">Observación</span>
-              <p class="ll-item__text">{{ item.observation }}</p>
-            </div>
-            <div class="ll-item__two-cols">
-              @if (item.discussion) {
-                <div class="ll-field ll-field--no-margin">
-                  <span class="ll-label">Discusión</span>
-                  <p class="ll-item__text">{{ item.discussion }}</p>
-                </div>
-              }
-              @if (item.recommendation) {
-                <div class="ll-field ll-field--no-margin">
-                  <span class="ll-label">Recomendación</span>
-                  <p class="ll-item__text">{{ item.recommendation }}</p>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-      }
-
     </div>
+
+    <!-- ── Consulta original (a todo lo ancho, al fondo) ────── -->
+    @if (d.query) {
+      <div class="ll-query">
+        <div class="ll-query__title">
+          <i class="pi pi-search ll-query__icon" aria-hidden="true"></i>
+          <span>Consulta original</span>
+        </div>
+        <p class="ll-query__text">{{ d.query }}</p>
+      </div>
+    }
   }
 </div>

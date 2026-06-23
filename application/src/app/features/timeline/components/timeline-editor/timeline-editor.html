@@ -9,7 +9,7 @@
     <!-- ── Top bar ──────────────────────────────────────────── -->
     <app-artifact-header
       [title]="t.title"
-      [description]="t.summary"
+      [description]="t.description"
       [exporting]="exportingAs()"
       (back)="goBack()"
       (exportRequested)="export($event)"
@@ -40,5 +40,16 @@
       }
 
     </div>
+
+    <!-- ── Consulta original (a todo lo ancho, al fondo) ────── -->
+    @if (t.query) {
+      <div class="te-query">
+        <div class="te-query__title">
+          <i class="pi pi-search te-query__icon" aria-hidden="true"></i>
+          <span>Consulta original</span>
+        </div>
+        <p class="te-query__text">{{ t.query }}</p>
+      </div>
+    }
   }
 </div>

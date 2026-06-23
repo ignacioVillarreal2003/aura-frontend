@@ -54,10 +54,41 @@
   color: var(--accent-color, #6366f1);
 }
 
+/* Original query (collapsible, a todo lo ancho, al fondo) */
+.te-query {
+  width: 100%;
+  margin-top: 28px;
+  padding: 28px;
+  background: var(--surface-page);
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.te-query__title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 600;
+  color: var(--text-secondary);
+}
+.te-query__icon { font-size: 13px; color: var(--accent-color, #6366f1); }
+.te-query__text {
+  width: 100%;
+  margin: 22px 0 0;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--overlay-subtle);
+  font-size: 14.5px; line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+
 /* Body: aloja la línea de tiempo circular a pantalla completa */
 .te-body {
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: 88vh;
   display: flex;
   flex-direction: column;
 }

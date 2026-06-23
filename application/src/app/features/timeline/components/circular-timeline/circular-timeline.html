@@ -1,22 +1,14 @@
-<div
-  class="ct"
-  tabindex="0"
-  (keydown)="onKeydown($event)"
->
+<div class="ct">
   <!-- ── Dial radial ──────────────────────────────────────────── -->
   <div class="ct-dial-wrap">
     <div class="ct-dial" [style.transform]="'rotate(' + dialRotation() + 'deg)'">
       @for (dot of dots(); track dot.item.id; let i = $index) {
-        <button
-          type="button"
+        <div
           class="ct-dot"
           [class.ct-dot--active]="i === activeIndex()"
           [style.transform]="
             'rotate(' + dot.baseAngle + 'deg) translateX(var(--ct-radius))'
           "
-          (mouseenter)="setActive(i)"
-          (click)="setActive(i)"
-          [attr.aria-label]="dot.item.year + ' · ' + dot.item.title"
           [attr.aria-current]="i === activeIndex() ? 'true' : null"
         >
           <span
@@ -26,9 +18,8 @@
             "
           >
             <span class="ct-dot__pt"></span>
-            <span class="ct-dot__year">{{ dot.item.year }}</span>
           </span>
-        </button>
+        </div>
       }
     </div>
   </div>
@@ -46,9 +37,9 @@
         @if (item.year) {
           <div class="ct-card__year">{{ item.year }}</div>
         }
-        <h2 class="ct-card__title">{{ item.title }}</h2>
+        <h2 class="ct-card__title" [innerHTML]="item.title | markdownInline"></h2>
         @if (item.description) {
-          <p class="ct-card__desc">{{ item.description }}</p>
+          <div class="ct-card__desc" [innerHTML]="item.description | markdown"></div>
         }
       </div>
     }

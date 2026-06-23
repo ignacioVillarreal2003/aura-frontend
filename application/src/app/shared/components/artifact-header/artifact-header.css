@@ -100,6 +100,25 @@
   flex: 1 1 auto;
 }
 
+/* Markdown inline dentro del título / descripción (negrita, código, enlaces) */
+.ah__title strong,
+.ah__desc strong { font-weight: 700; color: var(--text-primary); }
+.ah__title em,
+.ah__desc em { font-style: italic; }
+.ah__title code,
+.ah__desc code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.9em;
+  background: var(--overlay-subtle);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+.ah__desc a {
+  color: var(--accent-color, #6366f1);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-color, #6366f1) 40%, transparent);
+}
+
 .ah__exports {
   flex: none;
   display: inline-flex;
@@ -107,16 +126,16 @@
 }
 
 /* Botones de exportación — mismo lenguaje que .drawer-section-tile:
-   tile translúcido tenue + borde 1px + contenido naranja. */
+   tile translúcido tenue + borde 1px + contenido morado. */
 .ah__export {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   padding: 9px 16px;
-  border: 1px solid rgba(254, 119, 17, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.22);
   border-radius: 12px;
-  background: rgba(254, 119, 17, 0.08);
-  color: var(--color-flush-orange-400, #ff8d28);
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--accent-color, #818cf8);
   font-family: var(--font-ui, 'Sora', sans-serif);
   font-size: 14px;
   font-weight: 600;
@@ -131,8 +150,8 @@
 }
 
 .ah__export:hover:not(:disabled) {
-  background: rgba(254, 119, 17, 0.14);
-  border-color: rgba(254, 119, 17, 0.34);
+  background: rgba(99, 102, 241, 0.14);
+  border-color: rgba(99, 102, 241, 0.36);
 }
 
 .ah__export:focus-visible {

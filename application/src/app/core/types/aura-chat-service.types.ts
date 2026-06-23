@@ -688,7 +688,7 @@ export interface TimelineDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly query: string;
-  readonly summary: string;
+  readonly description: string;
   readonly retrieve_context: boolean | null;
   readonly process_documents: boolean | null;
   readonly document_ids: readonly number[];
@@ -739,7 +739,7 @@ export interface LessonsLearnedDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly query: string;
-  readonly context: string;
+  readonly description: string;
   readonly retrieve_context: boolean | null;
   readonly process_documents: boolean | null;
   readonly document_ids: readonly number[];
@@ -788,7 +788,7 @@ export interface DecisionBriefDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly query: string;
-  readonly problem: string;
+  readonly description: string;
   readonly context: string;
   readonly risks: string;
   readonly recommendation: string;

@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { MarkdownInlinePipe } from '../../pipes/markdown.pipe';
 
 export type ArtifactExportFormat = 'pdf' | 'markdown';
 
@@ -9,12 +10,12 @@ export type ArtifactExportFormat = 'pdf' | 'markdown';
  * document-summary, document-action).
  *
  * Línea 1: título + botón "Volver" a la derecha (estilo documentos).
- * Línea 2: descripción + botones de exportación naranjas.
+ * Línea 2: descripción + botones de exportación morados.
  */
 @Component({
   selector: 'app-artifact-header',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, MarkdownInlinePipe],
   templateUrl: './artifact-header.html',
   styleUrl: './artifact-header.css',
 })

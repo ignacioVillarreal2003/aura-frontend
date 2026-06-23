@@ -1,5 +1,6 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { MarkdownPipe, MarkdownInlinePipe } from '../../../../shared/pipes/markdown.pipe';
 
 export interface TimelineItem {
   id: number;
@@ -21,7 +22,7 @@ export interface TimelineItem {
 @Component({
   selector: 'app-circular-timeline',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, MarkdownPipe, MarkdownInlinePipe],
   templateUrl: './circular-timeline.html',
   styleUrl: './circular-timeline.css',
 })
@@ -67,16 +68,5 @@ export class CircularTimeline {
 
   prev(): void {
     this.setActive(this.activeIndex() - 1);
-  }
-
-  // ── Teclado ───────────────────────────────────────────────────
-  onKeydown(e: KeyboardEvent): void {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      this.next();
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      this.prev();
-    }
   }
 }

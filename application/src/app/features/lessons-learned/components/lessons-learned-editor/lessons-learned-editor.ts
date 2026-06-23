@@ -5,15 +5,13 @@ import { take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import { ArtifactHeader } from '../../../../shared/components/artifact-header/artifact-header';
-import type {
-  LessonsLearnedDto,
-  LessonsLearnedCategory,
-} from '@aura-types/aura-chat-service.types';
+import { LessonsLearnedCards } from '../lessons-learned-cards/lessons-learned-cards';
+import type { LessonsLearnedDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
   selector: 'app-lessons-learned-editor',
   standalone: true,
-  imports: [CommonModule, ArtifactHeader],
+  imports: [CommonModule, ArtifactHeader, LessonsLearnedCards],
   templateUrl: './lessons-learned-editor.html',
   styleUrl: './lessons-learned-editor.css',
 })
@@ -26,12 +24,6 @@ export class LessonsLearnedEditor implements OnInit {
   readonly doc = signal<LessonsLearnedDto | null>(null);
   readonly loading = signal(true);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
-
-  readonly categories: { value: LessonsLearnedCategory; label: string; icon: string }[] = [
-    { value: 'sustain', label: 'Sostener', icon: 'pi-check-circle' },
-    { value: 'improve', label: 'Mejorar', icon: 'pi-arrow-up-right' },
-    { value: 'recommendation', label: 'Recomendación', icon: 'pi-star' },
-  ];
 
   readonly sortedItems = computed(() => {
     const d = this.doc();
@@ -79,13 +71,5 @@ export class LessonsLearnedEditor implements OnInit {
       },
       error: () => { this.exportingAs.set(null); this.toast.show('No se pudo exportar.', 'error'); },
     });
-  }
-
-  categoryLabel(cat: LessonsLearnedCategory): string {
-    return this.categories.find((c) => c.value === cat)?.label ?? cat;
-  }
-
-  categoryIcon(cat: LessonsLearnedCategory): string {
-    return this.categories.find((c) => c.value === cat)?.icon ?? 'pi-circle';
   }
 }

@@ -5,12 +5,13 @@ import { take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import { ArtifactHeader } from '../../../../shared/components/artifact-header/artifact-header';
+import { MarkdownPipe, MarkdownInlinePipe } from '../../../../shared/pipes/markdown.pipe';
 import type { DecisionBriefDto } from '@aura-types/aura-chat-service.types';
 
 @Component({
   selector: 'app-decision-brief-editor',
   standalone: true,
-  imports: [CommonModule, ArtifactHeader],
+  imports: [CommonModule, ArtifactHeader, MarkdownPipe, MarkdownInlinePipe],
   templateUrl: './decision-brief-editor.html',
   styleUrl: './decision-brief-editor.css',
 })

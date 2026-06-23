@@ -1,7 +1,7 @@
 <header class="ah">
   <!-- Línea 1: título + salir -->
   <div class="ah__top">
-    <h1 class="ah__title" [title]="title()">{{ title() }}</h1>
+    <h1 class="ah__title" [title]="title()" [innerHTML]="title() | markdownInline"></h1>
 
     <button type="button" class="ah__back" (click)="back.emit()">
       <i class="pi pi-arrow-left" aria-hidden="true"></i>
@@ -12,7 +12,7 @@
   <!-- Línea 2: descripción + exportar -->
   <div class="ah__sub">
     @if (description()) {
-      <p class="ah__desc">{{ description() }}</p>
+      <p class="ah__desc" [innerHTML]="description() | markdownInline"></p>
     } @else {
       <span class="ah__desc ah__desc--placeholder" aria-hidden="true"></span>
     }
