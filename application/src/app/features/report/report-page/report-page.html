@@ -1,0 +1,47 @@
+<div class="rp-root">
+
+  @if (loading()) {
+    <div class="rp-loading">
+      <i class="pi pi-spin pi-spinner rp-loading__icon" aria-hidden="true"></i>
+      <span class="rp-loading__text">Cargando informe…</span>
+    </div>
+  } @else if (report(); as r) {
+
+    <!-- ── Top bar ─────────────────────────────────────────── -->
+    <app-artifact-header
+      [title]="r.title"
+      [description]="r.description"
+      [exporting]="exportingAs()"
+      (back)="goBack()"
+      (exportRequested)="export($event)"
+    />
+
+    <!-- ── Meta strip (estilo timeline) ───────────────────────── -->
+    <div class="rp-meta">
+      <span class="rp-meta__chip rp-meta__chip--type">
+        <i class="pi pi-file" aria-hidden="true"></i>
+        {{ r.type }}
+      </span>
+      <span class="rp-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ r.created_at | date: 'mediumDate' }}
+      </span>
+    </div>
+
+    <!-- ── Document ───────────────────────────────────────────── -->
+    <div class="rp-body">
+      <app-report-document [report]="r" />
+    </div>
+
+    <!-- ── Consulta original (al fondo) ──────────────────────── -->
+    @if (r.query) {
+      <div class="rp-query">
+        <div class="rp-query__title">
+          <i class="pi pi-search rp-query__icon" aria-hidden="true"></i>
+          <span>Consulta original</span>
+        </div>
+        <p class="rp-query__text">{{ r.query }}</p>
+      </div>
+    }
+  }
+</div>

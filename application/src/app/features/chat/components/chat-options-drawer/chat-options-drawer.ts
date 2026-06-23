@@ -9,8 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged, switchMap, take } from 'rxjs';
-import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
+import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap, take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { AuraAuthServiceHttp } from '@core/services/http-services/aura-auth-service-http.service';
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
@@ -86,7 +85,7 @@ const ARTIFACT_TAB_META: Record<ArtifactTabKey, { label: string; icon: string; p
 @Component({
   selector: 'app-chat-options-drawer',
   standalone: true,
-  imports: [CommonModule, BtnIcon],
+  imports: [CommonModule],
   templateUrl: './chat-options-drawer.html',
   styleUrl: './chat-options-drawer.css',
   host: {
@@ -112,13 +111,6 @@ export class ChatOptionsDrawer {
   readonly canListChecklists = computed(() =>
     this.userState.user()?.permissions.includes('LIST_CHECKLISTS') ?? false
   );
-  readonly canDownloadDocument = computed(() =>
-    this.userState.user()?.permissions.includes('DOWNLOAD_DOCUMENT') ?? false
-  );
-  readonly canDeleteDocument = computed(() =>
-    this.userState.user()?.permissions.includes('SOFT_DELETE_DOCUMENT') ?? false
-  );
-
   readonly availableArtifactTabs = computed((): ArtifactTabKey[] => {
     const perms = this.userState.user()?.permissions ?? [];
     return (Object.keys(ARTIFACT_TAB_META) as ArtifactTabKey[]).filter(
@@ -172,6 +164,7 @@ export class ChatOptionsDrawer {
   readonly bookmarkedMessages = signal<ArtifactSummaryDto[]>([]);
   readonly bookmarkedLoading = signal(false);
   readonly exportingAs = signal<'pdf' | 'markdown' | null>(null);
+  readonly downloadingArtifactId = signal<number | null>(null);
 
   readonly reports = signal<ReportListItemDto[]>([]);
   readonly reportsLoading = signal(false);
@@ -921,6 +914,48 @@ export class ChatOptionsDrawer {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  /** Resolve the PDF export observable for any artifact summary (pinned or bookmarked). */
+  private artifactPdfObservable(artifact: ArtifactSummaryDto): Observable<Blob> | null {
+    const lid = artifact.linked_id;
+    switch (artifact.type) {
+      case 'MESSAGE': {
+        const msgId = artifact.message?.id ?? artifact.id;
+        return this.chatHttp.exportArtifactMessagePdf(msgId);
+      }
+      case 'REPORT':           return lid ? this.chatHttp.exportReportPdf(lid) : null;
+      case 'CHECKLIST':        return lid ? this.chatHttp.exportChecklistPdf(lid) : null;
+      case 'QUIZ':             return lid ? this.chatHttp.exportQuizPdf(lid) : null;
+      case 'TIMELINE':         return lid ? this.chatHttp.exportTimelinePdf(lid) : null;
+      case 'LESSONS_LEARNED':  return lid ? this.chatHttp.exportLessonsLearnedPdf(lid) : null;
+      case 'DECISION_BRIEF':   return lid ? this.chatHttp.exportDecisionBriefPdf(lid) : null;
+      case 'DOCUMENT_SUMMARY': return lid ? this.chatHttp.exportDocumentSummaryPdf(lid) : null;
+      case 'DOCUMENT_ACTION':  return lid ? this.chatHttp.exportDocumentActionPdf(lid) : null;
+      default:                 return null;
+    }
+  }
+
+  downloadArtifact(artifact: ArtifactSummaryDto): void {
+    if (this.downloadingArtifactId() !== null) return;
+    const obs$ = this.artifactPdfObservable(artifact);
+    if (!obs$) {
+      this.toastService.show('No se puede descargar este elemento.', 'error');
+      return;
+    }
+    this.downloadingArtifactId.set(artifact.id);
+    const base = (artifact.message?.message ?? artifact.title ?? `mensaje-${artifact.id}`)
+      .replace(/\s+/g, ' ').trim().replace(/[^\w-]/g, '_').slice(0, 60) || `mensaje-${artifact.id}`;
+    obs$.pipe(take(1)).subscribe({
+      next: (blob) => {
+        this.downloadBlob(blob, `${base}.pdf`);
+        this.downloadingArtifactId.set(null);
+      },
+      error: () => {
+        this.downloadingArtifactId.set(null);
+        this.toastService.show('No se pudo descargar.', 'error');
+      },
+    });
   }
 
   reloadMembers(chatId: number): void {

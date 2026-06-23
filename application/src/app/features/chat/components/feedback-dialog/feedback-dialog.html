@@ -11,7 +11,6 @@
       </div>
       <div class="fd-header__copy">
         <h2 id="fd-title" class="fd-header__title">¿Qué estuvo mal?</h2>
-        <p class="fd-header__hint">Opcional — ayudanos a mejorar las respuestas.</p>
       </div>
       <button type="button" class="fd-close" (click)="onClose()" aria-label="Cerrar">
         <i class="pi pi-times"></i>
@@ -33,10 +32,7 @@
       </div>
 
       <div class="fd-field">
-        <div class="fd-field__header">
-          <label class="fd-field__label" for="feedback-comment">Comentario</label>
-          <span class="fd-field__optional">opcional</span>
-        </div>
+        <label class="fd-field__label" for="feedback-comment">Comentario</label>
         <textarea
           id="feedback-comment"
           class="fd-field__textarea"

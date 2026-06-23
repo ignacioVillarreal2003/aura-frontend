@@ -1,0 +1,8 @@
+@if (report.content.trim()) {
+  <div class="rd-prose" [innerHTML]="report.content | markdown"></div>
+} @else {
+  <div class="rd-empty">
+    <i class="pi pi-file-edit rd-empty__icon" aria-hidden="true"></i>
+    <p>Sin contenido.</p>
+  </div>
+}

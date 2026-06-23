@@ -1,0 +1,49 @@
+<div class="llc">
+  <!-- Flecha izquierda -->
+  @if (items().length > 1) {
+    <button type="button" class="llc-nav llc-nav--prev" (click)="prev()" aria-label="Lección anterior">
+      <i class="pi pi-arrow-left" aria-hidden="true"></i>
+    </button>
+  }
+
+  <!-- Card central -->
+  <div class="llc-stage">
+    <span class="llc-index">
+      {{ displayIndex() + 1 | number: '2.0-0' }}
+      <span class="llc-index__sep">/</span>
+      {{ items().length | number: '2.0-0' }}
+    </span>
+
+    @for (item of activeList(); track item.id) {
+      <article class="llc-card">
+        <span class="llc-badge">
+          <i class="pi" [ngClass]="categoryIcon(item.category)" aria-hidden="true"></i>
+          {{ categoryLabel(item.category) }}
+        </span>
+
+        <h2 class="llc-card__title" [innerHTML]="item.observation | markdownInline"></h2>
+
+        @if (item.discussion) {
+          <div class="llc-field">
+            <span class="llc-field__label">Discusión</span>
+            <div class="llc-field__body" [innerHTML]="item.discussion | markdown"></div>
+          </div>
+        }
+
+        @if (item.recommendation) {
+          <div class="llc-field llc-field--rec">
+            <span class="llc-field__label">Recomendación</span>
+            <div class="llc-field__body" [innerHTML]="item.recommendation | markdown"></div>
+          </div>
+        }
+      </article>
+    }
+  </div>
+
+  <!-- Flecha derecha -->
+  @if (items().length > 1) {
+    <button type="button" class="llc-nav llc-nav--next" (click)="next()" aria-label="Lección siguiente">
+      <i class="pi pi-arrow-right" aria-hidden="true"></i>
+    </button>
+  }
+</div>

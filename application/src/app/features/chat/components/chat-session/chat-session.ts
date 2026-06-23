@@ -38,20 +38,14 @@ import type {
   AuraChatWsServerMessage,
   ChatDetailDto,
   ChatFragment,
-  ChecklistMode,
-  DecisionBriefMode,
   DocumentActionType,
   FeedbackReason,
   FeedbackValue,
-  LessonsLearnedMode,
   MessageSenderType,
   PageNumberResult,
   PinnedArtifactDto,
-  QuizMode,
-  ReportMode,
   ReportType,
   ThreadReplyDto,
-  TimelineMode,
 } from '@aura-types/aura-chat-service.types';
 import { AURA_CHAT_AI_MODE_DEFAULT } from '@aura-types/aura-chat-service.types';
 import { ChatService } from '@core/services/chat/chat.service';
@@ -61,7 +55,6 @@ import { ChatWebSocketService, type ChatSocketConnection } from '@core/services/
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { ToastService } from '@core/components/toast-service';
 import { ChatOptionsDrawer, type DocumentItem } from '../chat-options-drawer/chat-options-drawer';
-import { BtnIcon } from '../../../../shared/components/buttons/btn-icon/btn-icon';
 import { MarkdownPipe } from '../../../../shared/pipes/markdown.pipe';
 import { TokenMaterializeDirective } from '../../../../shared/directives/token-materialize.directive';
 import { UserState } from '@core/state/user.state';
@@ -70,6 +63,14 @@ import {
   FeedbackDialog,
   type DislikeFeedbackResult,
 } from '../feedback-dialog/feedback-dialog';
+import {
+  ChatComposer,
+  type ComposerAudio,
+  type ComposerChatSubmit,
+  type ComposerDoc,
+  type ComposerGenerate,
+} from '../chat-composer/chat-composer';
+import { ChatComposerHandoffService } from '../chat-composer/chat-composer-handoff.service';
 
 interface ChatMessage {
   readonly id: number;
@@ -93,31 +94,19 @@ interface ChatMessage {
   readonly messageId?: number;
 }
 
-const REPORT_TYPES: readonly { value: ReportType; label: string; placeholder: string }[] = [
-  { value: 'SITREP', label: 'SITREP — Situación', placeholder: 'Describí la situación, unidades involucradas, área de operaciones…' },
-  { value: 'INTSUM', label: 'INTSUM — Inteligencia', placeholder: 'Describí la amenaza, período cubierto, eventos relevantes…' },
-  { value: 'OPORD', label: 'OPORD — Operaciones', placeholder: 'Describí la misión, situación, plan de ejecución…' },
-];
-
-interface AiModeOption {
-  readonly value: AuraChatAiMode;
-  readonly label: string;
-  readonly icon: string;
-  readonly hint: string;
-  readonly permission: string | null;
+/** A unique source document behind an AI answer (fragments collapsed by document). */
+interface SourceDocument {
+  readonly id: number;
+  readonly name: string;
+  readonly type: string | null;
+  readonly category: string | null;
+  readonly matched: number;
 }
-
-const AI_MODES: readonly AiModeOption[] = [
-  { value: 'document_question', label: 'Documentos', icon: 'pi-database', hint: 'Responde usando tus documentos (RAG).', permission: null },
-  { value: 'general_chat', label: 'General', icon: 'pi-comment', hint: 'Asistente general, sin documentos.', permission: 'LLM_GENERAL_CHAT' },
-  { value: 'rag_agent', label: 'Agente RAG', icon: 'pi-sitemap', hint: 'Pipeline RAG avanzado con razonamiento.', permission: 'LLM_AGENT' },
-  { value: 'agent', label: 'Agente', icon: 'pi-bolt', hint: 'Agente con herramientas sobre documentos.', permission: 'LLM_AGENT' },
-];
 
 @Component({
   selector: 'app-chat-session',
   standalone: true,
-  imports: [CommonModule, FormsModule, BtnIcon, ChatOptionsDrawer, MarkdownPipe, TokenMaterializeDirective, FeedbackDialog],
+  imports: [CommonModule, FormsModule, ChatOptionsDrawer, MarkdownPipe, TokenMaterializeDirective, FeedbackDialog, ChatComposer],
   templateUrl: './chat-session.html',
   styleUrls: ['./chat-session.css'],
   host: {
@@ -138,29 +127,7 @@ export class ChatSession implements OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly userState = inject(UserState);
   private readonly userCache = inject(UserCacheService);
-
-  readonly canUseTools = computed(() => {
-    const perms = this.userState.user()?.permissions ?? [];
-    return (
-      perms.includes('LLM_REPORT_GENERATE') ||
-      perms.includes('LLM_CHECKLIST_GENERATE') ||
-      perms.includes('LLM_QUIZ_GENERATE') ||
-      perms.includes('LLM_TIMELINE_GENERATE') ||
-      perms.includes('LLM_LESSONS_LEARNED_GENERATE') ||
-      perms.includes('LLM_DECISION_BRIEF_GENERATE') ||
-      perms.includes('LLM_DOCUMENT_SUMMARY_GENERATE') ||
-      perms.includes('LLM_DOCUMENT_ACTION_GENERATE')
-    );
-  });
-
-  readonly canReport            = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_REPORT_GENERATE'));
-  readonly canChecklist         = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_CHECKLIST_GENERATE'));
-  readonly canQuiz              = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_QUIZ_GENERATE'));
-  readonly canTimeline          = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_TIMELINE_GENERATE'));
-  readonly canLessonsLearned    = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_LESSONS_LEARNED_GENERATE'));
-  readonly canDecisionBrief     = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_DECISION_BRIEF_GENERATE'));
-  readonly canDocumentSummary   = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_DOCUMENT_SUMMARY_GENERATE'));
-  readonly canDocumentAction    = computed(() => (this.userState.user()?.permissions ?? []).includes('LLM_DOCUMENT_ACTION_GENERATE'));
+  private readonly handoff = inject(ChatComposerHandoffService);
 
   private chatId: number | null = null;
   private wsSessionId = 0;
@@ -168,13 +135,6 @@ export class ChatSession implements OnDestroy {
   private wsMessagesSub: Subscription | undefined;
   private typingOutTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly peerTypingTimers = new Map<number, ReturnType<typeof setTimeout>>();
-
-  // ── Voice recording ──────────────────────────────────────────
-  readonly voiceState = signal<'idle' | 'recording' | 'processing'>('idle');
-  readonly recordingSeconds = signal(0);
-  private _mediaRecorder: MediaRecorder | null = null;
-  private _audioChunks: Blob[] = [];
-  private _recordingTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly streamingAssistantId = signal<number | null>(null);
   readonly pinnedMessageIds = signal<Set<number>>(new Set());
@@ -218,84 +178,38 @@ export class ChatSession implements OnDestroy {
   chat: ChatDetailDto | null = null;
   messages = signal<ChatMessage[]>([]);
   readonly messageUserMap = signal<Map<number, { username: string; name: string }>>(new Map());
-  newMessage = '';
   loading = true;
   isTyping = signal(false);
   optionsOpen = signal(false);
-  readonly composerMode = signal<'chat' | 'report' | 'checklist' | 'quiz' | 'timeline' | 'lessons-learned' | 'decision-brief' | 'document-summary' | 'document-action'>('chat');
-  readonly genDocumentActionType = signal<DocumentActionType | ''>('');
-
-  // ── AI chat mode (document_question / general_chat / rag_agent / agent) ──
-  readonly aiModes = AI_MODES;
-  readonly aiMode = signal<AuraChatAiMode>(AURA_CHAT_AI_MODE_DEFAULT);
-  readonly aiModeDropdownOpen = signal(false);
-  readonly availableAiModes = computed(() => {
-    const perms = this.userState.user()?.permissions ?? [];
-    return AI_MODES.filter((m) => m.permission === null || perms.includes(m.permission));
-  });
-  readonly showAiModeSelector = computed(() => this.availableAiModes().length > 1);
-  readonly activeAiMode = computed(
-    () => AI_MODES.find((m) => m.value === this.aiMode()) ?? AI_MODES[0],
-  );
-
-  readonly genReportType = signal<ReportType>('SITREP');
-  readonly genMode = signal<'direct' | 'rag'>('direct');
-  readonly genMessage = signal('');
   readonly genLoading = signal(false);
-  readonly modeDropdownOpen = signal(false);
 
-  readonly reportTypes = REPORT_TYPES;
+  // ── AI chat mode (kept to drive the auto-sent pending message) ──
+  readonly aiMode = signal<AuraChatAiMode>(AURA_CHAT_AI_MODE_DEFAULT);
 
-  readonly composerModeLabel = computed(() => {
-    switch (this.composerMode()) {
-      case 'report':           return { icon: 'pi-file-edit',       label: 'Informe' };
-      case 'checklist':        return { icon: 'pi-check-square',    label: 'Checklist' };
-      case 'quiz':             return { icon: 'pi-question-circle', label: 'Quiz' };
-      case 'timeline':         return { icon: 'pi-calendar',        label: 'Línea de tiempo' };
-      case 'lessons-learned':  return { icon: 'pi-book',            label: 'Lecciones' };
-      case 'decision-brief':   return { icon: 'pi-bolt',            label: 'Decisión' };
-      case 'document-summary': return { icon: 'pi-align-left',      label: 'Resumen' };
-      case 'document-action':  return { icon: 'pi-cog',             label: 'Acción' };
-      default:                 return { icon: 'pi-comments',        label: 'Chat' };
-    }
-  });
+  private readonly composer = viewChild(ChatComposer);
 
-  readonly genTextareaPlaceholder = computed(() => {
-    switch (this.composerMode()) {
-      case 'checklist':        return 'Describí el procedimiento o SOP a convertir en checklist…';
-      case 'quiz':             return 'Describí el tema para el que querés generar preguntas de evaluación…';
-      case 'timeline':         return 'Describí la secuencia de eventos a ordenar cronológicamente…';
-      case 'lessons-learned':  return 'Describí el ejercicio o actividad cuyos aprendizajes querés capturar…';
-      case 'decision-brief':   return 'Describí el problema y las alternativas a evaluar…';
-      case 'document-action':  return 'Describí la instrucción o tarea a ejecutar sobre los documentos…';
-      default:                 return REPORT_TYPES.find((t) => t.value === this.genReportType())?.placeholder ?? 'Ingresá el contenido…';
-    }
-  });
-
-  readonly hasProcessingDocs = computed(() =>
-    this.sessionDocuments().some(d => d.status === 'uploaded'),
+  readonly perms = computed(() => this.userState.user()?.permissions ?? []);
+  readonly attachedComposerDocs = computed<ComposerDoc[]>(() =>
+    this.sessionDocuments().map((d) => ({
+      id: d.id,
+      name: d.name,
+      status: d.status === 'processed' ? 'ready' : d.status === 'failed' ? 'failed' : 'processing',
+    })),
   );
-
-  readonly canGenerate = computed(() => {
-    const mode = this.composerMode();
-    if (this.genLoading()) return false;
-    const docs = this.sessionDocuments();
-    const allDocsReady = docs.every(d => d.status === 'processed');
-    if (mode === 'document-summary') return docs.length > 0 && allDocsReady;
-    if (mode === 'document-action') return docs.length > 0 && allDocsReady && this.genMessage().trim().length > 0;
-    return this.genMessage().trim().length > 0;
-  });
+  readonly allDocsReady = computed(() => this.sessionDocuments().every((d) => d.status === 'processed'));
 
   documentUploading = signal(false);
   readonly docDropOverlayVisible = signal(false);
   readonly sessionDocuments = signal<DocumentItem[]>([]);
 
+  /** Context toggles carried from the home composer for the first message (null = backend default). */
+  private _pendingChatOptions: { retrieveContext: boolean | null; processDocuments: boolean | null } =
+    { retrieveContext: null, processDocuments: null };
+
   private readonly _docPolls = new Map<number, Subject<void>>();
   private deltaBuffer = '';
   private rafHandle: number | null = null;
   private pendingDeltaChatId: number | null = null;
-
-  private readonly messageBox = viewChild<ElementRef<HTMLTextAreaElement>>('messageBox');
 
   constructor() {
     this.route.paramMap
@@ -318,11 +232,10 @@ export class ChatSession implements OnDestroy {
           const sessionId = ++this.wsSessionId;
           this.docDropOverlayVisible.set(false);
           this.sessionDocuments.set([]);
-          this.composerMode.set('chat');
-          this.genMessage.set('');
-          this.modeDropdownOpen.set(false);
           this.aiMode.set(AURA_CHAT_AI_MODE_DEFAULT);
-          this.aiModeDropdownOpen.set(false);
+          this.composer()?.resetToChat();
+          this.composer()?.clearText();
+          this.composer()?.presetAiMode(AURA_CHAT_AI_MODE_DEFAULT);
           this.loading = true;
           this.chat = null;
           this.messages.set([]);
@@ -331,7 +244,9 @@ export class ChatSession implements OnDestroy {
           const pendingAiMode = this.consumePendingAiModeFromHistory();
           if (pendingAiMode) {
             this.aiMode.set(pendingAiMode);
+            this.composer()?.presetAiMode(pendingAiMode);
           }
+          this._pendingChatOptions = this.consumePendingChatFlagsFromHistory();
 
           this._olderMessagesUrl = null;
           this.hasMoreMessages.set(false);
@@ -358,19 +273,28 @@ export class ChatSession implements OnDestroy {
               this.loading = false;
               this.http.markChatAsRead(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
               void this.openWebSocketAfterLoad(id, sessionId, pending);
+
+              // A voice recording started on the home screen: process it now
+              // against this freshly created chat (transcribe + WS / generate).
+              const pendingAudio = this.handoff.consumePendingAudio();
+              if (pendingAudio) {
+                setTimeout(() => this.onAudioCaptured(pendingAudio), 0);
+              }
+
               setTimeout(() => {
                 this.scrollToBottom();
                 this._setupMessagesTopObserver();
               }, 100);
-              queueMicrotask(() => this.autosizeTextarea());
-
               const gen = this.consumePendingGenerationFromHistory();
               if (gen) {
-                this.composerMode.set(gen.mode);
-                this.genMode.set(gen.genMode);
-                this.genMessage.set(gen.message);
-                if (gen.type) this.genReportType.set(gen.type);
-                setTimeout(() => this.generateTool(), 100);
+                setTimeout(() => this.generateTool({
+                  mode: gen.mode,
+                  retrieveContext: gen.retrieveContext,
+                  processDocuments: gen.processDocuments,
+                  reportType: gen.type ?? 'SITREP',
+                  documentActionType: '',
+                  message: gen.message,
+                }), 100);
               }
             }),
           );
@@ -455,6 +379,7 @@ export class ChatSession implements OnDestroy {
         thread_reply_count: artifact.thread_reply_count,
         artifactType: 'MESSAGE',
         messageId: artifact.message.id,
+        fragments: artifact.fragments as ChatFragment[] | null,
       };
     }
     return {
@@ -481,53 +406,43 @@ export class ChatSession implements OnDestroy {
     this.optionsOpen.update((v) => !v);
   }
 
-  toggleModeDropdown(): void {
-    this.modeDropdownOpen.update((v) => !v);
+  // ── Composer event handlers ────────────────────────────────────
+  onComposerTyping(): void {
+    this.emitTypingStart();
   }
 
-  setComposerMode(mode: 'chat' | 'report' | 'checklist' | 'quiz' | 'timeline' | 'lessons-learned' | 'decision-brief' | 'document-summary' | 'document-action'): void {
-    this.composerMode.set(mode);
-    this.genMessage.set('');
-    this.genMode.set('direct');
-    this.genDocumentActionType.set('');
-    this.modeDropdownOpen.set(false);
-    if (mode === 'chat') {
-      setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
-    }
+  onComposerFiles(files: File[]): void {
+    files.forEach((file) => this.uploadDocumentFromFile(file, false));
   }
 
-  onGenTypeChange(value: string): void {
-    this.genReportType.set(value as ReportType);
+  onComposerRemoveDoc(doc: ComposerDoc): void {
+    this.removeSessionDocument(Number(doc.id));
   }
 
-  toggleAiModeDropdown(): void {
-    this.aiModeDropdownOpen.update((v) => !v);
+  onComposerSubmitChat(payload: ComposerChatSubmit): void {
+    this.sendChatMessage(payload.text, payload.aiMode, payload.retrieveContext, payload.processDocuments);
   }
 
-  setAiMode(mode: AuraChatAiMode): void {
-    this.aiMode.set(mode);
-    this.aiModeDropdownOpen.set(false);
-    setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
-  }
-
-  generateTool(): void {
-    const message = this.genMessage().trim();
-    const composerMode = this.composerMode();
+  generateTool(payload: ComposerGenerate): void {
+    const message = payload.message.trim();
+    const composerMode = payload.mode;
     if (!message && composerMode !== 'document-summary') return;
 
     const chatId = this.chatId ?? undefined;
-    const mode = this.genMode();
+    const ctx = {
+      retrieve_context: payload.retrieveContext,
+      process_documents: payload.processDocuments,
+    };
     this.genLoading.set(true);
 
     const onSuccess = (
-      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string },
       type: ArtifactType,
       toastMsg: string,
       fragments?: readonly ChatFragment[] | null,
     ) => {
       this.genLoading.set(false);
-      this.genMessage.set('');
-      this.composerMode.set('chat');
+      this.composer()?.resetToChat();
       this._pushGeneratedArtifact(resource, type, fragments);
       this.toast.show(toastMsg, 'success');
     };
@@ -538,7 +453,7 @@ export class ChatSession implements OnDestroy {
     };
 
     if (composerMode === 'checklist') {
-      this.http.generateChecklist({ mode: mode as ChecklistMode, message, chat_id: chatId })
+      this.http.generateChecklist({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.checklist, 'CHECKLIST', 'Checklist generada.', res.fragments as unknown as ChatFragment[]),
@@ -548,7 +463,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'quiz') {
-      this.http.generateQuiz({ mode: mode as QuizMode, message, chat_id: chatId })
+      this.http.generateQuiz({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.quiz, 'QUIZ', 'Quiz generado.', res.fragments as unknown as ChatFragment[]),
@@ -558,7 +473,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'timeline') {
-      this.http.generateTimeline({ mode: mode as TimelineMode, message, chat_id: chatId })
+      this.http.generateTimeline({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.timeline, 'TIMELINE', 'Línea de tiempo generada.', res.fragments as unknown as ChatFragment[]),
@@ -568,7 +483,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'lessons-learned') {
-      this.http.generateLessonsLearned({ mode: mode as LessonsLearnedMode, message, chat_id: chatId })
+      this.http.generateLessonsLearned({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.lessons_learned, 'LESSONS_LEARNED', 'Lecciones aprendidas generadas.', res.fragments as unknown as ChatFragment[]),
@@ -578,7 +493,7 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'decision-brief') {
-      this.http.generateDecisionBrief({ mode: mode as DecisionBriefMode, message, chat_id: chatId })
+      this.http.generateDecisionBrief({ message, chat_id: chatId, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => onSuccess(res.decision_brief, 'DECISION_BRIEF', 'Brief de decisión generado.', res.fragments as unknown as ChatFragment[]),
@@ -590,12 +505,12 @@ export class ChatSession implements OnDestroy {
     if (composerMode === 'document-summary') {
       const docIds = this.sessionDocuments().map((d) => d.id);
       if (docIds.length === 0) { onError('Subí al menos un documento antes de generar un resumen.'); return; }
-      this.http.generateDocumentSummary({ document_ids: docIds, chat_id: chatId! })
+      this.http.generateDocumentSummary({ document_ids: docIds, chat_id: chatId!, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => {
             this.sessionDocuments.set([]);
-            onSuccess(res.document_summary as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_SUMMARY', 'Resumen generado.', res.fragments as unknown as ChatFragment[]);
+            onSuccess(res.document_summary as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string }, 'DOCUMENT_SUMMARY', 'Resumen generado.', res.fragments as unknown as ChatFragment[]);
           },
           error: () => onError('No se pudo generar el resumen.'),
         });
@@ -605,18 +520,19 @@ export class ChatSession implements OnDestroy {
     if (composerMode === 'document-action') {
       const docIds = this.sessionDocuments().map((d) => d.id);
       if (docIds.length === 0) { onError('Subí al menos un documento antes de generar la acción.'); return; }
-      const actionType = this.genDocumentActionType();
+      const actionType = payload.documentActionType;
       this.http.generateDocumentAction({
         document_ids: docIds,
         instruction: message,
         action: actionType || null,
         chat_id: chatId!,
+        ...ctx,
       })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => {
             this.sessionDocuments.set([]);
-            onSuccess(res.document_action as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string }, 'DOCUMENT_ACTION', 'Acción generada.', res.fragments as unknown as ChatFragment[]);
+            onSuccess(res.document_action as unknown as { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string }, 'DOCUMENT_ACTION', 'Acción generada.', res.fragments as unknown as ChatFragment[]);
           },
           error: () => onError('No se pudo generar la acción.'),
         });
@@ -624,7 +540,7 @@ export class ChatSession implements OnDestroy {
     }
 
     // report (default)
-    this.http.generateReport({ type: this.genReportType(), mode: mode as ReportMode, message, chat_id: chatId })
+    this.http.generateReport({ type: payload.reportType, message, chat_id: chatId, ...ctx })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => onSuccess(res.report, 'REPORT', 'Informe generado.', res.fragments as unknown as ChatFragment[]),
@@ -633,7 +549,7 @@ export class ChatSession implements OnDestroy {
   }
 
   private _pushGeneratedArtifact(
-    resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+    resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string },
     type: ArtifactType,
     fragments?: readonly ChatFragment[] | null,
   ): void {
@@ -653,7 +569,6 @@ export class ChatSession implements OnDestroy {
         artifactType: type,
         artifactTitle: resource.title,
         artifactStatus: 'draft' as ArtifactStatus,
-        artifactMode: resource.mode as ArtifactMode,
         artifactLinkedId: resource.id,
         fragments: fragments ?? null,
       },
@@ -674,17 +589,6 @@ export class ChatSession implements OnDestroy {
     this.documents.deleteDocument(docId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       error: () => this.toast.show('No se pudo eliminar el documento del servidor.', 'error'),
     });
-  }
-
-  onAttachClick(fileInput: HTMLInputElement): void {
-    fileInput.click();
-  }
-
-  onFilesSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-    this.uploadDocumentFromFile(file ?? null, false);
   }
 
   onDocumentFromDrawer(file: File): void {
@@ -852,89 +756,37 @@ export class ChatSession implements OnDestroy {
     }
   }
 
-  // ── Voice recording ──────────────────────────────────────────
-  async startRecording(): Promise<void> {
-    if (this.voiceState() !== 'idle') return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
-
-      this._audioChunks = [];
-      this._mediaRecorder = new MediaRecorder(stream, { mimeType });
-      this._mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) this._audioChunks.push(e.data);
-      };
-      this._mediaRecorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        this._sendAudio(new Blob(this._audioChunks, { type: mimeType }));
-      };
-
-      this._mediaRecorder.start(200);
-      this.voiceState.set('recording');
-      this.recordingSeconds.set(0);
-      this._recordingTimer = setInterval(() => {
-        this.recordingSeconds.update((s) => s + 1);
-        if (this.recordingSeconds() >= 120) this.stopRecording();
-      }, 1000);
-    } catch {
-      this.toast.show('No se pudo acceder al micrófono.', 'error');
-    }
+  // ── Voice (recorded by the composer; routed here) ──────────────
+  /** Append the context flags to a generation FormData, omitting nulls (server default). */
+  private _appendAudioContext(fd: FormData, audio: ComposerAudio): void {
+    if (audio.retrieveContext != null) fd.append('retrieve_context', String(audio.retrieveContext));
+    if (audio.processDocuments != null) fd.append('process_documents', String(audio.processDocuments));
   }
 
-  stopRecording(): void {
-    if (this.voiceState() !== 'recording') return;
-    if (this._recordingTimer != null) {
-      clearInterval(this._recordingTimer);
-      this._recordingTimer = null;
-    }
-    this._mediaRecorder?.stop();
-    this.voiceState.set('processing');
-  }
-
-  cancelRecording(): void {
-    if (this._recordingTimer != null) {
-      clearInterval(this._recordingTimer);
-      this._recordingTimer = null;
-    }
-    if (this._mediaRecorder && this._mediaRecorder.state !== 'inactive') {
-      this._mediaRecorder.onstop = null;
-      this._mediaRecorder.stop();
-      this._mediaRecorder.stream?.getTracks().forEach((t) => t.stop());
-    }
-    this._mediaRecorder = null;
-    this._audioChunks = [];
-    this.voiceState.set('idle');
-    this.recordingSeconds.set(0);
-  }
-
-  private _sendAudio(blob: Blob): void {
+  onAudioCaptured(audio: ComposerAudio): void {
     const chatId = this.chatId;
-    if (!chatId) { this.voiceState.set('idle'); return; }
+    if (!chatId) { this.composer()?.finishVoiceProcessing(); return; }
 
-    const mode = this.composerMode();
     const formData = new FormData();
-    formData.append('audio', blob, 'recording.webm');
+    formData.append('audio', audio.blob, 'recording.webm');
 
-    const done = () => { this.voiceState.set('idle'); this.recordingSeconds.set(0); };
+    const done = () => this.composer()?.finishVoiceProcessing();
 
     const voiceSuccess = (
-      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string; mode: string },
+      resource: { id: number; title: string; source_chat_id: number | null; created_by: number; created_at: string },
       type: ArtifactType,
       toastMsg: string,
       fragments?: readonly ChatFragment[] | null,
     ) => {
       done();
-      this.genMessage.set('');
-      this.composerMode.set('chat');
+      this.composer()?.resetToChat();
       this._pushGeneratedArtifact(resource, type, fragments);
       this.toast.show(toastMsg, 'success');
     };
 
-    if (mode === 'report') {
-      formData.append('type', this.genReportType());
-      formData.append('mode', this.genMode());
+    if (audio.mode === 'report') {
+      formData.append('type', audio.reportType);
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateReport(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -945,8 +797,8 @@ export class ChatSession implements OnDestroy {
       return;
     }
 
-    if (mode === 'checklist') {
-      formData.append('mode', this.genMode());
+    if (audio.mode === 'checklist') {
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateChecklist(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -957,8 +809,8 @@ export class ChatSession implements OnDestroy {
       return;
     }
 
-    if (mode === 'quiz') {
-      formData.append('mode', this.genMode());
+    if (audio.mode === 'quiz') {
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateQuiz(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -969,8 +821,8 @@ export class ChatSession implements OnDestroy {
       return;
     }
 
-    if (mode === 'timeline') {
-      formData.append('mode', this.genMode());
+    if (audio.mode === 'timeline') {
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateTimeline(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -981,8 +833,8 @@ export class ChatSession implements OnDestroy {
       return;
     }
 
-    if (mode === 'lessons-learned') {
-      formData.append('mode', this.genMode());
+    if (audio.mode === 'lessons-learned') {
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateLessonsLearned(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -993,8 +845,8 @@ export class ChatSession implements OnDestroy {
       return;
     }
 
-    if (mode === 'decision-brief') {
-      formData.append('mode', this.genMode());
+    if (audio.mode === 'decision-brief') {
+      this._appendAudioContext(formData, audio);
       formData.append('chat_id', String(chatId));
       this.http.generateDecisionBrief(formData)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -1020,21 +872,16 @@ export class ChatSession implements OnDestroy {
             this.toast.show('Sin conexión en tiempo real. Reconectá e intentá de nuevo.', 'error');
             return;
           }
-          this.socket.sendUserMessage(text, this.aiMode());
+          this.socket.sendUserMessage(text, audio.aiMode, {
+            retrieveContext: audio.retrieveContext,
+            processDocuments: audio.processDocuments,
+          });
         },
         error: () => { done(); this.toast.show('No se pudo transcribir el audio.', 'error'); },
       });
   }
 
-  get recordingLabel(): string {
-    const s = this.recordingSeconds();
-    const m = Math.floor(s / 60).toString().padStart(2, '0');
-    const sec = (s % 60).toString().padStart(2, '0');
-    return `${m}:${sec}`;
-  }
-
   ngOnDestroy(): void {
-    this.cancelRecording();
     this.teardownSocket();
     this.clearDeltaScheduling();
     this.chatShell.clearCurrentChat();
@@ -1056,18 +903,26 @@ export class ChatSession implements OnDestroy {
       || this.sessionDocuments().some(d => d.status === 'uploaded');
   }
 
-  sendMessage(): void {
-    if (!this.newMessage.trim() || !this.chat || this.sendBlocked()) return;
+  sendChatMessage(
+    rawText: string,
+    aiMode: AuraChatAiMode,
+    retrieveContext: boolean | null = null,
+    processDocuments: boolean | null = null,
+  ): void {
+    const text = rawText.trim();
+    if (!text || !this.chat || this.sendBlocked()) return;
 
-    const text = this.newMessage.trim();
-    this.newMessage = '';
-    queueMicrotask(() => this.autosizeTextarea());
+    this.composer()?.clearText();
 
     const docIds = this.sessionDocuments().map((d) => d.id);
     if (docIds.length > 0) this.sessionDocuments.set([]);
 
     if (this.socket) {
-      this.socket.sendUserMessage(text, this.aiMode(), docIds.length > 0 ? docIds : undefined);
+      this.socket.sendUserMessage(text, aiMode, {
+        documentIds: docIds.length > 0 ? docIds : undefined,
+        retrieveContext,
+        processDocuments,
+      });
       setTimeout(() => this.scrollToBottom(), 50);
       return;
     }
@@ -1075,7 +930,13 @@ export class ChatSession implements OnDestroy {
     if (!this.chatId) return;
     this.isTyping.set(true);
     this.http
-      .sendMessageJson(this.chatId, { chat_id: this.chatId!, message: text, mode: this.aiMode() })
+      .sendMessageJson(this.chatId, {
+        chat_id: this.chatId!,
+        message: text,
+        mode: aiMode,
+        retrieve_context: retrieveContext,
+        process_documents: processDocuments,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
@@ -1123,12 +984,6 @@ export class ChatSession implements OnDestroy {
       });
   }
 
-  onNewMessageChange(value: string): void {
-    this.newMessage = value;
-    queueMicrotask(() => this.autosizeTextarea());
-    this.emitTypingStart();
-  }
-
   private emitTypingStart(): void {
     if (!this.socket) return;
     this.socket.sendTyping(true);
@@ -1137,28 +992,6 @@ export class ChatSession implements OnDestroy {
       this.socket?.sendTyping(false);
       this.typingOutTimer = null;
     }, 2000);
-  }
-
-  private autosizeTextarea(): void {
-    const el = this.messageBox()?.nativeElement;
-    if (!el) return;
-
-    const styles = getComputedStyle(el);
-    const maxHeight = parseFloat(styles.maxHeight);
-    const maxPx = Number.isFinite(maxHeight) && maxHeight > 0 ? maxHeight : 160;
-
-    el.style.height = 'auto';
-    const scrollH = el.scrollHeight;
-    const next = Math.min(scrollH, maxPx);
-    el.style.height = `${next}px`;
-    el.style.overflowY = scrollH > maxPx ? 'auto' : 'hidden';
-  }
-
-  onEnterKey(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      this.sendMessage();
-    }
   }
 
   isProcessing(msgId: number): boolean {
@@ -1396,6 +1229,7 @@ export class ChatSession implements OnDestroy {
         next: (result) => {
           const older = [...result.results].reverse();
           this.threadReplies.update((r) => [...older, ...r]);
+          this._resolveReplyUsers(older);
           this.threadHasMore.set(result.next != null);
           this.threadLoading.set(false);
           setTimeout(() => {
@@ -1419,6 +1253,7 @@ export class ChatSession implements OnDestroy {
       .subscribe({
         next: (result) => {
           this.threadReplies.set([...result.results].reverse());
+          this._resolveReplyUsers(result.results);
           this.threadHasMore.set(result.next != null);
           this.threadLoading.set(false);
           // Wait for Angular CD to render replies, then scroll to bottom before
@@ -1436,9 +1271,30 @@ export class ChatSession implements OnDestroy {
       });
   }
 
-  threadReplyAvatarColor(userId: number): string {
-    const palette = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'];
-    return palette[userId % palette.length];
+  /** Handle for a thread reply author (the template prepends "@"), resolving the id via the user cache. */
+  threadAuthorName(userId: number): string {
+    const sessionMemberId = this.chatShell.sessionViewerMemberId();
+    if (sessionMemberId != null && userId === sessionMemberId) {
+      const n = this.chatShell.sessionViewerDisplayName();
+      return n?.trim() ? n.trim() : 'vos';
+    }
+    const u = this.messageUserMap().get(userId);
+    if (u) return u.username?.trim() || u.name?.trim() || `usuario-${userId}`;
+    return `usuario-${userId}`;
+  }
+
+  private _resolveReplyUsers(replies: readonly ThreadReplyDto[]): void {
+    const ids = [...new Set(replies.map((r) => r.created_by).filter((id): id is number => id != null))];
+    if (ids.length === 0) return;
+    this.userCache.resolve(ids).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (userMap) => {
+        this.messageUserMap.update((prev) => {
+          const next = new Map(prev);
+          userMap.forEach((u, id) => next.set(id, { username: u.username, name: u.name }));
+          return next;
+        });
+      },
+    });
   }
 
   startEditReply(reply: ThreadReplyDto): void {
@@ -1508,6 +1364,7 @@ export class ChatSession implements OnDestroy {
       .subscribe({
         next: (reply) => {
           this.threadReplies.update((r) => [...r, reply]);
+          this._resolveReplyUsers([reply]);
           this.messages.update((msgs) =>
             msgs.map((m) =>
               m.id === messageId ? { ...m, thread_reply_count: m.thread_reply_count + 1 } : m
@@ -1718,15 +1575,6 @@ export class ChatSession implements OnDestroy {
     return labels[type] ?? type;
   }
 
-  artifactStatusLabel(status: string | null | undefined): string {
-    switch (status) {
-      case 'draft':    return 'Borrador';
-      case 'final':    return 'Final';
-      case 'archived': return 'Archivado';
-      default:         return status ?? '';
-    }
-  }
-
   artifactTypeIcon(type: ArtifactType): string {
     const icons: Record<ArtifactType, string> = {
       MESSAGE: 'pi-comment',
@@ -1799,12 +1647,43 @@ export class ChatSession implements OnDestroy {
     }
   }
 
-  hasFragments(id: number): boolean {
-    return (this.messageFragments().get(id)?.length ?? 0) > 0;
+  /** Unique source documents per message id (fragments collapsed by document). */
+  readonly sourceDocsByMessage = computed(() => {
+    const out = new Map<number, SourceDocument[]>();
+    this.messageFragments().forEach((frags, msgId) => {
+      out.set(msgId, this._dedupeSourceDocuments(frags));
+    });
+    return out;
+  });
+
+  private _dedupeSourceDocuments(frags: readonly ChatFragment[]): SourceDocument[] {
+    const byDoc = new Map<number, { id: number; name: string; type: string | null; category: string | null; matched: number }>();
+    for (const f of frags) {
+      const doc = f.document;
+      const docId = doc?.id ?? f.document_id;
+      if (docId == null) continue;
+      const existing = byDoc.get(docId);
+      if (existing) {
+        existing.matched += 1;
+      } else {
+        byDoc.set(docId, {
+          id: docId,
+          name: doc?.name ?? `Documento ${docId}`,
+          type: doc?.type ?? null,
+          category: doc?.category ?? null,
+          matched: 1,
+        });
+      }
+    }
+    return [...byDoc.values()];
   }
 
-  getFragments(id: number): readonly ChatFragment[] {
-    return this.messageFragments().get(id) ?? [];
+  hasFragments(id: number): boolean {
+    return (this.sourceDocsByMessage().get(id)?.length ?? 0) > 0;
+  }
+
+  getSourceDocuments(id: number): readonly SourceDocument[] {
+    return this.sourceDocsByMessage().get(id) ?? [];
   }
 
   isFragmentsExpanded(id: number): boolean {
@@ -1817,6 +1696,38 @@ export class ChatSession implements OnDestroy {
       if (n.has(id)) n.delete(id); else n.add(id);
       return n;
     });
+  }
+
+  readonly downloadingSourceId = signal<number | null>(null);
+
+  sourceDocIcon(doc: SourceDocument): string {
+    const t = (doc.type ?? '').toLowerCase();
+    if (t.includes('pdf')) return 'pi-file-pdf';
+    if (t.includes('word') || t.includes('doc')) return 'pi-file-word';
+    if (t.includes('sheet') || t.includes('excel') || t.includes('csv') || t.includes('xls')) return 'pi-file-excel';
+    return 'pi-file';
+  }
+
+  downloadSourceDocument(doc: SourceDocument): void {
+    if (this.downloadingSourceId() !== null) return;
+    this.downloadingSourceId.set(doc.id);
+    this.documents.downloadDocument(doc.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          this.downloadingSourceId.set(null);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = doc.name;
+          a.click();
+          URL.revokeObjectURL(url);
+        },
+        error: () => {
+          this.downloadingSourceId.set(null);
+          this.toast.show('No se pudo descargar el documento.', 'error');
+        },
+      });
   }
 
   private _resolveMessageUsers(msgs: readonly ChatMessage[]): void {
@@ -1862,13 +1773,28 @@ export class ChatSession implements OnDestroy {
       const { pendingAiMode: _m, ...rest } = navState;
       history.replaceState(rest, '');
     }
-    return this.aiModes.some((m) => m.value === raw) ? (raw as AuraChatAiMode) : undefined;
+    const validModes: readonly AuraChatAiMode[] = ['document_question', 'general_chat', 'rag_agent'];
+    return validModes.some((m) => m === raw) ? (raw as AuraChatAiMode) : undefined;
+  }
+
+  private consumePendingChatFlagsFromHistory(): { retrieveContext: boolean | null; processDocuments: boolean | null } {
+    const navState = history.state as { pendingRetrieveContext?: unknown; pendingProcessDocuments?: unknown } | null;
+    const flags = {
+      retrieveContext: navState?.pendingRetrieveContext === true ? true : null,
+      processDocuments: navState?.pendingProcessDocuments === true ? true : null,
+    };
+    if (navState && ('pendingRetrieveContext' in navState || 'pendingProcessDocuments' in navState)) {
+      const { pendingRetrieveContext: _r, pendingProcessDocuments: _p, ...rest } = navState;
+      history.replaceState(rest, '');
+    }
+    return flags;
   }
 
   private consumePendingGenerationFromHistory(): {
     mode: 'report' | 'checklist' | 'quiz' | 'timeline' | 'lessons-learned' | 'decision-brief' | 'document-summary' | 'document-action';
     type?: ReportType;
-    genMode: 'direct' | 'rag';
+    retrieveContext: boolean | null;
+    processDocuments: boolean | null;
     message: string;
   } | undefined {
     const navState = history.state as Record<string, unknown> | null;
@@ -1881,10 +1807,12 @@ export class ChatSession implements OnDestroy {
     const g = raw as Record<string, unknown>;
     const validModes = ['report', 'checklist', 'quiz', 'timeline', 'lessons-learned', 'decision-brief', 'document-summary', 'document-action'] as const;
     if (!validModes.includes(g['mode'] as typeof validModes[number])) return undefined;
+    const triState = (v: unknown): boolean | null => (v === true ? true : v === false ? false : null);
     return {
       mode: g['mode'] as typeof validModes[number],
       type: g['type'] as ReportType | undefined,
-      genMode: (g['genMode'] === 'rag' ? 'rag' : 'direct'),
+      retrieveContext: triState(g['retrieveContext']),
+      processDocuments: triState(g['processDocuments']),
       message: String(g['message'] ?? ''),
     };
   }
@@ -1922,7 +1850,11 @@ export class ChatSession implements OnDestroy {
     }
 
     if (pending?.trim()) {
-      conn.sendUserMessage(pending.trim(), this.aiMode());
+      conn.sendUserMessage(pending.trim(), this.aiMode(), {
+        retrieveContext: this._pendingChatOptions.retrieveContext,
+        processDocuments: this._pendingChatOptions.processDocuments,
+      });
+      this._pendingChatOptions = { retrieveContext: null, processDocuments: null };
     }
   }
 

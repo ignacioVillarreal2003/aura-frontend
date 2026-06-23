@@ -1,0 +1,90 @@
+<div class="ce-root">
+  @if (loading()) {
+    <div class="ce-loading">
+      <i class="pi pi-spin pi-spinner ce-loading__icon" aria-hidden="true"></i>
+      <span class="ce-loading__text">Cargando checklist…</span>
+    </div>
+  } @else if (checklist(); as c) {
+
+    <!-- ── Top bar ─────────────────────────────────────────── -->
+    <app-artifact-header
+      [title]="c.title"
+      [description]="c.description"
+      [exporting]="exportingAs()"
+      (back)="goBack()"
+      (exportRequested)="export($event)"
+    />
+
+    <!-- ── Meta strip (estilo timeline) ───────────────────────── -->
+    <div class="ce-meta">
+      <span class="ce-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ c.created_at | date: 'mediumDate' }}
+      </span>
+      <span class="ce-meta__chip ce-meta__chip--progress">
+        <i class="pi pi-check-square" aria-hidden="true"></i>
+        {{ checkedCount() }}/{{ totalCount() }} verificados
+      </span>
+    </div>
+
+    <!-- ── Progress bar ─────────────────────────────────────── -->
+    <div class="ce-progress-bar" role="progressbar" [attr.aria-valuenow]="progressPct()" aria-valuemin="0" aria-valuemax="100">
+      <div class="ce-progress-bar__fill" [style.width.%]="progressPct()"></div>
+    </div>
+
+    <!-- ── Body ──────────────────────────────────────────────── -->
+    <div class="ce-body">
+
+      @if (sortedSections().length === 0) {
+        <div class="ce-empty">
+          <i class="pi pi-list-check" aria-hidden="true"></i>
+          <p>Sin secciones.</p>
+        </div>
+      }
+
+      <div class="ce-sections">
+        @for (group of sortedSections(); track group.id) {
+          <section class="ce-section">
+            <header class="ce-section__head">
+              <span class="ce-section__name">{{ group.title }}</span>
+              <span class="ce-section__count">{{ group.items.length }}</span>
+            </header>
+
+            <div class="ce-items">
+              @if (group.items.length === 0) {
+                <p class="ce-items__empty">Sin ítems.</p>
+              }
+              @for (item of group.items; track item.id) {
+                <button
+                  type="button"
+                  class="ce-item"
+                  [class.ce-item--done]="item.is_checked"
+                  [disabled]="isToggling(item.id)"
+                  (click)="toggleItem(item)"
+                  [attr.aria-pressed]="item.is_checked"
+                >
+                  <i
+                    [ngClass]="['pi', item.is_checked ? 'pi-check-circle' : 'pi-circle', 'ce-item__check']"
+                    aria-hidden="true"
+                  ></i>
+                  <span class="ce-item__text">{{ item.text }}</span>
+                </button>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    </div>
+
+    <!-- ── Consulta original (al fondo) ──────────────────────── -->
+    @if (c.query) {
+      <div class="ce-query">
+        <div class="ce-query__title">
+          <i class="pi pi-search ce-query__icon" aria-hidden="true"></i>
+          <span>Consulta original</span>
+        </div>
+        <p class="ce-query__text">{{ c.query }}</p>
+      </div>
+    }
+  }
+</div>

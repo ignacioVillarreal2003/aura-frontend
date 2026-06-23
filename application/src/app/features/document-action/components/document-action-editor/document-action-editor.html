@@ -1,0 +1,48 @@
+<div class="da-root">
+  @if (loading()) {
+    <div class="da-loading">
+      <i class="pi pi-spin pi-spinner da-loading__spinner" aria-hidden="true"></i>
+      <p class="da-loading__text">Cargando acción…</p>
+    </div>
+  } @else if (action(); as a) {
+    <app-artifact-header
+      [title]="a.title"
+      [description]="a.description"
+      [exporting]="exportingAs()"
+      (back)="goBack()"
+      (exportRequested)="export($event)"
+    />
+
+    <div class="da-meta">
+      <span class="da-meta__chip">
+        <i class="pi pi-cog" aria-hidden="true"></i>
+        {{ actionLabel(a.action) }}
+      </span>
+      <span class="da-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ a.created_at | date:'mediumDate' }}
+      </span>
+    </div>
+
+    <div class="da-body">
+      @if (a.result.trim()) {
+        <div class="da-prose" [innerHTML]="a.result | markdown"></div>
+      } @else {
+        <div class="da-empty">
+          <i class="pi pi-file-edit da-empty__icon" aria-hidden="true"></i>
+          <p>Sin resultado.</p>
+        </div>
+      }
+    </div>
+
+    @if (a.instruction) {
+      <div class="da-query">
+        <div class="da-query__title">
+          <i class="pi pi-send da-query__icon" aria-hidden="true"></i>
+          <span>Instrucción original</span>
+        </div>
+        <p class="da-query__text">{{ a.instruction }}</p>
+      </div>
+    }
+  }
+</div>

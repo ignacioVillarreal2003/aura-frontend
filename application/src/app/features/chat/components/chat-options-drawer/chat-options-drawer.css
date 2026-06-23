@@ -66,9 +66,36 @@
 .drawer-panel__header-main {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
   min-width: 0;
   flex: 1;
+}
+
+.drawer-close-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+.drawer-close-btn:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.drawer-close-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .drawer-back-btn {
@@ -406,6 +433,31 @@
   gap: 8px;
 }
 
+.drawer-doc-card {
+  gap: 11px;
+  padding: 11px 12px;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.drawer-doc-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(99, 102, 241, 0.28);
+}
+
+.drawer-doc-card__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.24);
+  color: #a5b4fc;
+  font-size: 0.95rem;
+}
+
 .drawer-member-card {
   flex-direction: column;
   align-items: stretch;
@@ -569,45 +621,60 @@
 .drawer-doc-card__actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .drawer-doc-action {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: var(--overlay-subtle, rgba(255, 255, 255, 0.05));
   color: var(--text-secondary, #9a9aa3);
   cursor: pointer;
-  font-size: 12px;
-  transition: background 0.12s ease, color 0.12s ease;
+  font-size: 13px;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
-.drawer-doc-action:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary, #e8e8ea);
+.drawer-doc-action--download {
+  color: #f59e0b;
+}
+
+.drawer-doc-action--download:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
 }
 
 .drawer-doc-action--danger:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.4);
   color: #f87171;
 }
 
 .drawer-doc-action:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.drawer-doc-card__name,
 .drawer-member-card__title {
   font-size: 14px;
   font-weight: 500;
   word-break: break-word;
+}
+
+.drawer-doc-card__name {
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #e8e8ea);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .drawer-doc-card__meta,
@@ -616,7 +683,37 @@
   color: var(--text-secondary, #9a9aa3);
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 7px;
+}
+
+.drawer-doc-card__date {
+  font-size: 0.72rem;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.drawer-doc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.drawer-doc-chip .pi {
+  font-size: 0.62rem;
+}
+
+.drawer-doc-chip--processing {
+  background: rgba(99, 102, 241, 0.14);
+  color: #a5b4fc;
+}
+
+.drawer-doc-chip--error {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
 }
 
 
@@ -748,14 +845,14 @@
   gap: 12px;
   padding: 14px 16px;
   border-radius: 12px;
-  background: rgba(99, 102, 241, 0.05);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(251, 191, 36, 0.04);
+  border: 1px solid rgba(251, 191, 36, 0.18);
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .drawer-pinned-card:hover {
-  background: rgba(99, 102, 241, 0.09);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
 .drawer-pinned-card__icon {
@@ -812,6 +909,39 @@
   margin-top: 2px;
   font-size: 13px;
   color: #fbbf24;
+}
+
+.drawer-msg-download {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-top: -2px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--overlay-subtle, rgba(255, 255, 255, 0.05));
+  color: #f59e0b;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.drawer-msg-download:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.drawer-msg-download:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.drawer-msg-download:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* ── Pin toggle ────────────────────────────────────────────── */
@@ -877,7 +1007,22 @@
 .drawer-rename-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.drawer-rename-form__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.drawer-btn--grow {
+  flex: 1;
+  justify-content: center;
 }
 
 .drawer-rename-form__field {

@@ -43,17 +43,7 @@
       <button
         type="button"
         class="sidebar-link"
-        [class.is-active]="activeId() === 'assistants'"
-        [routerLink]="['/main-container', 'assistants']">
-        <i class="pi pi-android" aria-hidden="true"></i>
-        <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Asistentes</span>
-      </button>
-
-      <button
-        type="button"
-        class="sidebar-link"
-        [class.is-active]="activeId() === 'document-search'"
-        [routerLink]="['/main-container', 'document-search']">
+        routerLink="/documents">
         <i class="pi pi-file" aria-hidden="true"></i>
         <span class="sidebar-link__text sidebar-link__text--collapsible" [attr.aria-hidden]="collapsed() ? true : null">Documentos</span>
       </button>
@@ -67,7 +57,7 @@
             <div class="sidebar-chats-separator" role="presentation"></div>
             <div class="sidebar-chats-inner">
               <p class="chats-section-label">Recientes</p>
-              <div class="chats-container">
+              <div class="chats-container" (scroll)="onChatsScroll($event)">
                 <div class="sidebar-nav-links sidebar-nav-links--recents" role="list">
                   @for (c of sortedChats(); track c.id; let i = $index) {
                     <div
@@ -85,6 +75,9 @@
                         @if (c.is_locked) {
                           <i class="pi pi-lock sidebar-chat-badge" title="Bloqueado" aria-label="Bloqueado" aria-hidden="true"></i>
                         }
+                        @if (c.unread_count > 0) {
+                          <span class="sidebar-chat-unread" [title]="c.unread_count + ' sin leer'" aria-label="Mensajes sin leer"></span>
+                        }
                       </button>
                       <button
                         type="button"
@@ -93,6 +86,11 @@
                         (click)="onChatOptionsClick($event, c.id)">
                         <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
                       </button>
+                    </div>
+                  }
+                  @if (loadingMore()) {
+                    <div class="sidebar-chats-loading" role="status" aria-live="polite">
+                      <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
                     </div>
                   }
                 </div>

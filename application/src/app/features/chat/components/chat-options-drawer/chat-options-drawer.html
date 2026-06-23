@@ -23,12 +23,9 @@
         }
         <h2 id="chat-drawer-title" class="drawer-panel__title">{{ headerTitle() }}</h2>
       </div>
-      <app-btn-icon
-        [icon]="'close'"
-        [variant]="'transparent'"
-        [rounded]="'radius-circle'"
-        (click)="close()"
-      />
+      <button type="button" class="drawer-close-btn" (click)="close()" aria-label="Cerrar">
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
     </header>
 
     <div class="drawer-panel__body">
@@ -82,7 +79,7 @@
                 <span class="drawer-section-tile__icon drawer-section-tile__icon--prompts" aria-hidden="true"><i class="pi pi-sliders-h"></i></span>
                 <span class="drawer-section-tile__text">
                   <span class="drawer-section-tile__title">Prompts</span>
-                  <span class="drawer-section-tile__hint">System prompt y estilo de respuesta</span>
+                  <span class="drawer-section-tile__hint">Instrucciones y estilo de respuesta</span>
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
@@ -126,34 +123,43 @@
               <ul class="drawer-doc-list" aria-label="Documentos">
                 @for (doc of mergedDocuments(); track doc.id; let i = $index) {
                   <li class="drawer-doc-card" [style.--i]="i">
+                    <span class="drawer-doc-card__icon" aria-hidden="true">
+                      <i class="pi pi-file"></i>
+                    </span>
                     <div class="drawer-doc-card__main">
-                      <span class="drawer-doc-card__name">{{ doc.name }}</span>
+                      <span class="drawer-doc-card__name" [title]="doc.name">{{ doc.name }}</span>
                       <span class="drawer-doc-card__meta">
-                        <span class="drawer-doc-card__status">{{ docStatusLabel(doc.status) }}</span>
-                        <span class="drawer-doc-card__date">{{ doc.created_at | date: 'short' }}</span>
+                        @if (doc.status === 'uploaded') {
+                          <span class="drawer-doc-chip drawer-doc-chip--processing">
+                            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando
+                          </span>
+                        } @else if (doc.status === 'failed') {
+                          <span class="drawer-doc-chip drawer-doc-chip--error">
+                            <i class="pi pi-exclamation-circle" aria-hidden="true"></i> Error
+                          </span>
+                        }
+                        <span class="drawer-doc-card__date">{{ doc.created_at | date: 'dd/MM/yyyy' }}</span>
                       </span>
                     </div>
                     <div class="drawer-doc-card__actions">
-                      @if (canDownloadDocument()) {
-                        <button
-                          type="button"
-                          class="drawer-doc-action"
-                          [disabled]="downloadingDocId() === doc.id || deletingDocId() === doc.id"
-                          title="Descargar"
-                          (click)="downloadDocument(doc)">
-                          <i [ngClass]="['pi', downloadingDocId() === doc.id ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
-                        </button>
-                      }
-                      @if (canDeleteDocument()) {
-                        <button
-                          type="button"
-                          class="drawer-doc-action drawer-doc-action--danger"
-                          [disabled]="deletingDocId() === doc.id || downloadingDocId() === doc.id"
-                          title="Eliminar"
-                          (click)="deleteDocument(doc)">
-                          <i [ngClass]="['pi', deletingDocId() === doc.id ? 'pi-spin pi-spinner' : 'pi-trash']" aria-hidden="true"></i>
-                        </button>
-                      }
+                      <button
+                        type="button"
+                        class="drawer-doc-action drawer-doc-action--download"
+                        [disabled]="downloadingDocId() === doc.id || deletingDocId() === doc.id"
+                        title="Descargar"
+                        aria-label="Descargar documento"
+                        (click)="downloadDocument(doc)">
+                        <i [ngClass]="['pi', downloadingDocId() === doc.id ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="drawer-doc-action drawer-doc-action--danger"
+                        [disabled]="deletingDocId() === doc.id || downloadingDocId() === doc.id"
+                        title="Eliminar"
+                        aria-label="Eliminar documento"
+                        (click)="deleteDocument(doc)">
+                        <i [ngClass]="['pi', deletingDocId() === doc.id ? 'pi-spin pi-spinner' : 'pi-trash']" aria-hidden="true"></i>
+                      </button>
                     </div>
                   </li>
                 }
@@ -337,8 +343,6 @@
           }
           @case ('tags') {
             <div class="drawer-tags-form">
-              <p class="drawer-tags-hint">Organizá este chat con etiquetas para encontrarlo y filtrarlo fácilmente.</p>
-
               <div class="drawer-tags-chips">
                 @for (tag of tagsDraft(); track tag) {
                   <span class="drawer-chat-tag">
@@ -376,21 +380,23 @@
                 </button>
               </div>
 
-              <button
-                type="button"
-                class="drawer-btn drawer-btn--primary drawer-btn--full"
-                [disabled]="tagsSubmitting()"
-                (click)="submitTags()">
-                @if (tagsSubmitting()) {
-                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-                } @else {
-                  <i class="pi pi-check" aria-hidden="true"></i>
-                }
-                Guardar etiquetas
-              </button>
-              <button type="button" class="drawer-rename-form__cancel" (click)="openSub('chat')">
-                Cancelar
-              </button>
+              <div class="drawer-rename-form__actions">
+                <button type="button" class="drawer-btn drawer-btn--secondary drawer-btn--grow" (click)="openSub('chat')">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  class="drawer-btn drawer-btn--primary drawer-btn--grow"
+                  [disabled]="tagsSubmitting()"
+                  (click)="submitTags()">
+                  @if (tagsSubmitting()) {
+                    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  } @else {
+                    <i class="pi pi-check" aria-hidden="true"></i>
+                  }
+                  Guardar
+                </button>
+              </div>
             </div>
           }
           @case ('rename') {
@@ -409,20 +415,22 @@
                   autofocus
                 />
               </div>
-              <button
-                type="submit"
-                class="drawer-btn drawer-btn--primary drawer-btn--full"
-                [disabled]="renameSubmitting() || !renameValue().trim() || renameValue().trim() === contextChatTitle().trim()">
-                @if (renameSubmitting()) {
-                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-                } @else {
-                  <i class="pi pi-check" aria-hidden="true"></i>
-                }
-                Guardar
-              </button>
-              <button type="button" class="drawer-rename-form__cancel" (click)="openSub('chat')">
-                Cancelar
-              </button>
+              <div class="drawer-rename-form__actions">
+                <button type="button" class="drawer-btn drawer-btn--secondary drawer-btn--grow" (click)="openSub('chat')">
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  class="drawer-btn drawer-btn--primary drawer-btn--grow"
+                  [disabled]="renameSubmitting() || !renameValue().trim() || renameValue().trim() === contextChatTitle().trim()">
+                  @if (renameSubmitting()) {
+                    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  } @else {
+                    <i class="pi pi-check" aria-hidden="true"></i>
+                  }
+                  Guardar
+                </button>
+              </div>
             </form>
           }
           @case ('share') {
@@ -504,6 +512,15 @@
                       <p class="drawer-pinned-card__text">{{ pm.artifact.message?.message ?? pm.artifact.title }}</p>
                       <span class="drawer-pinned-card__date">{{ pm.created_at | date: 'short' }}</span>
                     </div>
+                    <button
+                      type="button"
+                      class="drawer-msg-download"
+                      [disabled]="downloadingArtifactId() === pm.artifact.id"
+                      title="Descargar"
+                      aria-label="Descargar mensaje"
+                      (click)="downloadArtifact(pm.artifact)">
+                      <i [ngClass]="['pi', downloadingArtifactId() === pm.artifact.id ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
+                    </button>
                   </li>
                 }
               </ul>
@@ -526,6 +543,15 @@
                       <p class="drawer-pinned-card__text">{{ msg.message?.message ?? msg.title }}</p>
                       <span class="drawer-pinned-card__date">{{ msg.created_at | date: 'short' }}</span>
                     </div>
+                    <button
+                      type="button"
+                      class="drawer-msg-download"
+                      [disabled]="downloadingArtifactId() === msg.id"
+                      title="Descargar"
+                      aria-label="Descargar mensaje"
+                      (click)="downloadArtifact(msg)">
+                      <i [ngClass]="['pi', downloadingArtifactId() === msg.id ? 'pi-spin pi-spinner' : 'pi-download']" aria-hidden="true"></i>
+                    </button>
                   </li>
                 }
               </ul>
@@ -638,7 +664,7 @@
                         <i class="pi pi-calendar" aria-hidden="true"></i>
                         {{ r.created_at | date: 'shortDate' }}
                       </span>
-                      <span class="drawer-report-card__meta">{{ r.mode === 'rag' ? 'Con documentos' : 'Directo' }}</span>
+                      <span class="drawer-report-card__meta">{{ (r.retrieve_context || r.process_documents) ? 'Con documentos' : 'Directo' }}</span>
                       <div class="drawer-report-card__actions">
                         <button type="button" class="drawer-icon-btn" title="Ver / Editar" (click)="openReport(r.id)">
                           <i class="pi pi-external-link" aria-hidden="true"></i>
@@ -722,7 +748,7 @@
                         <i class="pi pi-calendar" aria-hidden="true"></i>
                         {{ c.created_at | date: 'shortDate' }}
                       </span>
-                      <span class="drawer-report-card__meta">{{ c.mode === 'rag' ? 'Con documentos' : 'Directo' }}</span>
+                      <span class="drawer-report-card__meta">{{ (c.retrieve_context || c.process_documents) ? 'Con documentos' : 'Directo' }}</span>
                       <span class="drawer-checklist-progress">
                         <span
                           class="drawer-checklist-progress__bar"
@@ -794,8 +820,7 @@
             <form class="drawer-prompts-form" (submit)="$event.preventDefault(); submitPrompts()">
               <div class="drawer-prompts-form__field">
                 <label class="drawer-prompts-form__label" for="system-prompt-input">
-                  System prompt
-                  <span class="drawer-prompts-form__hint">Instrucciones base que recibe el modelo en cada mensaje</span>
+                  Instrucciones del asistente
                 </label>
                 <textarea
                   id="system-prompt-input"
@@ -810,7 +835,6 @@
               <div class="drawer-prompts-form__field">
                 <label class="drawer-prompts-form__label" for="response-style-input">
                   Estilo de respuesta
-                  <span class="drawer-prompts-form__hint">Cómo debe formatear y redactar las respuestas</span>
                 </label>
                 <textarea
                   id="response-style-input"
@@ -821,20 +845,22 @@
                   rows="5"
                 ></textarea>
               </div>
-              <button
-                type="submit"
-                class="drawer-btn drawer-btn--primary drawer-btn--full"
-                [disabled]="promptSubmitting()">
-                @if (promptSubmitting()) {
-                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-                } @else {
-                  <i class="pi pi-check" aria-hidden="true"></i>
-                }
-                Guardar
-              </button>
-              <button type="button" class="drawer-rename-form__cancel" (click)="goRoot()">
-                Cancelar
-              </button>
+              <div class="drawer-rename-form__actions">
+                <button type="button" class="drawer-btn drawer-btn--secondary drawer-btn--grow" (click)="goRoot()">
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  class="drawer-btn drawer-btn--primary drawer-btn--grow"
+                  [disabled]="promptSubmitting()">
+                  @if (promptSubmitting()) {
+                    <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                  } @else {
+                    <i class="pi pi-check" aria-hidden="true"></i>
+                  }
+                  Guardar
+                </button>
+              </div>
             </form>
           }
         }

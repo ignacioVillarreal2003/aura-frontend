@@ -63,20 +63,36 @@ export const DOCUMENT_SEARCH_MAX_RESULTS = 50 as const;
 
 export const DOCUMENT_SEARCH_DEFAULT_RESULTS = 10 as const;
 
+export const DOCUMENT_SEARCH_DEFAULT_PAGE_SIZE = 10 as const;
+
+export const DOCUMENT_SEARCH_MAX_PAGE_SIZE = 50 as const;
+
+/** Ranking strategy for the content search. */
+export type DocumentSearchMode = 'vector' | 'bm25';
+
 export interface DocumentSearchRequestDto {
   readonly query: string;
-  readonly max_documents?: number;
+  readonly mode?: DocumentSearchMode;
+  readonly page?: number;
+  readonly page_size?: number;
 }
 
 export interface DocumentSearchResultDto {
   readonly document: DocumentQueryChatDocumentDto;
+  /** Normalized relevance in [0, 1] for display (cosine for vector, mapped for bm25). */
   readonly similarity: number;
+  /** Raw mode-native score (cosine for vector, BM25 score for bm25). */
+  readonly score: number;
   readonly matched_fragments: number;
   readonly best_fragment_snippet: string | null;
 }
 
 export interface DocumentSearchResponseDto {
   readonly results: readonly DocumentSearchResultDto[];
+  readonly mode: DocumentSearchMode;
+  readonly page: number;
+  readonly page_size: number;
+  readonly has_more: boolean;
 }
 
 export interface DocumentProcessingValidationErrorItem {
