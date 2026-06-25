@@ -9,4 +9,5 @@ export const environment = {
   toolsApiUrl: '',
   notificationApiUrl: '',
   llmApiUrl: '',
+  adminUrl: '',
 };

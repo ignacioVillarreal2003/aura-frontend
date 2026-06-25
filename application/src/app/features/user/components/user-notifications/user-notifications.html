@@ -205,50 +205,6 @@
             </div>
           }
         </section>
-
-        <!-- Event type catalogue (informative) -->
-        @if (eventCatalogue().length > 0) {
-          <section class="pref-group" aria-labelledby="event-prefs-title">
-            <h2 id="event-prefs-title" class="pref-group-title">Tipos de notificación</h2>
-            <p class="pref-group-subtitle">
-              Estos son los eventos que pueden generar notificaciones y sus canales de entrega.
-              Los eventos marcados con candado se entregan siempre, incluso con las notificaciones silenciadas.
-            </p>
-
-            <div class="event-prefs-list">
-              @for (entry of eventCatalogue(); track entry.event_type) {
-                <div class="event-pref-item">
-                  <div class="event-pref-info">
-                    <div class="event-pref-name-row">
-                      <span class="event-pref-name">{{ entry.event_type }}</span>
-                      <span class="badge" [attr.data-type]="entry.type">{{ entry.type }}</span>
-                      <span class="badge" [attr.data-severity]="entry.severity">{{ entry.severity }}</span>
-                      @if (!entry.is_silenceable) {
-                        <span class="badge locked" title="Se entrega siempre, no se puede silenciar">
-                          <i class="pi pi-lock"></i>
-                        </span>
-                      }
-                    </div>
-                    <p class="event-pref-desc">{{ entry.description }}</p>
-                  </div>
-
-                  <div class="event-pref-channels">
-                    @if (hasChannel(entry, 'inapp')) {
-                      <span class="channel-chip" title="Notificación en la app">
-                        <i class="pi pi-bell"></i> App
-                      </span>
-                    }
-                    @if (hasChannel(entry, 'email')) {
-                      <span class="channel-chip" title="Notificación por email">
-                        <i class="pi pi-envelope"></i> Email
-                      </span>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          </section>
-        }
       }
     </div>
   }

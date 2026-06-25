@@ -6,7 +6,6 @@ import { NotificationSseService } from '@core/services/notification/notification
 import { NotificationState } from '@core/state/notification.state';
 import { ToastService } from '@core/components/toast-service';
 import type {
-  EventTypeCatalogueEntryDto,
   NotificationDto,
   NotificationPreferenceDto,
   NotificationStatus,
@@ -47,7 +46,6 @@ export class UserNotifications implements OnInit, OnDestroy {
 
   // ── Preferences state ──────────────────────────────────────────────────────
   readonly preferences = signal<NotificationPreferenceDto | null>(null);
-  readonly eventCatalogue = signal<EventTypeCatalogueEntryDto[]>([]);
   readonly loadingPrefs = signal(false);
   readonly muteInput = signal('');
   readonly savingMute = signal(false);
@@ -169,17 +167,11 @@ export class UserNotifications implements OnInit, OnDestroy {
         if (prefs.mute_until) {
           this.muteInput.set(this.toDatetimeLocalValue(prefs.mute_until));
         }
-      },
-      error: () => this.toast.show('No se pudieron cargar las preferencias.', 'error'),
-    });
-    this.http.getEventTypeCatalogue().subscribe({
-      next: list => {
-        this.eventCatalogue.set(list);
         this.loadingPrefs.set(false);
       },
       error: () => {
-        this.toast.show('No se pudo cargar el catálogo de eventos.', 'error');
         this.loadingPrefs.set(false);
+        this.toast.show('No se pudieron cargar las preferencias.', 'error');
       },
     });
   }
@@ -299,10 +291,6 @@ export class UserNotifications implements OnInit, OnDestroy {
 
   formatMuteUntil(iso: string): string {
     return new Date(iso).toLocaleString('es', { dateStyle: 'medium', timeStyle: 'short' });
-  }
-
-  hasChannel(entry: EventTypeCatalogueEntryDto, channel: 'inapp' | 'email'): boolean {
-    return entry.default_channels.includes(channel);
   }
 
   private replaceNotification(updated: NotificationDto): void {
