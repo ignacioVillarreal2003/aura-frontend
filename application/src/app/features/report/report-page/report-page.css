@@ -1,0 +1,101 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--surface-page);
+  color: var(--text-primary, #fafaf9);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+:host::-webkit-scrollbar { width: 8px; }
+:host::-webkit-scrollbar-track { background: var(--overlay-subtle); }
+:host::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+:host::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+.rp-root {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-height: 100%;
+}
+
+/* Loading */
+.rp-loading {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex: 1; gap: 14px;
+  color: var(--text-secondary);
+}
+.rp-loading__icon { font-size: 28px; color: var(--accent-color, #6366f1); }
+.rp-loading__text { font-size: 14px; }
+
+/* Meta — estilo timeline (chips pill) */
+.rp-meta {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px 28px;
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+.rp-meta__chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--overlay-subtle);
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: 12.5px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.rp-meta__chip .pi { font-size: 12px; color: var(--accent-color, #6366f1); }
+.rp-meta__chip--type {
+  border-color: color-mix(in srgb, var(--accent-color, #6366f1) 35%, transparent);
+  color: var(--accent-color, #6366f1);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Body: columna centrada y aireada (sin cards) */
+.rp-body {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 40px clamp(28px, 5vw, 72px) 8px;
+}
+
+/* Consulta original (al fondo) — igual que los demás */
+.rp-query {
+  width: 100%;
+  margin-top: 28px;
+  padding: 28px;
+  background: var(--surface-page);
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.rp-query__title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 600;
+  color: var(--text-secondary);
+}
+.rp-query__icon { font-size: 13px; color: var(--accent-color, #6366f1); }
+.rp-query__text {
+  width: 100%;
+  margin: 22px 0 0;
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--overlay-subtle);
+  font-size: 14.5px; line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+
+button:focus-visible { outline: none; box-shadow: var(--focus-ring); }

@@ -1,0 +1,194 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.llc {
+  --llc-ease: cubic-bezier(0.42, 0, 0.58, 1);
+  /* Color de acento de la app (el mismo que usa timeline y el resto) */
+  --llc-violet: var(--accent-color, #6366f1);
+  --llc-violet-strong: var(--accent-color, #6366f1);
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: clamp(24px, 5vh, 56px) clamp(72px, 10vw, 140px);
+  box-sizing: border-box;
+}
+
+/* ── Escenario / card central ─────────────────────────────────── */
+.llc-stage {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.llc-index {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--llc-violet) 65%, transparent);
+  margin-bottom: clamp(16px, 3vh, 28px);
+}
+.llc-index__sep { opacity: 0.45; }
+
+/* Keyed por id → la animación de entrada se re-dispara en cada cambio */
+.llc-card {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 2.2vh, 20px);
+  padding: clamp(28px, 4vw, 48px);
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--llc-violet) 28%, transparent);
+  background:
+    radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--llc-violet) 13%, transparent), transparent 62%),
+    var(--overlay-subtle);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--llc-violet) 8%, transparent),
+    0 28px 64px -30px color-mix(in srgb, var(--llc-violet) 65%, transparent);
+  animation: llc-in 560ms var(--llc-ease);
+}
+
+.llc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--llc-violet) 42%, transparent);
+  background: color-mix(in srgb, var(--llc-violet) 15%, transparent);
+  color: var(--llc-violet);
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.llc-badge .pi { font-size: 12px; }
+
+.llc-card__title {
+  margin: 0;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: clamp(20px, 2.6vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary, #fafaf9);
+  max-width: 30ch;
+}
+
+/* ── Campos de texto (Markdown) ───────────────────────────────── */
+.llc-field {
+  width: 100%;
+  max-width: 58ch;
+  margin: 0 auto;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.llc-field--rec {
+  margin-top: 4px;
+  padding-top: clamp(14px, 2vh, 20px);
+  border-top: 1px solid color-mix(in srgb, var(--llc-violet) 18%, transparent);
+}
+
+.llc-field__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--llc-violet) 72%, transparent);
+}
+
+.llc-field__body {
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: clamp(13.5px, 1.2vw, 15.5px);
+  line-height: 1.7;
+  color: var(--text-secondary, #9a9aa3);
+}
+.llc-field__body > :first-child { margin-top: 0; }
+.llc-field__body > :last-child { margin-bottom: 0; }
+.llc-field__body p { margin: 0 0 0.7em; }
+.llc-field__body ul,
+.llc-field__body ol { margin: 0 0 0.7em; padding-left: 1.4em; }
+.llc-field__body li { margin: 0.25em 0; padding-left: 0.2em; }
+.llc-field__body li::marker { color: var(--llc-violet); }
+.llc-field__body strong { color: var(--text-primary, #fafaf9); font-weight: 600; }
+.llc-field__body em { font-style: italic; }
+.llc-field__body a {
+  color: var(--llc-violet);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--llc-violet) 40%, transparent);
+}
+.llc-field__body a:hover { border-bottom-color: var(--llc-violet); }
+.llc-field__body code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.88em;
+  background: var(--overlay-subtle);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+.llc-field__body blockquote {
+  margin: 0 0 0.7em;
+  padding: 0.2em 0 0.2em 0.9em;
+  border-left: 2px solid color-mix(in srgb, var(--llc-violet) 35%, transparent);
+  color: var(--text-tertiary, #888);
+  font-style: italic;
+}
+
+/* ── Flechas laterales (mismo botón que timeline) ─────────────── */
+.llc-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: var(--overlay-subtle);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.18s ease, color 0.18s ease,
+    border-color 0.18s ease, transform 0.18s ease;
+}
+.llc-nav--prev { left: clamp(10px, 3vw, 44px); }
+.llc-nav--next { right: clamp(10px, 3vw, 44px); }
+.llc-nav:hover {
+  background: var(--overlay-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.llc-nav:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+@keyframes llc-in {
+  from { opacity: 0; transform: translateY(22px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .llc { padding: clamp(20px, 4vh, 40px) clamp(56px, 16vw, 76px); }
+  .llc-nav { width: 44px; height: 44px; font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .llc-card { animation-duration: 0.001ms; }
+}

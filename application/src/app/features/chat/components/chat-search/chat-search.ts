@@ -8,7 +8,16 @@ import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-serv
 import { ToastService } from '@core/components/toast-service';
 import type { ChatListItemDto, PageNumberResult } from '@aura-types/aura-chat-service.types';
 
-type ChatListItem = { id: string; title: string; sortKey: number; tags: readonly string[] };
+type ChatListItem = {
+  id: string;
+  title: string;
+  sortKey: number;
+  tags: readonly string[];
+  time: string;
+  isPinned: boolean;
+  isLocked: boolean;
+  unread: number;
+};
 
 @Component({
   selector: 'app-chat-search',
@@ -33,6 +42,8 @@ export class ChatSearch implements OnInit {
   readonly loading = signal(false);
   readonly loadingMore = signal(false);
   readonly hasMore = signal(false);
+
+  readonly skeletonRows = Array.from({ length: 6 });
 
   readonly activeTagFiltersArray = computed(() => [...this.activeTagFilters()]);
   readonly allTags = computed(() => [...this.knownTags()].sort());
@@ -105,7 +116,7 @@ export class ChatSearch implements OnInit {
     return {
       search: this.searchQuery.trim() || undefined,
       tags: activeTags.length > 0 ? activeTags.join(',') : undefined,
-      page_size: 30,
+      page_size: 18,
     };
   }
 
@@ -151,6 +162,10 @@ export class ChatSearch implements OnInit {
         title: c.name,
         sortKey: d.getTime(),
         tags: c.tags ?? [],
+        time: this.relativeTime(d.getTime()),
+        isPinned: c.is_pinned,
+        isLocked: c.is_locked,
+        unread: c.unread_count ?? 0,
       };
       if (d >= startOfToday) {
         hoy.push(item);
@@ -170,5 +185,19 @@ export class ChatSearch implements OnInit {
     anteriores.sort(byRecent);
 
     this.grouped.set({ hoy, ayer, semana, anteriores });
+  }
+
+  /** Compact, expert-friendly relative time: "Ahora", "8 min", "3 h", "5 d", date. */
+  private relativeTime(ts: number): string {
+    const diffMs = Date.now() - ts;
+    const min = Math.floor(diffMs / 60_000);
+    if (min < 1) return 'Ahora';
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `${h} h`;
+    const days = Math.floor(h / 24);
+    if (days < 7) return `${days} d`;
+    if (days < 30) return `${Math.floor(days / 7)} sem`;
+    return new Date(ts).toLocaleDateString('es', { day: '2-digit', month: 'short' });
   }
 }

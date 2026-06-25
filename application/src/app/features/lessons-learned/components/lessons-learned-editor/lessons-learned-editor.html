@@ -1,0 +1,61 @@
+<div class="ll-root">
+  @if (loading()) {
+    <div class="ll-loading">
+      <i class="pi pi-spin pi-spinner ll-loading__spinner" aria-hidden="true"></i>
+      <p class="ll-loading__text">Cargando lecciones aprendidas…</p>
+    </div>
+  } @else if (doc(); as d) {
+
+    <!-- ── Top bar ──────────────────────────────────────────── -->
+    <app-artifact-header
+      [title]="d.title"
+      [description]="d.description"
+      [exporting]="exportingAs()"
+      (back)="goBack()"
+      (exportRequested)="export($event)"
+    />
+
+    <!-- ── Meta strip ──────────────────────────────────────── -->
+    <div class="ll-meta">
+      <span class="ll-meta__chip">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        {{ d.created_at | date: 'mediumDate' }}
+      </span>
+      <span class="ll-meta__chip ll-meta__chip--sustain">
+        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        {{ sustainCount() }} sostener
+      </span>
+      <span class="ll-meta__chip ll-meta__chip--improve">
+        <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
+        {{ improveCount() }} mejorar
+      </span>
+      <span class="ll-meta__chip ll-meta__chip--rec">
+        <i class="pi pi-star" aria-hidden="true"></i>
+        {{ recCount() }} recomendación
+      </span>
+    </div>
+
+    <!-- ── Body: carrusel de cards (contenido principal) ────── -->
+    <div class="ll-body">
+      @if (sortedItems().length === 0) {
+        <div class="ll-empty">
+          <i class="pi pi-book ll-empty__icon" aria-hidden="true"></i>
+          <p>Sin lecciones.</p>
+        </div>
+      } @else {
+        <app-lessons-learned-cards [items]="sortedItems()" />
+      }
+    </div>
+
+    <!-- ── Consulta original (a todo lo ancho, al fondo) ────── -->
+    @if (d.query) {
+      <div class="ll-query">
+        <div class="ll-query__title">
+          <i class="pi pi-search ll-query__icon" aria-hidden="true"></i>
+          <span>Consulta original</span>
+        </div>
+        <p class="ll-query__text">{{ d.query }}</p>
+      </div>
+    }
+  }
+</div>

@@ -403,6 +403,8 @@ export interface SendMessageTextJsonBody {
   readonly chat_id: number;
   readonly message: string;
   readonly mode?: AuraChatAiMode;
+  readonly retrieve_context?: boolean | null;
+  readonly process_documents?: boolean | null;
 }
 
 export interface AddMembersBody {
@@ -493,7 +495,19 @@ export interface ChatExportBackupDto {
 // ── Reports ────────────────────────────────────────────────────────────────────
 
 export type ReportType = 'SITREP' | 'INTSUM' | 'OPORD';
-export type ReportMode = 'direct' | 'rag';
+
+/**
+ * Generation context flags shared by every "generate" request body.
+ * They replaced the old `mode: 'direct' | 'rag'`:
+ *  - retrieve_context: recuperar contexto de la base de conocimiento (RAG).
+ *  - process_documents: procesar el contenido completo de los documentos adjuntos.
+ * `null`/omitido = usar el default del servicio.
+ */
+export interface GenerationContextFields {
+  readonly retrieve_context?: boolean | null;
+  readonly process_documents?: boolean | null;
+  readonly document_ids?: readonly number[];
+}
 
 export interface ReportDto {
   readonly id: number;
@@ -503,7 +517,9 @@ export interface ReportDto {
   readonly description: string;
   readonly query: string;
   readonly content: string;
-  readonly mode: ReportMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
+  readonly document_ids: readonly number[];
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
@@ -513,7 +529,8 @@ export interface ReportListItemDto {
   readonly id: number;
   readonly type: ReportType;
   readonly title: string;
-  readonly mode: ReportMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
@@ -529,9 +546,8 @@ export interface GenerateFragmentDto {
   readonly content?: string;
 }
 
-export interface GenerateReportBody {
+export interface GenerateReportBody extends GenerationContextFields {
   readonly type: ReportType;
-  readonly mode: ReportMode;
   readonly message: string;
   readonly chat_id?: number | null;
 }
@@ -544,13 +560,10 @@ export interface ReportGenerateResponseDto {
 
 // ── Checklists ─────────────────────────────────────────────────────────────────
 
-export type ChecklistMode = 'direct' | 'rag';
-
 export interface ChecklistItemDto {
   readonly id: string;
   readonly text: string;
   readonly is_checked: boolean;
-  readonly notes: string;
   readonly position: number;
 }
 
@@ -568,7 +581,9 @@ export interface ChecklistDto {
   readonly description: string;
   readonly query: string;
   readonly sections: readonly ChecklistSectionDto[];
-  readonly mode: ChecklistMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
+  readonly document_ids: readonly number[];
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
@@ -577,7 +592,8 @@ export interface ChecklistDto {
 export interface ChecklistListItemDto {
   readonly id: number;
   readonly title: string;
-  readonly mode: ChecklistMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
   readonly source_chat_id: number | null;
   readonly item_count: number;
   readonly checked_count: number;
@@ -585,8 +601,7 @@ export interface ChecklistListItemDto {
   readonly created_at: IsoDateTimeString;
 }
 
-export interface GenerateChecklistBody {
-  readonly mode: ChecklistMode;
+export interface GenerateChecklistBody extends GenerationContextFields {
   readonly message: string;
   readonly chat_id?: number | null;
 }
@@ -599,7 +614,6 @@ export interface ChecklistGenerateResponseDto {
 
 // ── Quiz ───────────────────────────────────────────────────────────────────────
 
-export type QuizMode = 'direct' | 'rag';
 export type QuizQuestionKind = 'single' | 'multiple' | 'boolean';
 
 export interface QuizOptionDto {
@@ -615,6 +629,8 @@ export interface QuizQuestionDto {
   readonly explanation: string;
   readonly position: number;
   readonly options: readonly QuizOptionDto[];
+  readonly selected_option_id: number | null;
+  readonly correct_option_ids: readonly number[];
 }
 
 export interface QuizDto {
@@ -624,28 +640,43 @@ export interface QuizDto {
   readonly description: string;
   readonly query: string;
   readonly instructions: string;
-  readonly pass_score: number | null;
-  readonly mode: QuizMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
+  readonly document_ids: readonly number[];
   readonly questions: readonly QuizQuestionDto[];
+  readonly total_questions: number;
+  readonly answered_count: number;
+  readonly correct_count: number;
+  readonly score_pct: number;
   readonly source_chat_id: number | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
+}
+
+export interface QuizAnswerResultDto {
+  readonly question_id: number;
+  readonly selected_option_id: number;
+  readonly is_correct: boolean;
+  readonly correct_option_ids: readonly number[];
+  readonly answered_count: number;
+  readonly correct_count: number;
+  readonly total_questions: number;
+  readonly score_pct: number;
 }
 
 export interface QuizListItemDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
-  readonly mode: QuizMode;
-  readonly pass_score: number | null;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
   readonly source_chat_id: number | null;
   readonly question_count: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
 
-export interface GenerateQuizBody {
-  readonly mode: QuizMode;
+export interface GenerateQuizBody extends GenerationContextFields {
   readonly message: string;
   readonly chat_id?: number | null;
 }
@@ -657,8 +688,6 @@ export interface QuizGenerateResponseDto {
 }
 
 // ── Timeline ───────────────────────────────────────────────────────────────────
-
-export type TimelineMode = 'direct' | 'rag';
 
 export interface TimelineEventDto {
   readonly id: number;
@@ -673,8 +702,10 @@ export interface TimelineDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly query: string;
-  readonly summary: string;
-  readonly mode: TimelineMode;
+  readonly description: string;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
+  readonly document_ids: readonly number[];
   readonly events: readonly TimelineEventDto[];
   readonly source_chat_id: number | null;
   readonly created_by: number;
@@ -685,15 +716,15 @@ export interface TimelineListItemDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
-  readonly mode: TimelineMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
   readonly source_chat_id: number | null;
   readonly event_count: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
 
-export interface GenerateTimelineBody {
-  readonly mode: TimelineMode;
+export interface GenerateTimelineBody extends GenerationContextFields {
   readonly message: string;
   readonly chat_id?: number | null;
 }
@@ -706,7 +737,6 @@ export interface TimelineGenerateResponseDto {
 
 // ── LessonsLearned ─────────────────────────────────────────────────────────────
 
-export type LessonsLearnedMode = 'direct' | 'rag';
 export type LessonsLearnedCategory = 'sustain' | 'improve' | 'recommendation';
 
 export interface LessonsLearnedItemDto {
@@ -723,8 +753,10 @@ export interface LessonsLearnedDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly query: string;
-  readonly context: string;
-  readonly mode: LessonsLearnedMode;
+  readonly description: string;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
+  readonly document_ids: readonly number[];
   readonly items: readonly LessonsLearnedItemDto[];
   readonly source_chat_id: number | null;
   readonly created_by: number;
@@ -735,15 +767,15 @@ export interface LessonsLearnedListItemDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
-  readonly mode: LessonsLearnedMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
   readonly source_chat_id: number | null;
   readonly item_count: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
 
-export interface GenerateLessonsLearnedBody {
-  readonly mode: LessonsLearnedMode;
+export interface GenerateLessonsLearnedBody extends GenerationContextFields {
   readonly message: string;
   readonly chat_id?: number | null;
 }
@@ -755,8 +787,6 @@ export interface LessonsLearnedGenerateResponseDto {
 }
 
 // ── DecisionBrief ──────────────────────────────────────────────────────────────
-
-export type DecisionBriefMode = 'direct' | 'rag';
 
 export interface DecisionBriefOptionDto {
   readonly id: number;
@@ -772,11 +802,13 @@ export interface DecisionBriefDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly query: string;
-  readonly problem: string;
+  readonly description: string;
   readonly context: string;
   readonly risks: string;
   readonly recommendation: string;
-  readonly mode: DecisionBriefMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
+  readonly document_ids: readonly number[];
   readonly options: readonly DecisionBriefOptionDto[];
   readonly source_chat_id: number | null;
   readonly created_by: number;
@@ -787,15 +819,15 @@ export interface DecisionBriefListItemDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
-  readonly mode: DecisionBriefMode;
+  readonly retrieve_context: boolean | null;
+  readonly process_documents: boolean | null;
   readonly source_chat_id: number | null;
   readonly option_count: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
 
-export interface GenerateDecisionBriefBody {
-  readonly mode: DecisionBriefMode;
+export interface GenerateDecisionBriefBody extends GenerationContextFields {
   readonly message: string;
   readonly chat_id?: number | null;
 }
@@ -812,8 +844,8 @@ export interface DocumentSummaryDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
+  readonly description: string;
   readonly summary: string;
-  readonly document_ids: readonly number[];
   readonly source_chat_id: number;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
@@ -824,12 +856,11 @@ export interface DocumentSummaryListItemDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly source_chat_id: number;
-  readonly document_ids: readonly number[];
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
 
-export interface GenerateDocumentSummaryBody {
+export interface GenerateDocumentSummaryBody extends GenerationContextFields {
   readonly document_ids: readonly number[];
   readonly chat_id: number;
 }
@@ -854,8 +885,8 @@ export interface DocumentActionDto {
   readonly id: number;
   readonly artifact_id: number;
   readonly title: string;
+  readonly description: string;
   readonly result: string;
-  readonly document_ids: readonly number[];
   readonly instruction: string;
   readonly action: DocumentActionType | null;
   readonly source_chat_id: number;
@@ -868,14 +899,13 @@ export interface DocumentActionListItemDto {
   readonly artifact_id: number;
   readonly title: string;
   readonly source_chat_id: number;
-  readonly document_ids: readonly number[];
   readonly instruction: string;
   readonly action: DocumentActionType | null;
   readonly created_by: number;
   readonly created_at: IsoDateTimeString;
 }
 
-export interface GenerateDocumentActionBody {
+export interface GenerateDocumentActionBody extends GenerationContextFields {
   readonly document_ids: readonly number[];
   readonly instruction: string;
   readonly action?: DocumentActionType | null;
@@ -887,52 +917,19 @@ export interface DocumentActionGenerateResponseDto {
   readonly fragments: readonly GenerateFragmentDto[];
 }
 
-// ── Assistants ─────────────────────────────────────────────────────────────────
-
-export interface AssistantDto {
-  readonly id: number;
-  readonly name: string;
-  readonly description: string;
-  readonly avatar_emoji: string;
-  readonly is_active: boolean;
-  readonly created_at: IsoDateTimeString;
-}
-
-export interface AssistantAdminDto extends AssistantDto {
-  readonly system_prompt: string;
-  readonly created_by: number;
-  readonly updated_by: number | null;
-  readonly updated_at: IsoDateTimeString | null;
-}
-
-export interface CreateAssistantBody {
-  readonly name: string;
-  readonly description?: string;
-  readonly system_prompt: string;
-  readonly avatar_emoji?: string;
-  readonly is_active?: boolean;
-}
-
-export interface UpdateAssistantBody {
-  readonly name?: string;
-  readonly description?: string;
-  readonly system_prompt?: string;
-  readonly avatar_emoji?: string;
-  readonly is_active?: boolean;
-}
-
-export interface StartChatResponseDto {
-  readonly chat_id: number;
-  readonly chat_name: string;
-  readonly is_new: boolean;
-}
-
-export type AuraChatAiMode = 'document_question' | 'general_chat' | 'rag_agent' | 'agent';
+export type AuraChatAiMode = 'document_question' | 'general_chat' | 'rag_agent';
 
 export const AURA_CHAT_AI_MODE_DEFAULT: AuraChatAiMode = 'document_question';
 
 export type AuraChatWsClientMessage =
-  | { readonly type: 'chat.message'; readonly message: string; readonly mode?: AuraChatAiMode; readonly document_ids?: readonly number[] }
+  | {
+      readonly type: 'chat.message';
+      readonly message: string;
+      readonly mode?: AuraChatAiMode;
+      readonly document_ids?: readonly number[];
+      readonly retrieve_context?: boolean | null;
+      readonly process_documents?: boolean | null;
+    }
   | { readonly type: 'chat.regenerate'; readonly mode?: AuraChatAiMode }
   | { readonly type: 'chat.typing'; readonly is_typing: boolean };
 

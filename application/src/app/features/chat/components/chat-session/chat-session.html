@@ -22,12 +22,13 @@
         </div>
       </div>
       <div class="header-right">
-        <app-btn-icon
-          [icon]="'more_vert'"
-          [variant]="'transparent'"
-          [rounded]="'radius-circle'"
-          (click)="toggleOptions()"
-        />
+        <button
+          type="button"
+          class="chat-header__options"
+          aria-label="Opciones del chat"
+          (click)="toggleOptions()">
+          <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
 
@@ -96,6 +97,7 @@
                   <span class="message-time">{{ formatTime(message.created_at) }}</span>
                 </div>
                 @if (streamingAssistantId() !== message.id) {
+                  <div class="message-toolbar">
                   <div class="message-actions" role="toolbar" [attr.aria-label]="'Acciones del mensaje'">
                     <button
                       type="button"
@@ -186,24 +188,18 @@
                   @if (message.sender_type === 'assistant' && hasFragments(message.id)) {
                     <button
                       type="button"
-                      class="fragments-toggle"
+                      class="sources-pill"
+                      [class.is-open]="isFragmentsExpanded(message.id)"
+                      [attr.aria-expanded]="isFragmentsExpanded(message.id)"
                       (click)="toggleFragments(message.id)">
-                      <i [ngClass]="['pi', isFragmentsExpanded(message.id) ? 'pi-chevron-up' : 'pi-chevron-down']" aria-hidden="true"></i>
-                      Ver fuentes ({{ getFragments(message.id).length }})
+                      <i class="pi pi-book sources-pill__icon" aria-hidden="true"></i>
+                      <span>Fuentes</span>
+                      <i class="pi pi-chevron-down sources-pill__chevron" aria-hidden="true"></i>
                     </button>
-                    @if (isFragmentsExpanded(message.id)) {
-                      <div class="fragments-panel">
-                        @for (frag of getFragments(message.id); track frag.id) {
-                          <div class="fragment-item">
-                            <span class="fragment-doc">
-                              <i class="pi pi-file" aria-hidden="true"></i>
-                              {{ frag.document.name }}
-                            </span>
-                            <p class="fragment-content">{{ frag.content.length > 280 ? (frag.content | slice:0:280) + '…' : frag.content }}</p>
-                          </div>
-                        }
-                      </div>
-                    }
+                  }
+                  </div>
+                  @if (message.sender_type === 'assistant' && hasFragments(message.id)) {
+                    <ng-container *ngTemplateOutlet="sourcesBlock; context: { $implicit: message.id }" />
                   }
                 }
               </div>
@@ -217,7 +213,6 @@
                 <div class="artifact-card">
                   <div class="artifact-card__header">
                     <span class="artifact-card__type-badge">{{ artifactTypeLabel(message.artifactType) }}</span>
-                    <span class="artifact-card__status" [ngClass]="'artifact-card__status--' + (message.artifactStatus ?? 'draft')">{{ artifactStatusLabel(message.artifactStatus) }}</span>
                   </div>
                   <h4 class="artifact-card__title">{{ message.artifactTitle }}</h4>
                   @if (message.artifactDescription) {
@@ -238,6 +233,7 @@
                   }
                   <div class="artifact-card__footer">
                     <span class="artifact-card__time">{{ formatTime(message.created_at) }}</span>
+                    <div class="artifact-card__footer-right">
                     <div class="artifact-card__actions">
                       <button
                         type="button"
@@ -323,29 +319,23 @@
                         <i class="pi pi-trash" aria-hidden="true"></i>
                       </button>
                     </div>
+                    @if (hasFragments(message.id)) {
+                      <button
+                        type="button"
+                        class="sources-pill"
+                        [class.is-open]="isFragmentsExpanded(message.id)"
+                        [attr.aria-expanded]="isFragmentsExpanded(message.id)"
+                        (click)="toggleFragments(message.id)">
+                        <i class="pi pi-book sources-pill__icon" aria-hidden="true"></i>
+                        <span>Fuentes</span>
+                        <i class="pi pi-chevron-down sources-pill__chevron" aria-hidden="true"></i>
+                      </button>
+                    }
+                    </div>
                   </div>
                 </div>
                 @if (hasFragments(message.id)) {
-                  <button
-                    type="button"
-                    class="fragments-toggle"
-                    (click)="toggleFragments(message.id)">
-                    <i [ngClass]="['pi', isFragmentsExpanded(message.id) ? 'pi-chevron-up' : 'pi-chevron-down']" aria-hidden="true"></i>
-                    Ver fuentes ({{ getFragments(message.id).length }})
-                  </button>
-                  @if (isFragmentsExpanded(message.id)) {
-                    <div class="fragments-panel">
-                      @for (frag of getFragments(message.id); track frag.id) {
-                        <div class="fragment-item">
-                          <span class="fragment-doc">
-                            <i class="pi pi-file" aria-hidden="true"></i>
-                            {{ frag.document.name }}
-                          </span>
-                          <p class="fragment-content">{{ frag.content.length > 280 ? (frag.content | slice:0:280) + '…' : frag.content }}</p>
-                        </div>
-                      }
-                    </div>
-                  }
+                  <ng-container *ngTemplateOutlet="sourcesBlock; context: { $implicit: message.id }" />
                 }
               </div>
             </div>
@@ -390,371 +380,6 @@
 
     </div>
 
-    <div class="chat-input-container">
-      <div class="session-input-composer">
-        <div class="session-composer-surface">
-          @if (sessionDocuments().length > 0) {
-            <div class="session-doc-chips" role="list" aria-label="Documentos adjuntos">
-              @for (doc of sessionDocuments(); track doc.id) {
-                <div
-                  class="session-doc-chip"
-                  [class.session-doc-chip--processing]="doc.status === 'uploaded'"
-                  [class.session-doc-chip--failed]="doc.status === 'failed'"
-                  role="listitem">
-                  @if (doc.status === 'uploaded') {
-                    <i class="pi pi-spin pi-spinner session-doc-chip__icon" aria-hidden="true"></i>
-                  } @else if (doc.status === 'failed') {
-                    <i class="pi pi-exclamation-circle session-doc-chip__icon session-doc-chip__icon--error" aria-hidden="true"></i>
-                  } @else {
-                    <i class="pi pi-file-check session-doc-chip__icon session-doc-chip__icon--ok" aria-hidden="true"></i>
-                  }
-                  <span class="session-doc-chip__name" [title]="doc.name">{{ doc.name.length > 28 ? (doc.name | slice:0:28) + '…' : doc.name }}</span>
-                  <button
-                    type="button"
-                    class="session-doc-chip__remove"
-                    [attr.aria-label]="'Quitar ' + doc.name"
-                    (click)="removeSessionDocument(doc.id)">
-                    <i class="pi pi-times" aria-hidden="true"></i>
-                  </button>
-                </div>
-              }
-            </div>
-          }
-
-          @if (composerMode() !== 'chat' && composerMode() !== 'document-summary' && composerMode() !== 'document-action') {
-            <div class="gen-inline-controls">
-              @if (composerMode() === 'report') {
-                <select
-                  class="gen-type-select"
-                  [value]="genReportType()"
-                  [disabled]="genLoading()"
-                  (change)="onGenTypeChange($any($event.target).value)"
-                  aria-label="Tipo de informe">
-                  @for (opt of reportTypes; track opt.value) {
-                    <option [value]="opt.value">{{ opt.label }}</option>
-                  }
-                </select>
-              }
-              <div class="gen-mode-pills">
-                <button
-                  type="button"
-                  class="gen-mode-pill"
-                  [class.gen-mode-pill--active]="genMode() === 'direct'"
-                  [disabled]="genLoading()"
-                  (click)="genMode.set('direct')"
-                  title="Solo usa lo que ingresás">
-                  <i class="pi pi-pencil" aria-hidden="true"></i>
-                  Directo
-                </button>
-                <button
-                  type="button"
-                  class="gen-mode-pill"
-                  [class.gen-mode-pill--active]="genMode() === 'rag'"
-                  [disabled]="genLoading()"
-                  (click)="genMode.set('rag')"
-                  title="Recupera fragmentos del chat">
-                  <i class="pi pi-database" aria-hidden="true"></i>
-                  Con documentos
-                </button>
-              </div>
-            </div>
-          }
-
-          @if (composerMode() === 'document-action') {
-            <div class="gen-inline-controls">
-              <select
-                class="gen-type-select"
-                [value]="genDocumentActionType()"
-                [disabled]="genLoading()"
-                (change)="genDocumentActionType.set($any($event.target).value)"
-                aria-label="Tipo de acción">
-                <option value="">Acción automática</option>
-                <option value="summarize">Resumir</option>
-                <option value="essay">Ensayo</option>
-                <option value="key_points">Puntos clave</option>
-                <option value="compare">Comparar</option>
-                <option value="analyze">Analizar</option>
-                <option value="explain">Explicar</option>
-                <option value="report">Informe</option>
-              </select>
-              @if (sessionDocuments().length === 0) {
-                <span class="gen-doc-hint"><i class="pi pi-info-circle" aria-hidden="true"></i> Adjuntá documentos con el botón +</span>
-              } @else if (hasProcessingDocs()) {
-                <span class="gen-doc-hint"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando…</span>
-              } @else {
-                <span class="gen-doc-hint gen-doc-hint--ok"><i class="pi pi-check" aria-hidden="true"></i> {{ sessionDocuments().length }} doc{{ sessionDocuments().length !== 1 ? 's' : '' }}</span>
-              }
-            </div>
-          }
-
-          @if (composerMode() === 'document-summary') {
-            <div class="gen-inline-controls">
-              @if (sessionDocuments().length === 0) {
-                <div class="gen-doc-empty">
-                  <i class="pi pi-info-circle" aria-hidden="true"></i>
-                  <span>Adjuntá documentos con el botón <strong>+</strong> para generar un resumen.</span>
-                </div>
-              } @else if (hasProcessingDocs()) {
-                <div class="gen-doc-hint">
-                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-                  <span>Procesando documentos, aguardá un momento…</span>
-                </div>
-              } @else {
-                <div class="gen-doc-ready">
-                  <i class="pi pi-check-circle" aria-hidden="true"></i>
-                  <span><strong>{{ sessionDocuments().length }}</strong> documento{{ sessionDocuments().length !== 1 ? 's' : '' }} listos para resumir.</span>
-                </div>
-              }
-            </div>
-          }
-
-          @if (composerMode() === 'chat') {
-            <label class="chat-session-visually-hidden" for="chat-session-message">Mensaje</label>
-            <textarea
-              #messageBox
-              id="chat-session-message"
-              name="chatSessionMessage"
-              class="message-input"
-              rows="1"
-              placeholder="Escribí un mensaje…"
-              [ngModel]="newMessage"
-              (ngModelChange)="onNewMessageChange($event)"
-              (keydown)="onEnterKey($event)"
-            ></textarea>
-          } @else if (composerMode() === 'document-summary') {
-            <!-- no textarea for summary mode; documents drive the generation -->
-          } @else {
-            <textarea
-              class="message-input gen-message-input"
-              rows="3"
-              [placeholder]="genTextareaPlaceholder()"
-              [value]="genMessage()"
-              [disabled]="genLoading()"
-              (input)="genMessage.set($any($event.target).value)"
-            ></textarea>
-          }
-
-          <div class="session-composer-footer">
-            <input
-              #sessionFileInput
-              type="file"
-              class="session-file-input"
-              multiple
-              accept=".pdf,.doc,.docx,.txt,.md,image/*"
-              (change)="onFilesSelected($event)"
-              aria-hidden="true"
-              tabindex="-1"
-            />
-            @if (composerMode() === 'chat' && showAiModeSelector()) {
-              <div class="composer-mode-selector ai-mode-selector">
-                @if (aiModeDropdownOpen()) {
-                  <div class="mode-backdrop" (click)="aiModeDropdownOpen.set(false)"></div>
-                }
-                <button
-                  type="button"
-                  class="composer-mode-trigger ai-mode-trigger"
-                  [class.composer-mode-trigger--active]="aiMode() !== 'document_question'"
-                  (click)="toggleAiModeDropdown()"
-                  [attr.aria-expanded]="aiModeDropdownOpen()"
-                  [attr.title]="activeAiMode().hint"
-                  aria-label="Cambiar modo de IA">
-                  <i [ngClass]="['pi', activeAiMode().icon]" aria-hidden="true"></i>
-                  <span>{{ activeAiMode().label }}</span>
-                  <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="aiModeDropdownOpen()" aria-hidden="true"></i>
-                </button>
-                @if (aiModeDropdownOpen()) {
-                  <div class="mode-dropdown-menu ai-mode-menu" role="menu">
-                    @for (m of availableAiModes(); track m.value) {
-                      <button
-                        type="button"
-                        class="mode-dropdown-item ai-mode-item"
-                        role="menuitem"
-                        [class.mode-dropdown-item--active]="aiMode() === m.value"
-                        [attr.title]="m.hint"
-                        (click)="setAiMode(m.value)">
-                        <i [ngClass]="['pi', m.icon]" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">{{ m.label }}</span>
-                          <span class="ai-mode-item__hint">{{ m.hint }}</span>
-                        </span>
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-            }
-            @if (canUseTools()) {
-              <div class="composer-mode-selector">
-                @if (modeDropdownOpen()) {
-                  <div class="mode-backdrop" (click)="modeDropdownOpen.set(false)"></div>
-                }
-                <button
-                  type="button"
-                  class="composer-mode-trigger"
-                  [class.composer-mode-trigger--active]="composerMode() !== 'chat'"
-                  (click)="toggleModeDropdown()"
-                  [attr.aria-expanded]="modeDropdownOpen()"
-                  aria-label="Cambiar modo">
-                  <i [ngClass]="['pi', composerModeLabel().icon]" aria-hidden="true"></i>
-                  <span>{{ composerModeLabel().label }}</span>
-                  <i class="pi pi-chevron-up mode-trigger-chevron" [class.mode-trigger-chevron--open]="modeDropdownOpen()" aria-hidden="true"></i>
-                </button>
-                @if (modeDropdownOpen()) {
-                  <div class="mode-dropdown-menu" role="menu">
-                    <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'chat'" (click)="setComposerMode('chat')">
-                      <i class="pi pi-comments" aria-hidden="true"></i>
-                      <span class="ai-mode-item__text">
-                        <span class="ai-mode-item__label">Chat</span>
-                        <span class="ai-mode-item__hint">Conversación libre con IA</span>
-                      </span>
-                    </button>
-                    @if (canReport() || canChecklist() || canQuiz() || canTimeline() || canLessonsLearned() || canDecisionBrief() || canDocumentSummary() || canDocumentAction()) {
-                      <div class="mode-dropdown-section-header" aria-hidden="true">Herramientas IA</div>
-                    }
-                    @if (canReport()) {
-                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'report'" (click)="setComposerMode('report')">
-                        <i class="pi pi-file-edit" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">Informe</span>
-                          <span class="ai-mode-item__hint">Generá un informe estructurado</span>
-                        </span>
-                      </button>
-                    }
-                    @if (canChecklist()) {
-                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'checklist'" (click)="setComposerMode('checklist')">
-                        <i class="pi pi-check-square" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">Checklist</span>
-                          <span class="ai-mode-item__hint">Creá una lista de verificación</span>
-                        </span>
-                      </button>
-                    }
-                    @if (canQuiz()) {
-                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'quiz'" (click)="setComposerMode('quiz')">
-                        <i class="pi pi-question-circle" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">Quiz</span>
-                          <span class="ai-mode-item__hint">Generá preguntas de evaluación</span>
-                        </span>
-                      </button>
-                    }
-                    @if (canTimeline()) {
-                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'timeline'" (click)="setComposerMode('timeline')">
-                        <i class="pi pi-calendar" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">Línea de tiempo</span>
-                          <span class="ai-mode-item__hint">Construí una cronología de eventos</span>
-                        </span>
-                      </button>
-                    }
-                    @if (canLessonsLearned()) {
-                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'lessons-learned'" (click)="setComposerMode('lessons-learned')">
-                        <i class="pi pi-book" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">Lecciones aprendidas</span>
-                          <span class="ai-mode-item__hint">Registrá aprendizajes del proyecto</span>
-                        </span>
-                      </button>
-                    }
-                    @if (canDecisionBrief()) {
-                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'decision-brief'" (click)="setComposerMode('decision-brief')">
-                        <i class="pi pi-bolt" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">Brief de decisión</span>
-                          <span class="ai-mode-item__hint">Analizá opciones y criterios</span>
-                        </span>
-                      </button>
-                    }
-                    @if (canDocumentSummary()) {
-                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'document-summary'" (click)="setComposerMode('document-summary')">
-                        <i class="pi pi-align-left" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">Resumen de documentos</span>
-                          <span class="ai-mode-item__hint">Resumí los documentos adjuntos</span>
-                        </span>
-                      </button>
-                    }
-                    @if (canDocumentAction()) {
-                      <button type="button" class="mode-dropdown-item ai-mode-item" role="menuitem" [class.mode-dropdown-item--active]="composerMode() === 'document-action'" (click)="setComposerMode('document-action')">
-                        <i class="pi pi-cog" aria-hidden="true"></i>
-                        <span class="ai-mode-item__text">
-                          <span class="ai-mode-item__label">Acción sobre documentos</span>
-                          <span class="ai-mode-item__hint">Procesá documentos con IA</span>
-                        </span>
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-            }
-            <button
-              type="button"
-              class="session-attach"
-              aria-label="Adjuntar archivo"
-              (click)="onAttachClick(sessionFileInput)">
-              <i class="pi pi-plus" aria-hidden="true"></i>
-            </button>
-            @if (voiceState() !== 'idle') {
-              <div class="voice-recording-bar">
-                @if (voiceState() === 'recording') {
-                  <span class="voice-recording-dot" aria-hidden="true"></span>
-                  <span class="voice-recording-time">{{ recordingLabel }}</span>
-                  <button type="button" class="voice-cancel-btn" (click)="cancelRecording()" aria-label="Cancelar grabación">
-                    <i class="pi pi-times" aria-hidden="true"></i>
-                  </button>
-                  <button type="button" class="voice-stop-btn" (click)="stopRecording()" aria-label="Detener y enviar">
-                    <i class="pi pi-stop-circle" aria-hidden="true"></i>
-                  </button>
-                } @else {
-                  <i class="pi pi-spin pi-spinner voice-processing-icon" aria-hidden="true"></i>
-                  <span class="voice-processing-label">
-                    {{ composerMode() === 'chat' ? 'Transcribiendo…' : 'Generando…' }}
-                  </span>
-                }
-              </div>
-            } @else {
-              <span class="session-composer-spacer" aria-hidden="true"></span>
-            }
-
-            @if (voiceState() === 'idle') {
-              <button
-                type="button"
-                class="voice-btn"
-                [class.voice-btn--gen]="composerMode() !== 'chat'"
-                [attr.aria-label]="composerMode() === 'chat' ? 'Grabar audio' : 'Grabar contenido por voz'"
-                [disabled]="sendBlocked() || (composerMode() !== 'chat' && genLoading())"
-                (click)="startRecording()">
-                <i class="pi pi-microphone" aria-hidden="true"></i>
-              </button>
-            }
-            @if (composerMode() === 'chat') {
-              <button
-                type="button"
-                class="send-button"
-                aria-label="Enviar mensaje"
-                [disabled]="!newMessage.trim() || sendBlocked() || voiceState() !== 'idle'"
-                (click)="sendMessage()">
-                <i class="pi pi-send" aria-hidden="true"></i>
-              </button>
-            } @else {
-              <button
-                type="button"
-                class="send-button"
-                aria-label="Generar"
-                [disabled]="!canGenerate()"
-                (click)="generateTool()">
-                @if (genLoading()) {
-                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
-                } @else {
-                  <i class="pi pi-send" aria-hidden="true"></i>
-                }
-              </button>
-            }
-          </div>
-        </div>
-      </div>
-    </div>
-
     @if (docDropOverlayVisible()) {
       <div
         class="chat-doc-drop-overlay"
@@ -773,6 +398,26 @@
     }
     </div>
   }
+
+  <!-- Always rendered (even while loading) so the shared-element view transition
+       from "nuevo chat" has a morph target the instant we navigate here. -->
+  <div class="chat-input-container">
+    <app-chat-composer
+      [perms]="perms()"
+      [voiceEnabled]="true"
+      [busy]="genLoading()"
+      [sendDisabled]="loading || sendBlocked()"
+      [attachedDocs]="attachedComposerDocs()"
+      [hasDocs]="sessionDocuments().length > 0"
+      [docsReady]="allDocsReady()"
+      (submitChat)="onComposerSubmitChat($event)"
+      (generate)="generateTool($event)"
+      (filesSelected)="onComposerFiles($event)"
+      (removeDoc)="onComposerRemoveDoc($event)"
+      (audioCaptured)="onAudioCaptured($event)"
+      (typing)="onComposerTyping()"
+    />
+  </div>
 
   @if (feedbackDialogMessageId() !== null) {
     <app-feedback-dialog (submitFeedback)="onFeedbackDialogSubmit($event)"
@@ -854,13 +499,6 @@
                   [class.thread-reply--own]="reply.created_by === currentUserId()"
                   [class.thread-reply--deleting]="deletingReplyIds().has(reply.id)">
 
-                  <div
-                    class="thread-reply__avatar"
-                    [style.background-color]="threadReplyAvatarColor(reply.created_by)"
-                    aria-hidden="true">
-                    {{ reply.created_by % 100 }}
-                  </div>
-
                   <div class="thread-reply__body">
                     @if (threadEditingReplyId() === reply.id) {
                       <div class="thread-reply__edit-form">
@@ -885,33 +523,35 @@
                         </div>
                       </div>
                     } @else {
-                      <div class="thread-reply__meta">
-                        <span class="thread-reply__author">#{{ reply.created_by }}</span>
-                        <span class="thread-reply__time">{{ formatTime(reply.created_at) }}</span>
-                        @if (reply.updated_at) {
-                          <span class="thread-reply__edited">editado</span>
+                      <div class="thread-reply__header">
+                        <div class="thread-reply__meta">
+                          <span class="thread-reply__author">{{ '@' + threadAuthorName(reply.created_by) }}</span>
+                          <span class="thread-reply__time">{{ formatTime(reply.created_at) }}</span>
+                          @if (reply.updated_at) {
+                            <span class="thread-reply__edited">editado</span>
+                          }
+                        </div>
+                        @if (reply.created_by === currentUserId()) {
+                          <div class="thread-reply__actions">
+                            <button
+                              type="button"
+                              class="thread-reply__action-btn thread-reply__action-btn--edit"
+                              (click)="startEditReply(reply)"
+                              title="Editar">
+                              <i class="pi pi-pencil" aria-hidden="true"></i>
+                            </button>
+                            <button
+                              type="button"
+                              class="thread-reply__action-btn thread-reply__action-btn--delete"
+                              [disabled]="deletingReplyIds().has(reply.id)"
+                              (click)="deleteThreadReply(activeThreadMessageId()!, reply.id)"
+                              title="Eliminar">
+                              <i class="pi pi-trash" aria-hidden="true"></i>
+                            </button>
+                          </div>
                         }
                       </div>
                       <p class="thread-reply__text">{{ reply.message }}</p>
-                      @if (reply.created_by === currentUserId()) {
-                        <div class="thread-reply__actions">
-                          <button
-                            type="button"
-                            class="thread-reply__action-btn"
-                            (click)="startEditReply(reply)"
-                            title="Editar">
-                            <i class="pi pi-pencil" aria-hidden="true"></i>
-                          </button>
-                          <button
-                            type="button"
-                            class="thread-reply__action-btn thread-reply__action-btn--delete"
-                            [disabled]="deletingReplyIds().has(reply.id)"
-                            (click)="deleteThreadReply(activeThreadMessageId()!, reply.id)"
-                            title="Eliminar">
-                            <i class="pi pi-trash" aria-hidden="true"></i>
-                          </button>
-                        </div>
-                      }
                     }
                   </div>
                 </li>
@@ -947,3 +587,45 @@
     </div>
   }
 </div>
+
+<ng-template #sourcesBlock let-messageId>
+  @if (isFragmentsExpanded(messageId)) {
+    <div class="sources">
+      <div class="sources__header">
+        <i class="pi pi-book" aria-hidden="true"></i>
+        <span>Fuentes · {{ getSourceDocuments(messageId).length }} {{ getSourceDocuments(messageId).length === 1 ? 'documento' : 'documentos' }}</span>
+      </div>
+      <div class="sources__panel" role="list">
+        @for (doc of getSourceDocuments(messageId); track doc.id) {
+          <div class="source-doc" role="listitem">
+            <span class="source-doc__icon" aria-hidden="true">
+              <i class="pi" [ngClass]="sourceDocIcon(doc)"></i>
+            </span>
+            <span class="source-doc__main">
+              <span class="source-doc__name" [title]="doc.name">{{ doc.name }}</span>
+              <span class="source-doc__meta">
+                @if (doc.category) {
+                  <span>{{ doc.category }}</span>
+                  <span class="source-doc__dot" aria-hidden="true">·</span>
+                }
+                <span>{{ doc.matched }} {{ doc.matched === 1 ? 'fragmento' : 'fragmentos' }}</span>
+              </span>
+            </span>
+            <button
+              type="button"
+              class="source-doc__download"
+              [disabled]="downloadingSourceId() !== null"
+              [attr.aria-label]="'Descargar ' + doc.name"
+              (click)="downloadSourceDocument(doc)">
+              @if (downloadingSourceId() === doc.id) {
+                <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+              } @else {
+                <i class="pi pi-download" aria-hidden="true"></i>
+              }
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</ng-template>

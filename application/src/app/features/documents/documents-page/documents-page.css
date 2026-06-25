@@ -1,0 +1,114 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.documents-flex {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+}
+
+.documents-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.75rem 2rem;
+  background-color: var(--surface-page);
+  box-sizing: border-box;
+}
+
+.documents-topbar__title {
+  margin: 0;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.documents-topbar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.4rem 0.45rem 1.1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-family: var(--font-ui, 'Sora', sans-serif);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.documents-topbar__back i {
+  font-size: 0.8rem;
+  transition: transform 0.18s ease;
+}
+
+.documents-topbar__back:hover {
+  background: var(--overlay-subtle);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.documents-topbar__back:hover i {
+  transform: translateX(-3px);
+}
+
+.documents-topbar__back:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .documents-topbar__back i {
+    transition: none;
+  }
+}
+
+.documents-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--surface-page);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.documents-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.documents-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.documents-content::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.documents-main-outlet {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
+.documents-main-outlet > router-outlet {
+  display: none;
+}

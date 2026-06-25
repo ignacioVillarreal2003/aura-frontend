@@ -18,78 +18,71 @@ export const routes: Routes = [
       import('./features/chat/chat.routes').then((m) => m.chatShellRoutes),
   },
 
-  // ── Artifact viewers (full-screen, no sidebar) ──────────────────
+  // ── Reports (full-screen, own feature) ──────────────────────────
   {
-    path: 'report/:id',
-    title: 'Reporte',
+    path: 'report',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/report-editor/report-editor').then(
-        (m) => m.ReportEditor
+    loadChildren: () =>
+      import('./features/report/report.routes').then((m) => m.REPORT_ROUTES),
+  },
+
+  // ── Artifact viewers (full-screen, own features) ────────────────
+  {
+    path: 'checklist',
+    canActivate: [authenticationGuard],
+    loadChildren: () =>
+      import('./features/checklist/checklist.routes').then((m) => m.CHECKLIST_ROUTES),
+  },
+  {
+    path: 'quiz',
+    canActivate: [authenticationGuard],
+    loadChildren: () =>
+      import('./features/quiz/quiz.routes').then((m) => m.QUIZ_ROUTES),
+  },
+  {
+    path: 'timeline',
+    canActivate: [authenticationGuard],
+    loadChildren: () =>
+      import('./features/timeline/timeline.routes').then((m) => m.TIMELINE_ROUTES),
+  },
+  {
+    path: 'lessons-learned',
+    canActivate: [authenticationGuard],
+    loadChildren: () =>
+      import('./features/lessons-learned/lessons-learned.routes').then(
+        (m) => m.LESSONS_LEARNED_ROUTES
       ),
   },
   {
-    path: 'checklist/:id',
-    title: 'Checklist',
+    path: 'decision-brief',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/checklist-editor/checklist-editor').then(
-        (m) => m.ChecklistEditor
+    loadChildren: () =>
+      import('./features/decision-brief/decision-brief.routes').then(
+        (m) => m.DECISION_BRIEF_ROUTES
       ),
   },
   {
-    path: 'quiz/:id',
-    title: 'Quiz',
+    path: 'document-summary',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/quiz-editor/quiz-editor').then(
-        (m) => m.QuizEditor
+    loadChildren: () =>
+      import('./features/document-summary/document-summary.routes').then(
+        (m) => m.DOCUMENT_SUMMARY_ROUTES
       ),
   },
   {
-    path: 'timeline/:id',
-    title: 'Línea de tiempo',
+    path: 'document-action',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/timeline-editor/timeline-editor').then(
-        (m) => m.TimelineEditor
+    loadChildren: () =>
+      import('./features/document-action/document-action.routes').then(
+        (m) => m.DOCUMENT_ACTION_ROUTES
       ),
   },
+
   {
-    path: 'lessons-learned/:id',
-    title: 'Lecciones aprendidas',
+    path: 'documents',
     canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/lessons-learned-editor/lessons-learned-editor').then(
-        (m) => m.LessonsLearnedEditor
-      ),
-  },
-  {
-    path: 'decision-brief/:id',
-    title: 'Resumen de decisión',
-    canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/decision-brief-editor/decision-brief-editor').then(
-        (m) => m.DecisionBriefEditor
-      ),
-  },
-  {
-    path: 'document-summary/:id',
-    title: 'Resumen de documento',
-    canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/document-summary-editor/document-summary-editor').then(
-        (m) => m.DocumentSummaryEditor
-      ),
-  },
-  {
-    path: 'document-action/:id',
-    title: 'Acción de documento',
-    canActivate: [authenticationGuard],
-    loadComponent: () =>
-      import('./features/chat/components/document-action-editor/document-action-editor').then(
-        (m) => m.DocumentActionEditor
-      ),
+    loadChildren: () =>
+      import('./features/documents/documents.routes').then((m) => m.DOCUMENTS_ROUTES),
   },
 
   {
@@ -100,12 +93,9 @@ export const routes: Routes = [
   },
 
   {
-    path: 'share/:token',
-    title: 'Chat compartido',
-    loadComponent: () =>
-      import('./features/chat/components/public-share/public-share').then(
-        (m) => m.PublicShare
-      ),
+    path: 'share',
+    loadChildren: () =>
+      import('./features/share/share.routes').then((m) => m.SHARE_ROUTES),
   },
 
   { path: '**', redirectTo: 'login' }

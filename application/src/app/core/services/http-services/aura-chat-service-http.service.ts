@@ -8,8 +8,6 @@ import type {
   ArtifactDetailDto,
   ArtifactSummaryDto,
   ArtifactVersionDto,
-  AssistantAdminDto,
-  AssistantDto,
   BulkArchiveChatResultDto,
   BulkChatIdsBody,
   BulkUnarchiveChatResultDto,
@@ -18,8 +16,8 @@ import type {
   ChatListQueryParams,
   ChecklistDto,
   ChecklistGenerateResponseDto,
+  ChecklistItemDto,
   ChecklistListItemDto,
-  CreateAssistantBody,
   CreateChatBody,
   CursorPageResult,
   CursorPaginationQueryParams,
@@ -51,6 +49,7 @@ import type {
   MessageDto,
   PageNumberResult,
   PinnedArtifactDto,
+  QuizAnswerResultDto,
   QuizDto,
   QuizGenerateResponseDto,
   QuizListItemDto,
@@ -69,8 +68,6 @@ import type {
   TimelineGenerateResponseDto,
   TimelineListItemDto,
   UpdateChatBody,
-  StartChatResponseDto,
-  UpdateAssistantBody,
   UpdateMemberRoleBody,
   UpdateMemberStatusBody,
 } from '@aura-types/aura-chat-service.types';
@@ -493,6 +490,13 @@ export class AuraChatServiceHttp {
     return this.http.get<ChecklistDto>(`${this.base}/checklists/${checklistId}/`);
   }
 
+  updateChecklistItem(checklistId: number, itemId: number | string, isChecked: boolean): Observable<ChecklistItemDto> {
+    return this.http.patch<ChecklistItemDto>(
+      `${this.base}/checklists/${checklistId}/items/${itemId}/`,
+      { is_checked: isChecked },
+    );
+  }
+
   deleteChecklist(checklistId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/checklists/${checklistId}/`);
   }
@@ -519,6 +523,17 @@ export class AuraChatServiceHttp {
 
   getQuiz(quizId: number): Observable<QuizDto> {
     return this.http.get<QuizDto>(`${this.base}/quizzes/${quizId}/`);
+  }
+
+  answerQuizQuestion(quizId: number, questionId: number, optionId: number): Observable<QuizAnswerResultDto> {
+    return this.http.patch<QuizAnswerResultDto>(
+      `${this.base}/quizzes/${quizId}/questions/${questionId}/answer/`,
+      { option_id: optionId },
+    );
+  }
+
+  resetQuiz(quizId: number): Observable<QuizDto> {
+    return this.http.post<QuizDto>(`${this.base}/quizzes/${quizId}/reset/`, {});
   }
 
   deleteQuiz(quizId: number): Observable<void> {
@@ -671,39 +686,6 @@ export class AuraChatServiceHttp {
 
   exportDocumentActionMarkdown(id: number): Observable<Blob> {
     return this.http.get(`${this.base}/document-actions/${id}/export/markdown/`, { responseType: 'blob' });
-  }
-
-  // ── Assistants ──────────────────────────────────────────────────────────────
-
-  listAssistants(query: { page?: number; page_size?: number; search?: string } = {}): Observable<PageNumberResult<AssistantDto>> {
-    let p = this.paramsForPaging(query);
-    if (query.search) p = p.set('search', query.search);
-    return this.http.get<PageNumberResult<AssistantDto>>(`${this.base}/assistants/`, { params: p });
-  }
-
-  listAssistantsAdmin(query: { page?: number; page_size?: number } = {}): Observable<PageNumberResult<AssistantAdminDto>> {
-    const p = this.paramsForPaging(query);
-    return this.http.get<PageNumberResult<AssistantAdminDto>>(`${this.base}/assistants/manage/`, { params: p });
-  }
-
-  createAssistant(body: CreateAssistantBody): Observable<AssistantAdminDto> {
-    return this.http.post<AssistantAdminDto>(`${this.base}/assistants/`, body);
-  }
-
-  getAssistant(assistantId: number): Observable<AssistantDto> {
-    return this.http.get<AssistantDto>(`${this.base}/assistants/${assistantId}/`);
-  }
-
-  patchAssistant(assistantId: number, body: UpdateAssistantBody): Observable<AssistantAdminDto> {
-    return this.http.patch<AssistantAdminDto>(`${this.base}/assistants/${assistantId}/`, body);
-  }
-
-  deleteAssistant(assistantId: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/assistants/${assistantId}/`);
-  }
-
-  startAssistantChat(assistantId: number, body: { resume?: boolean } = {}): Observable<StartChatResponseDto> {
-    return this.http.post<StartChatResponseDto>(`${this.base}/assistants/${assistantId}/start-chat/`, body);
   }
 
   listPublicShareMessages(

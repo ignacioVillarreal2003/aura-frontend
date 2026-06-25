@@ -55,6 +55,9 @@ export class ChatSidebar implements OnInit {
   chatActionsDrawerOpen = signal(false);
   drawerContextChat = signal<ChatRef | null>(null);
 
+  readonly loadingMore = signal(false);
+  private nextUrl: string | null = null;
+
   ngOnInit(): void {
     this.reloadChats();
     this.chatService.sidebarReload$
@@ -63,15 +66,42 @@ export class ChatSidebar implements OnInit {
   }
 
   reloadChats(): void {
-    this.chatHttp.listChats({ page_size: 50 }).subscribe({
+    this.nextUrl = null;
+    this.chatHttp.listChats({ page_size: 15 }).subscribe({
       next: (page) => {
         this.chats.set([...page.results]);
+        this.nextUrl = page.next;
       },
       error: () => {
         this.chats.set([]);
+        this.nextUrl = null;
         this.toastService.show('No se pudieron cargar los chats.', 'error');
       },
     });
+  }
+
+  private loadMoreChats(): void {
+    if (!this.nextUrl || this.loadingMore()) return;
+    this.loadingMore.set(true);
+    this.chatHttp.listChats({ url: this.nextUrl }).subscribe({
+      next: (page) => {
+        const existing = new Set(this.chats().map((c) => c.id));
+        const fresh = page.results.filter((c) => !existing.has(c.id));
+        this.chats.update((curr) => [...curr, ...fresh]);
+        this.nextUrl = page.next;
+        this.loadingMore.set(false);
+      },
+      error: () => {
+        this.loadingMore.set(false);
+      },
+    });
+  }
+
+  onChatsScroll(event: Event): void {
+    const el = event.target as HTMLElement;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) {
+      this.loadMoreChats();
+    }
   }
 
   isOpen() {
