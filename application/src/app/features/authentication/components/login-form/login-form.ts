@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthenticationService } from '@core/services/authentication/authentication.service';
 import { BtnText } from '../../../../shared/components/buttons/btn-text/btn-text';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-login-form',
@@ -41,6 +42,15 @@ export class LoginForm {
         this.errorMessage.set(this.resolveErrorMessage(err));
       },
     });
+  }
+
+  goToAdmin(): void {
+    const url = environment.adminUrl;
+    if (!url) {
+      this.errorMessage.set('La URL de administración no está configurada.');
+      return;
+    }
+    window.location.href = url;
   }
 
   private resolveErrorMessage(err: unknown): string {

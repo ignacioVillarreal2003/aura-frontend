@@ -43,6 +43,13 @@
         [label]="submitting() ? 'Ingresando…' : 'Ingresar'"
         [disabled]="submitting()"
        />
+
+      <app-btn-text [buttonType]="'button'"
+        [variant]="'outline'"
+        [label]="'Ingresar como admin'"
+        [disabled]="submitting()"
+        (click)="goToAdmin()"
+       />
     </form>
   </div>
 </section>

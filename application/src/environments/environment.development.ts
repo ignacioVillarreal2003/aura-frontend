@@ -6,4 +6,5 @@ export const environment = {
   toolsApiUrl: 'http://localhost:8000',
   notificationApiUrl: 'http://localhost:8004',
   llmApiUrl: 'http://localhost:8001',
+  adminUrl: 'http://localhost:8002/admin',
 };
