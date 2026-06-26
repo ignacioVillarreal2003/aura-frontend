@@ -349,7 +349,7 @@
               <div class="message-content">
                 @if (aiProgressStep()) {
                   <div class="message-bubble ai-progress">
-                    <span class="ai-progress__label">{{ progressLabel(aiProgressStep()) }}</span>
+                    <span class="ai-progress__label">{{ aiProgressMessage() || progressLabel(aiProgressStep()) }}</span>
                   </div>
                 } @else {
                   <div class="message-bubble typing-indicator">
