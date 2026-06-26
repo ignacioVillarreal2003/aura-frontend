@@ -172,6 +172,7 @@ export class ChatSession implements OnDestroy {
   readonly submittingReply = signal(false);
   readonly resolvingLinkedId = signal<number | null>(null);
   readonly aiProgressStep = signal<string | null>(null);
+  readonly aiProgressMessage = signal<string | null>(null);
   readonly messageFragments = signal<Map<number, readonly ChatFragment[]>>(new Map());
   readonly expandedFragmentIds = signal<Set<number>>(new Set());
 
@@ -1900,12 +1901,14 @@ export class ChatSession implements OnDestroy {
         break;
       case 'ai_progress':
         this.aiProgressStep.set(msg.step);
+        this.aiProgressMessage.set(msg.message?.trim() || null);
         this.cdr.markForCheck();
         break;
       case 'ai_delta': {
         const delta = msg.delta ?? '';
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
+        this.aiProgressMessage.set(null);
         this.scheduleDeltaApply(cid, delta);
         break;
       }
@@ -1957,6 +1960,7 @@ export class ChatSession implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
+        this.aiProgressMessage.set(null);
 
         if (msg.fragments?.length) {
           const fragId = msg.id ?? sid ?? Date.now();
@@ -1975,6 +1979,7 @@ export class ChatSession implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
+        this.aiProgressMessage.set(null);
 
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
@@ -1984,6 +1989,7 @@ export class ChatSession implements OnDestroy {
         this.streamingAssistantId.set(null);
         this.isTyping.set(false);
         this.aiProgressStep.set(null);
+        this.aiProgressMessage.set(null);
 
         this.toast.show(msg.detail, 'error');
         this.cdr.markForCheck();
@@ -2014,6 +2020,7 @@ export class ChatSession implements OnDestroy {
           if (this.streamingAssistantId() === null) {
             this.isTyping.set(false);
             this.aiProgressStep.set(null);
+            this.aiProgressMessage.set(null);
           }
         }
         this.cdr.markForCheck();
