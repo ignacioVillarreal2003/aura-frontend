@@ -971,11 +971,11 @@
 }
 
 .message-action-btn--active {
-  color: #818cf8;
+  color: #707fff;
 }
 
 .message-action-btn--active:hover:not(:disabled) {
-  color: #a5b4fc;
+  color: #9aa6ff;
   background: rgba(129, 140, 248, 0.12);
 }
 
@@ -985,8 +985,15 @@
 }
 
 .message-action-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+  opacity: 0.6;
+  /* Mientras se registra el feedback (~1s) el botón queda disabled; usar
+     'default' evita el cursor de "cancelar" que se veía raro al presionar. */
+  cursor: default;
+}
+
+/* Si el botón ya está activo (feedback elegido), no atenuarlo mientras procesa. */
+.message-action-btn--active:disabled {
+  opacity: 1;
 }
 
 
