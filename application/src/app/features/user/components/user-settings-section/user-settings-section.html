@@ -135,7 +135,9 @@
               <div class="data-control-info">
                 <span class="data-control-label">Eliminar todos los chats</span>
               </div>
-              <button type="button" class="danger-btn">Eliminar todo</button>
+              <button type="button" class="danger-btn" [disabled]="deletingAll()" (click)="deleteAll()">
+                {{ deletingAll() ? 'Eliminando…' : 'Eliminar todo' }}
+              </button>
             </div>
             <div class="data-control-item">
               <div class="data-control-info">
@@ -155,6 +157,17 @@
           icon="pi-box"
           (confirm)="confirmArchiveAll()"
           (cancel)="cancelArchiveAll()" />
+      }
+
+      @if (confirmDeleteAllOpen()) {
+        <app-confirm-dialog
+          title="Eliminar todos los chats"
+          message="Se eliminarán permanentemente los chats de los que sos dueño. Esta acción no se puede deshacer."
+          confirmLabel="Eliminar todo"
+          icon="pi-trash"
+          [danger]="true"
+          (confirm)="confirmDeleteAll()"
+          (cancel)="cancelDeleteAll()" />
       }
     }
   }

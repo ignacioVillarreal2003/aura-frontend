@@ -94,6 +94,8 @@ export class UserSettingsSectionComponent {
   readonly unarchivingId = signal<number | null>(null);
   readonly archivingAll = signal(false);
   readonly confirmArchiveAllOpen = signal(false);
+  readonly deletingAll = signal(false);
+  readonly confirmDeleteAllOpen = signal(false);
 
   openArchived(): void {
     this.showArchived.set(true);
@@ -176,6 +178,54 @@ export class UserSettingsSectionComponent {
         },
         error: () => {
           this.archivingAll.set(false);
+          this.toast.show('No se pudieron obtener los chats.', 'error');
+        },
+      });
+  }
+
+  deleteAll(): void {
+    if (this.deletingAll()) return;
+    this.confirmDeleteAllOpen.set(true);
+  }
+
+  cancelDeleteAll(): void {
+    this.confirmDeleteAllOpen.set(false);
+  }
+
+  confirmDeleteAll(): void {
+    this.confirmDeleteAllOpen.set(false);
+    if (this.deletingAll()) return;
+    this.deletingAll.set(true);
+    // Mismo patrón que "archivar todo": juntamos los IDs de todos los chats del
+    // usuario (membresía) paginando y los eliminamos en una sola llamada. El back
+    // solo borra los chats de los que el usuario es dueño; el resto los omite.
+    this.chatHttp
+      .listChats()
+      .pipe(
+        expand((page) => (page.next ? this.chatHttp.listChats({ url: page.next }) : EMPTY)),
+        reduce((ids, page) => ids.concat(page.results.map((c) => c.id)), [] as number[]),
+      )
+      .subscribe({
+        next: (ids) => {
+          if (ids.length === 0) {
+            this.deletingAll.set(false);
+            this.toast.show('No hay chats para eliminar.', 'success');
+            return;
+          }
+          this.chatHttp.deleteChats({ ids }).subscribe({
+            next: (res) => {
+              this.deletingAll.set(false);
+              this.toast.show(`${res.deleted} chat(s) eliminado(s).`, 'success');
+              if (this.showArchived()) this.loadArchived();
+            },
+            error: () => {
+              this.deletingAll.set(false);
+              this.toast.show('No se pudieron eliminar los chats.', 'error');
+            },
+          });
+        },
+        error: () => {
+          this.deletingAll.set(false);
           this.toast.show('No se pudieron obtener los chats.', 'error');
         },
       });

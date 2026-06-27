@@ -320,6 +320,10 @@ export interface BulkUnarchiveChatResultDto {
   readonly unarchived: number;
 }
 
+export interface BulkDeleteChatResultDto {
+  readonly deleted: number;
+}
+
 export interface CreateChatBody {
   readonly name: string;
   readonly system_prompt?: string | null;

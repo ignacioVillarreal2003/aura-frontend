@@ -10,6 +10,7 @@ import type {
   ArtifactVersionDto,
   BulkArchiveChatResultDto,
   BulkChatIdsBody,
+  BulkDeleteChatResultDto,
   BulkUnarchiveChatResultDto,
   ChatDetailDto,
   ChatListItemDto,
@@ -172,6 +173,10 @@ export class AuraChatServiceHttp {
 
   unarchiveChats(body: BulkChatIdsBody): Observable<BulkUnarchiveChatResultDto> {
     return this.http.post<BulkUnarchiveChatResultDto>(`${this.chatsRoot()}unarchive/`, body);
+  }
+
+  deleteChats(body: BulkChatIdsBody): Observable<BulkDeleteChatResultDto> {
+    return this.http.post<BulkDeleteChatResultDto>(`${this.chatsRoot()}delete/`, body);
   }
 
   lockChat(chatId: number): Observable<void> {
