@@ -297,6 +297,17 @@ export interface MembershipDto {
   readonly created_at: IsoDateTimeString;
 }
 
+/** A human-to-human message in a chat's peer channel (no AI involved). */
+export interface PeerMessageDto {
+  readonly id: number;
+  readonly chat_id: number;
+  readonly message: string;
+  readonly created_by: number;
+  readonly created_at: IsoDateTimeString;
+  readonly updated_at: IsoDateTimeString | null;
+  readonly is_edited: boolean;
+}
+
 export interface ShareLinkDto {
   readonly id: number;
   readonly chat_id: number;
@@ -935,7 +946,11 @@ export type AuraChatWsClientMessage =
       readonly process_documents?: boolean | null;
     }
   | { readonly type: 'chat.regenerate'; readonly mode?: AuraChatAiMode }
-  | { readonly type: 'chat.typing'; readonly is_typing: boolean };
+  | { readonly type: 'chat.typing'; readonly is_typing: boolean }
+  | { readonly type: 'peer.message'; readonly message: string }
+  | { readonly type: 'peer.message.edit'; readonly id: number; readonly message: string }
+  | { readonly type: 'peer.message.delete'; readonly id: number }
+  | { readonly type: 'peer.typing'; readonly is_typing: boolean };
 
 export type AuraChatWsServerMessage =
   | { readonly type: 'chat_ai_lock'; readonly locked: boolean }
@@ -1007,4 +1022,34 @@ export type AuraChatWsServerMessage =
       readonly type: 'artifact_deleted';
       readonly artifact_id: number;
       readonly deleted_by: number | null;
+    }
+  | {
+      readonly type: 'peer_message_created';
+      readonly id: number;
+      readonly chat_id: number;
+      readonly message: string;
+      readonly created_by: number;
+      readonly created_at: IsoDateTimeString;
+      readonly updated_at: IsoDateTimeString | null;
+      readonly is_edited: boolean;
+    }
+  | {
+      readonly type: 'peer_message_updated';
+      readonly id: number;
+      readonly chat_id: number;
+      readonly message: string;
+      readonly created_by: number;
+      readonly created_at: IsoDateTimeString;
+      readonly updated_at: IsoDateTimeString | null;
+      readonly is_edited: boolean;
+    }
+  | {
+      readonly type: 'peer_message_deleted';
+      readonly id: number;
+      readonly deleted_by: number | null;
+    }
+  | {
+      readonly type: 'peer_typing';
+      readonly user_id: number;
+      readonly is_typing: boolean;
     };

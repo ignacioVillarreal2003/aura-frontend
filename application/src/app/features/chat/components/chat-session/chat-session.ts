@@ -208,6 +208,8 @@ export class ChatSession implements OnDestroy {
     { retrieveContext: null, processDocuments: null };
 
   private readonly _docPolls = new Map<number, Subject<void>>();
+  /** Interval handle while waiting for home-seeded documents to finish processing. */
+  private _docReadyWaitHandle: ReturnType<typeof setInterval> | null = null;
   private deltaBuffer = '';
   private rafHandle: number | null = null;
   private pendingDeltaChatId: number | null = null;
@@ -248,6 +250,7 @@ export class ChatSession implements OnDestroy {
             this.composer()?.presetAiMode(pendingAiMode);
           }
           this._pendingChatOptions = this.consumePendingChatFlagsFromHistory();
+          this.seedPendingDocuments();
 
           this._olderMessagesUrl = null;
           this.hasMoreMessages.set(false);
@@ -288,14 +291,23 @@ export class ChatSession implements OnDestroy {
               }, 100);
               const gen = this.consumePendingGenerationFromHistory();
               if (gen) {
-                setTimeout(() => this.generateTool({
-                  mode: gen.mode,
-                  retrieveContext: gen.retrieveContext,
-                  processDocuments: gen.processDocuments,
-                  reportType: gen.type ?? 'SITREP',
-                  documentActionType: '',
-                  message: gen.message,
-                }), 100);
+                // Esperá a que los documentos sembrados terminen de procesarse
+                // antes de generar, así el artefacto sí los toma en cuenta.
+                this.genLoading.set(true);
+                void this.waitForSeededDocsReady(sessionId).then(() => {
+                  if (this.chatId !== id || this.wsSessionId !== sessionId) {
+                    this.genLoading.set(false);
+                    return;
+                  }
+                  this.generateTool({
+                    mode: gen.mode,
+                    retrieveContext: gen.retrieveContext,
+                    processDocuments: gen.processDocuments,
+                    reportType: gen.type ?? 'SITREP',
+                    documentActionType: '',
+                    message: gen.message,
+                  });
+                });
               }
             }),
           );
@@ -427,12 +439,19 @@ export class ChatSession implements OnDestroy {
   generateTool(payload: ComposerGenerate): void {
     const message = payload.message.trim();
     const composerMode = payload.mode;
-    if (!message && composerMode !== 'document-summary') return;
-
     const chatId = this.chatId ?? undefined;
+    const docIds = this.sessionDocuments().map((d) => d.id);
+    // El mensaje es opcional cuando hay documentos adjuntos (generar solo desde
+    // el documento). `document-summary` nunca lo exige; `document-action` sí.
+    const allowEmptyMessage =
+      composerMode === 'document-summary' ||
+      (composerMode !== 'document-action' && docIds.length > 0);
+    if (!message && !allowEmptyMessage) return;
+
     const ctx = {
       retrieve_context: payload.retrieveContext,
       process_documents: payload.processDocuments,
+      ...(docIds.length > 0 ? { document_ids: docIds } : {}),
     };
     this.genLoading.set(true);
 
@@ -504,7 +523,6 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'document-summary') {
-      const docIds = this.sessionDocuments().map((d) => d.id);
       if (docIds.length === 0) { onError('Subí al menos un documento antes de generar un resumen.'); return; }
       this.http.generateDocumentSummary({ document_ids: docIds, chat_id: chatId!, ...ctx })
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -519,7 +537,6 @@ export class ChatSession implements OnDestroy {
     }
 
     if (composerMode === 'document-action') {
-      const docIds = this.sessionDocuments().map((d) => d.id);
       if (docIds.length === 0) { onError('Subí al menos un documento antes de generar la acción.'); return; }
       const actionType = payload.documentActionType;
       this.http.generateDocumentAction({
@@ -887,6 +904,10 @@ export class ChatSession implements OnDestroy {
     this.clearDeltaScheduling();
     this.chatShell.clearCurrentChat();
     this._messagesTopObserver?.disconnect();
+    if (this._docReadyWaitHandle != null) {
+      clearInterval(this._docReadyWaitHandle);
+      this._docReadyWaitHandle = null;
+    }
   }
 
   private clearTypingTimers(): void {
@@ -1818,6 +1839,65 @@ export class ChatSession implements OnDestroy {
     };
   }
 
+  /**
+   * Documentos subidos en la pantalla de inicio justo antes de crear el chat.
+   * Se siembran en `sessionDocuments` para que el primer mensaje/artefacto los
+   * adjunte, y se les arranca el polling de estado si aún están procesándose.
+   */
+  private seedPendingDocuments(): void {
+    const docs = this.consumePendingDocumentsFromHistory();
+    if (docs.length === 0) return;
+    const now = new Date().toISOString();
+    this.sessionDocuments.set(
+      docs.map((d) => ({ id: d.id, name: d.name, status: d.status, created_at: now })),
+    );
+    docs.forEach((d) => {
+      if (d.status !== 'processed' && d.status !== 'failed') this._startDocumentPolling(d.id);
+    });
+  }
+
+  private consumePendingDocumentsFromHistory(): { id: number; name: string; status: string }[] {
+    const navState = history.state as { pendingDocuments?: unknown } | null;
+    const raw = navState?.pendingDocuments;
+    if (navState && 'pendingDocuments' in navState) {
+      const { pendingDocuments: _d, ...rest } = navState;
+      history.replaceState(rest, '');
+    }
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter(
+        (d): d is { id: number; name?: unknown; status?: unknown } =>
+          !!d && typeof d === 'object' && typeof (d as { id?: unknown }).id === 'number',
+      )
+      .map((d) => ({ id: d.id, name: String(d.name ?? ''), status: String(d.status ?? 'processing') }));
+  }
+
+  /**
+   * Espera a que los documentos sembrados desde el inicio terminen de procesarse
+   * (status terminal: `processed`/`failed`) antes de disparar el primer mensaje o
+   * la generación, para que el backend tenga los fragmentos listos. Resuelve de
+   * inmediato si no hay docs o ya están listos, sale si cambia la sesión, y tiene
+   * timeout de fallback para no quedar colgado indefinidamente.
+   */
+  private waitForSeededDocsReady(sessionId: number, maxMs = 90_000): Promise<void> {
+    const isDone = (): boolean => {
+      if (this.wsSessionId !== sessionId) return true;
+      return this.sessionDocuments().every((d) => d.status === 'processed' || d.status === 'failed');
+    };
+    if (this.sessionDocuments().length === 0 || isDone()) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      const start = Date.now();
+      const handle = setInterval(() => {
+        if (isDone() || Date.now() - start > maxMs) {
+          clearInterval(handle);
+          if (this._docReadyWaitHandle === handle) this._docReadyWaitHandle = null;
+          resolve();
+        }
+      }, 400);
+      this._docReadyWaitHandle = handle;
+    });
+  }
+
   private async openWebSocketAfterLoad(expectedChatId: number, sessionId: number, pending?: string): Promise<void> {
     if (this.chatId !== expectedChatId || this.wsSessionId !== sessionId) return;
     const conn = this.wsFactory.open(expectedChatId, this.auth.getToken());
@@ -1851,10 +1931,17 @@ export class ChatSession implements OnDestroy {
     }
 
     if (pending?.trim()) {
+      // Esperá a que los documentos sembrados terminen de procesarse para que el
+      // primer mensaje los adjunte con los fragmentos ya disponibles.
+      await this.waitForSeededDocsReady(sessionId);
+      if (this.chatId !== expectedChatId || this.wsSessionId !== sessionId) return;
+      const docIds = this.sessionDocuments().map((d) => d.id);
       conn.sendUserMessage(pending.trim(), this.aiMode(), {
+        documentIds: docIds.length > 0 ? docIds : undefined,
         retrieveContext: this._pendingChatOptions.retrieveContext,
         processDocuments: this._pendingChatOptions.processDocuments,
       });
+      if (docIds.length > 0) this.sessionDocuments.set([]);
       this._pendingChatOptions = { retrieveContext: null, processDocuments: null };
     }
   }

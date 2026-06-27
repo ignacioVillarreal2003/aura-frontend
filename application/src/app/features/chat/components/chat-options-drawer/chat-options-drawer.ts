@@ -1,6 +1,8 @@
 import {
   Component,
+  DestroyRef,
   computed,
+  effect,
   inject,
   input,
   linkedSignal,
@@ -9,16 +11,20 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap, take } from 'rxjs';
+import { Observable, Subject, Subscription, debounceTime, distinctUntilChanged, switchMap, take } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { AuraAuthServiceHttp } from '@core/services/http-services/aura-auth-service-http.service';
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
 import { ToastService } from '@core/components/toast-service';
 import { UserState } from '@core/state/user.state';
 import { UserCacheService } from '@core/services/user-cache.service';
+import { AuthenticationService } from '@core/services/authentication/authentication.service';
+import { ChatWebSocketService, type ChatSocketConnection } from '@core/services/websocket/chat-websocket.service';
 import type { UserLookupDto } from '@aura-types/aura-auth-service.types';
 import {
   type ArtifactSummaryDto,
+  type AuraChatWsServerMessage,
+  type PeerMessageDto,
   type ChecklistListItemDto,
   type DecisionBriefListItemDto,
   type DocumentActionListItemDto,
@@ -59,7 +65,7 @@ export interface DocumentItem {
   readonly created_at: string;
 }
 
-type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'share' | 'pinned' | 'bookmarks' | 'export' | 'artifacts' | 'reports' | 'checklists' | 'rename' | 'tags' | 'prompts';
+type PanelView = 'root' | 'documents' | 'participants' | 'add-participants' | 'chat' | 'team-chat' | 'share' | 'pinned' | 'bookmarks' | 'export' | 'artifacts' | 'reports' | 'checklists' | 'rename' | 'tags' | 'prompts';
 
 export type ArtifactTabKey = 'reports' | 'checklists' | 'quizzes' | 'timelines' | 'lessons-learned' | 'decision-briefs' | 'document-summaries' | 'document-actions';
 
@@ -102,6 +108,9 @@ export class ChatOptionsDrawer {
   private readonly toastService = inject(ToastService);
   private readonly userState = inject(UserState);
   private readonly userCache = inject(UserCacheService);
+  private readonly auth = inject(AuthenticationService);
+  private readonly wsFactory = inject(ChatWebSocketService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly _userSearch$ = new Subject<string>();
 
@@ -202,10 +211,30 @@ export class ChatOptionsDrawer {
   readonly selectedUsers = signal<UserLookupDto[]>([]);
   readonly inviting = signal(false);
 
+  // ── Team chat (human-to-human, no AI) ──────────────────────────────────────
+  readonly peerMessages = signal<PeerMessageDto[]>([]);
+  readonly peerLoading = signal(false);
+  readonly peerInput = signal('');
+  readonly editingPeerId = signal<number | null>(null);
+  readonly editingPeerText = signal('');
+  readonly peerTypingIds = signal<number[]>([]);
+  private peerConn: ChatSocketConnection | null = null;
+  private peerSub: Subscription | null = null;
+  private peerTypingTimers = new Map<number, ReturnType<typeof setTimeout>>();
+  private peerSelfTypingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  readonly currentUserId = computed(() => this.userState.user()?.id ?? null);
+  readonly isPeerChatOwner = computed(() => {
+    const uid = this.currentUserId();
+    if (uid == null) return false;
+    return this.members().some((m) => m.member_id === uid && m.role === 'owner');
+  });
+
   readonly headerTitle = computed(() => {
     switch (this.panelView()) {
       case 'add-participants': return 'Añadir participantes';
       case 'chat': return 'Gestionar chat';
+      case 'team-chat': return 'Chat del equipo';
       case 'participants': return 'Participantes';
       case 'documents': return 'Documentos';
       case 'share': return 'Compartir';
@@ -256,7 +285,7 @@ export class ChatOptionsDrawer {
       debounceTime(300),
       distinctUntilChanged(),
       switchMap((q) => {
-        if (q.trim().length < 2) {
+        if (q.trim().length < 1) {
           this.userSearchResults.set([]);
           this.userSearchLoading.set(false);
           return [];
@@ -274,6 +303,16 @@ export class ChatOptionsDrawer {
         this.userSearchLoading.set(false);
       },
     });
+
+    // Tear down the team-chat socket whenever we leave that panel (back, close,
+    // or the drawer resetting panelView to 'root').
+    effect(() => {
+      if (this.panelView() !== 'team-chat' && this.peerConn) {
+        this.closePeerChat();
+      }
+    });
+
+    this.destroyRef.onDestroy(() => this.closePeerChat());
   }
 
   close(): void {
@@ -307,6 +346,9 @@ export class ChatOptionsDrawer {
     }
     if (view === 'participants') {
       this.reloadMembers(this.contextChatId()!);
+    }
+    if (view === 'team-chat') {
+      this.openPeerChat();
     }
     if (view === 'share') {
       this.reloadShareLinks();
@@ -714,7 +756,7 @@ export class ChatOptionsDrawer {
 
   onSearchInput(query: string): void {
     this.userSearchQuery.set(query);
-    if (query.trim().length < 2) {
+    if (query.trim().length < 1) {
       this.userSearchResults.set([]);
       this.userSearchOpen.set(false);
     }
@@ -767,6 +809,198 @@ export class ChatOptionsDrawer {
         this.inviting.set(false);
       },
     });
+  }
+
+  // ── Team chat (human-to-human, no AI) ──────────────────────────────────────
+  readonly peerTypingLabel = computed(() => {
+    const ids = this.peerTypingIds();
+    if (ids.length === 0) return '';
+    if (ids.length === 1) return `${this.peerAuthorName(ids[0])} está escribiendo…`;
+    return 'Varios están escribiendo…';
+  });
+
+  private openPeerChat(): void {
+    const cid = this.contextChatId();
+    if (cid == null) return;
+    this.closePeerChat();
+    // Reuse the member list to resolve author names and detect the chat owner.
+    this.reloadMembers(cid);
+    this.loadPeerHistory(cid);
+    const conn = this.wsFactory.open(cid, this.auth.getToken());
+    if (!conn) {
+      this.toastService.show('No se pudo conectar al chat en tiempo real.', 'error');
+      return;
+    }
+    this.peerConn = conn;
+    this.peerSub = conn.messages$.subscribe({
+      next: (msg) => this.handlePeerEvent(msg),
+    });
+  }
+
+  private closePeerChat(): void {
+    this.peerSub?.unsubscribe();
+    this.peerSub = null;
+    this.peerConn?.close();
+    this.peerConn = null;
+    for (const t of this.peerTypingTimers.values()) clearTimeout(t);
+    this.peerTypingTimers.clear();
+    if (this.peerSelfTypingTimer) {
+      clearTimeout(this.peerSelfTypingTimer);
+      this.peerSelfTypingTimer = null;
+    }
+    this.peerTypingIds.set([]);
+    this.peerMessages.set([]);
+    this.peerInput.set('');
+    this.cancelEditPeer();
+    this.peerLoading.set(false);
+  }
+
+  private loadPeerHistory(chatId: number): void {
+    this.peerLoading.set(true);
+    this.peerMessages.set([]);
+    this.chatHttp.listPeerMessages(chatId, { page_size: 50 }).pipe(take(1)).subscribe({
+      next: (page) => {
+        // Server returns newest-first; render oldest-first like a chat log.
+        this.peerMessages.set([...page.results].reverse());
+        this.peerLoading.set(false);
+      },
+      error: () => {
+        this.peerLoading.set(false);
+        this.toastService.show('No se pudieron cargar los mensajes.', 'error');
+      },
+    });
+  }
+
+  private handlePeerEvent(msg: AuraChatWsServerMessage): void {
+    switch (msg.type) {
+      case 'peer_message_created': {
+        const dto: PeerMessageDto = {
+          id: msg.id, chat_id: msg.chat_id, message: msg.message,
+          created_by: msg.created_by, created_at: msg.created_at,
+          updated_at: msg.updated_at, is_edited: msg.is_edited,
+        };
+        this.peerMessages.update((list) =>
+          list.some((m) => m.id === dto.id) ? list : [...list, dto]
+        );
+        this.markPeerTyping(dto.created_by, false);
+        break;
+      }
+      case 'peer_message_updated': {
+        const dto: PeerMessageDto = {
+          id: msg.id, chat_id: msg.chat_id, message: msg.message,
+          created_by: msg.created_by, created_at: msg.created_at,
+          updated_at: msg.updated_at, is_edited: msg.is_edited,
+        };
+        this.peerMessages.update((list) => list.map((m) => (m.id === dto.id ? dto : m)));
+        break;
+      }
+      case 'peer_message_deleted': {
+        this.peerMessages.update((list) => list.filter((m) => m.id !== msg.id));
+        if (this.editingPeerId() === msg.id) this.cancelEditPeer();
+        break;
+      }
+      case 'peer_typing': {
+        this.markPeerTyping(msg.user_id, msg.is_typing);
+        break;
+      }
+      case 'error': {
+        this.toastService.show(msg.detail || 'Error en el chat.', 'error');
+        break;
+      }
+    }
+  }
+
+  sendPeer(): void {
+    const text = this.peerInput().trim();
+    if (!this.peerConn || !text) return;
+    this.peerConn.sendPeerMessage(text);
+    this.peerInput.set('');
+    this.notifyPeerTypingStopped();
+  }
+
+  onPeerInput(value: string): void {
+    this.peerInput.set(value);
+    if (!this.peerConn) return;
+    this.peerConn.sendPeerTyping(true);
+    if (this.peerSelfTypingTimer) clearTimeout(this.peerSelfTypingTimer);
+    this.peerSelfTypingTimer = setTimeout(() => this.notifyPeerTypingStopped(), 2500);
+  }
+
+  private notifyPeerTypingStopped(): void {
+    if (this.peerSelfTypingTimer) {
+      clearTimeout(this.peerSelfTypingTimer);
+      this.peerSelfTypingTimer = null;
+    }
+    this.peerConn?.sendPeerTyping(false);
+  }
+
+  startEditPeer(m: PeerMessageDto): void {
+    this.editingPeerId.set(m.id);
+    this.editingPeerText.set(m.message);
+  }
+
+  cancelEditPeer(): void {
+    this.editingPeerId.set(null);
+    this.editingPeerText.set('');
+  }
+
+  submitEditPeer(): void {
+    const id = this.editingPeerId();
+    const text = this.editingPeerText().trim();
+    if (id == null || !text || !this.peerConn) return;
+    this.peerConn.editPeerMessage(id, text);
+    this.cancelEditPeer();
+  }
+
+  deletePeer(m: PeerMessageDto): void {
+    this.requestConfirm({
+      title: '¿Eliminar este mensaje?',
+      confirmLabel: 'Eliminar',
+      onConfirm: () => this.peerConn?.deletePeerMessage(m.id),
+    });
+  }
+
+  isOwnPeer(m: PeerMessageDto): boolean {
+    return m.created_by === this.currentUserId();
+  }
+
+  canEditPeer(m: PeerMessageDto): boolean {
+    return this.isOwnPeer(m);
+  }
+
+  canDeletePeer(m: PeerMessageDto): boolean {
+    return this.isOwnPeer(m) || this.isPeerChatOwner();
+  }
+
+  peerAuthorName(userId: number): string {
+    const u = this.memberUserMap().get(userId);
+    if (u) return u.name?.trim() || `@${u.username}`;
+    if (userId === this.currentUserId()) return 'Vos';
+    return `Usuario ${userId}`;
+  }
+
+  peerAuthorInitials(userId: number): string {
+    const u = this.memberUserMap().get(userId);
+    const base = (u?.name?.trim() || u?.username || `U${userId}`).toUpperCase();
+    const parts = base.split(/[\s._-]+/).filter(Boolean);
+    if (parts.length >= 2) return parts[0][0] + parts[parts.length - 1][0];
+    return base.slice(0, 2);
+  }
+
+  private markPeerTyping(userId: number, isTyping: boolean): void {
+    if (userId === this.currentUserId()) return;
+    const existing = this.peerTypingTimers.get(userId);
+    if (existing) clearTimeout(existing);
+    if (!isTyping) {
+      this.peerTypingTimers.delete(userId);
+      this.peerTypingIds.update((ids) => ids.filter((i) => i !== userId));
+      return;
+    }
+    this.peerTypingIds.update((ids) => (ids.includes(userId) ? ids : [...ids, userId]));
+    this.peerTypingTimers.set(
+      userId,
+      setTimeout(() => this.markPeerTyping(userId, false), 4000),
+    );
   }
 
   changeRoleTo(member: MembershipDto, role: MembershipRole): void {

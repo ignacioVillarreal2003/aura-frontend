@@ -26,6 +26,12 @@ interface PendingGeneration {
   message: string;
 }
 
+interface PendingDocument {
+  id: number;
+  name: string;
+  status: string;
+}
+
 @Component({
   selector: 'app-chat-home',
   standalone: true,
@@ -120,7 +126,7 @@ export class ChatHome {
 
     this.api.createChat({ name: chatName }).pipe(
       switchMap((chat) => {
-        if (files.length === 0) return of(chat);
+        if (files.length === 0) return of({ chat, docs: [] as PendingDocument[] });
         const uploads = files.map((file) => {
           try {
             return this.docHttp.createDocumentFromInput({
@@ -130,15 +136,26 @@ export class ChatHome {
             return of(null);
           }
         });
-        return forkJoin(uploads).pipe(map(() => chat));
+        return forkJoin(uploads).pipe(
+          map((results) => ({
+            chat,
+            docs: results
+              .filter((r): r is NonNullable<typeof r> => r != null)
+              .map((r) => ({ id: r.id, name: r.name, status: r.status })),
+          })),
+        );
       }),
     ).subscribe({
-      next: (chat) => {
+      next: ({ chat, docs }) => {
         this.submitting.set(false);
         this.pendingFiles.set([]);
+        // Pasá los documentos recién subidos a la sesión para que el primer
+        // mensaje/artefacto los adjunte (sessionDocuments arranca vacío en la
+        // sesión nueva, así que hay que sembrarlos vía el navigation state).
+        const state = docs.length > 0 ? { ...routerState, pendingDocuments: docs } : routerState;
         void this.router.navigate(
           ['/main-container', 'chat', String(chat.id)],
-          Object.keys(routerState).length > 0 ? { state: routerState } : {},
+          Object.keys(state).length > 0 ? { state } : {},
         );
       },
       error: () => {
