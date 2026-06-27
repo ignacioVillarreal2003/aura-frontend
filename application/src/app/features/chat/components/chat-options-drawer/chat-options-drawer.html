@@ -43,6 +43,14 @@
                 </span>
                 <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
               </button>
+              <button type="button" class="drawer-section-tile" (click)="openSub('team-chat')">
+                <span class="drawer-section-tile__icon drawer-section-tile__icon--teamchat" aria-hidden="true"><i class="pi pi-comments"></i></span>
+                <span class="drawer-section-tile__text">
+                  <span class="drawer-section-tile__title">Chat del equipo</span>
+                  <span class="drawer-section-tile__hint">Conversación entre miembros, sin IA</span>
+                </span>
+                <i class="pi pi-chevron-right drawer-section-tile__chev" aria-hidden="true"></i>
+              </button>
               <button type="button" class="drawer-section-tile" (click)="openSub('participants')">
                 <span class="drawer-section-tile__icon drawer-section-tile__icon--people" aria-hidden="true"><i class="pi pi-users"></i></span>
                 <span class="drawer-section-tile__text">
@@ -340,6 +348,87 @@
                 <span class="drawer-action-item__label">Borrar chat</span>
               </button>
             </nav>
+          }
+          @case ('team-chat') {
+            <div class="drawer-peer">
+              <div class="drawer-peer__messages" aria-label="Mensajes del equipo">
+                @if (peerLoading() && peerMessages().length === 0) {
+                  <p class="drawer-muted">Cargando mensajes…</p>
+                } @else if (peerMessages().length === 0) {
+                  <div class="drawer-empty-state">
+                    <i class="pi pi-comments drawer-empty-state__icon" aria-hidden="true"></i>
+                    <p class="drawer-empty-state__text">Todavía no hay mensajes. ¡Escribí el primero!</p>
+                  </div>
+                } @else {
+                  @for (m of peerMessages(); track m.id) {
+                    <div class="drawer-peer-msg" [class.drawer-peer-msg--own]="isOwnPeer(m)">
+                      <div class="drawer-peer-msg__avatar" aria-hidden="true">{{ peerAuthorInitials(m.created_by) }}</div>
+                      <div class="drawer-peer-msg__body">
+                        <div class="drawer-peer-msg__head">
+                          <span class="drawer-peer-msg__author">{{ peerAuthorName(m.created_by) }}</span>
+                          <span class="drawer-peer-msg__time">{{ m.created_at | date: 'short' }}</span>
+                          @if (m.is_edited) {
+                            <span class="drawer-peer-msg__edited">· editado</span>
+                          }
+                        </div>
+                        @if (editingPeerId() === m.id) {
+                          <form class="drawer-peer-edit" (submit)="$event.preventDefault(); submitEditPeer()">
+                            <textarea
+                              class="drawer-peer-edit__input"
+                              [value]="editingPeerText()"
+                              (input)="editingPeerText.set($any($event.target).value)"
+                              rows="2"
+                              maxlength="10000"
+                              aria-label="Editar mensaje"
+                            ></textarea>
+                            <div class="drawer-peer-edit__actions">
+                              <button type="button" class="drawer-btn drawer-btn--secondary" (click)="cancelEditPeer()">Cancelar</button>
+                              <button type="submit" class="drawer-btn drawer-btn--primary" [disabled]="!editingPeerText().trim()">Guardar</button>
+                            </div>
+                          </form>
+                        } @else {
+                          <p class="drawer-peer-msg__text">{{ m.message }}</p>
+                          @if (canEditPeer(m) || canDeletePeer(m)) {
+                            <div class="drawer-peer-msg__actions">
+                              @if (canEditPeer(m)) {
+                                <button type="button" class="drawer-peer-msg__action" title="Editar" aria-label="Editar mensaje" (click)="startEditPeer(m)">
+                                  <i class="pi pi-pencil" aria-hidden="true"></i>
+                                </button>
+                              }
+                              @if (canDeletePeer(m)) {
+                                <button type="button" class="drawer-peer-msg__action drawer-peer-msg__action--danger" title="Eliminar" aria-label="Eliminar mensaje" (click)="deletePeer(m)">
+                                  <i class="pi pi-trash" aria-hidden="true"></i>
+                                </button>
+                              }
+                            </div>
+                          }
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+
+              @if (peerTypingLabel()) {
+                <p class="drawer-peer__typing">{{ peerTypingLabel() }}</p>
+              }
+
+              <form class="drawer-peer__composer" (submit)="$event.preventDefault(); sendPeer()">
+                <textarea
+                  class="drawer-peer__input"
+                  placeholder="Escribí un mensaje al equipo…"
+                  [value]="peerInput()"
+                  (input)="onPeerInput($any($event.target).value)"
+                  (keydown.enter)="$event.preventDefault(); sendPeer()"
+                  rows="1"
+                  maxlength="10000"
+                  aria-label="Mensaje para el equipo"
+                ></textarea>
+                <button type="submit" class="drawer-peer__send" [disabled]="!peerInput().trim()" aria-label="Enviar">
+                  <i class="pi pi-send" aria-hidden="true"></i>
+                </button>
+              </form>
+            </div>
           }
           @case ('tags') {
             <div class="drawer-tags-form">

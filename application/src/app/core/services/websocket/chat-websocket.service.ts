@@ -30,6 +30,11 @@ export type ChatSocketConnection = {
   sendUserMessage(text: string, mode?: AuraChatAiMode, options?: ChatSendOptions): void;
   sendRegenerate(mode?: AuraChatAiMode): void;
   sendTyping(isTyping: boolean): void;
+  /** Peer chat (human-to-human, no AI) — shares the same socket/group. */
+  sendPeerMessage(text: string): void;
+  editPeerMessage(id: number, text: string): void;
+  deletePeerMessage(id: number): void;
+  sendPeerTyping(isTyping: boolean): void;
   close(): void;
   readonly whenOpen: Promise<void>;
 };
@@ -196,6 +201,42 @@ export class ChatWebSocketService {
             is_typing: isTyping,
           };
           ws.send(JSON.stringify(payload));
+        }
+      },
+      sendPeerMessage(text: string): void {
+        const t = text.trim();
+        if (!t) return;
+        if (t.length > AURA_CHAT_WS_MESSAGE_MAX_CHAR) {
+          toast.show('El mensaje es demasiado largo.', 'error');
+          return;
+        }
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'peer.message', message: t } as AuraChatWsClientMessage));
+          return;
+        }
+        toast.show('Conexión no disponible. Recargá la página.', 'error');
+      },
+      editPeerMessage(id: number, text: string): void {
+        const t = text.trim();
+        if (!t) return;
+        if (t.length > AURA_CHAT_WS_MESSAGE_MAX_CHAR) {
+          toast.show('El mensaje es demasiado largo.', 'error');
+          return;
+        }
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'peer.message.edit', id, message: t } as AuraChatWsClientMessage));
+          return;
+        }
+        toast.show('Conexión no disponible. Recargá la página.', 'error');
+      },
+      deletePeerMessage(id: number): void {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'peer.message.delete', id } as AuraChatWsClientMessage));
+        }
+      },
+      sendPeerTyping(isTyping: boolean): void {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'peer.typing', is_typing: isTyping } as AuraChatWsClientMessage));
         }
       },
       close(): void {

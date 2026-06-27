@@ -48,6 +48,7 @@ import type {
   MembershipDto,
   MessageDto,
   PageNumberResult,
+  PeerMessageDto,
   PinnedArtifactDto,
   QuizAnswerResultDto,
   QuizDto,
@@ -101,6 +102,10 @@ export class AuraChatServiceHttp {
 
   private membersRoot(chatId: number): string {
     return `${this.base}/chats/${chatId}/members/`;
+  }
+
+  private peerMessagesRoot(chatId: number): string {
+    return `${this.base}/chats/${chatId}/peer-messages/`;
   }
 
   health(): Observable<HttpResponse<HealthResponseDto>> {
@@ -213,6 +218,38 @@ export class AuraChatServiceHttp {
     let p = this.paramsForCursor(query);
     p = p.set('chat_id', String(chatId));
     return this.http.get<CursorPageResult<MessageDto>>(`${this.base}/messages/`, { params: p });
+  }
+
+  // ── Peer chat (human-to-human, no AI) ──────────────────────────────────────
+  listPeerMessages(
+    chatId: number,
+    query: CursorFollowQuery = {},
+  ): Observable<CursorPageResult<PeerMessageDto>> {
+    if (query.url) {
+      return this.http.get<CursorPageResult<PeerMessageDto>>(query.url);
+    }
+    return this.http.get<CursorPageResult<PeerMessageDto>>(this.peerMessagesRoot(chatId), {
+      params: this.paramsForCursor(query),
+    });
+  }
+
+  createPeerMessage(chatId: number, body: { message: string }): Observable<PeerMessageDto> {
+    return this.http.post<PeerMessageDto>(this.peerMessagesRoot(chatId), body);
+  }
+
+  updatePeerMessage(
+    chatId: number,
+    messageId: number,
+    body: { message: string },
+  ): Observable<PeerMessageDto> {
+    return this.http.patch<PeerMessageDto>(
+      `${this.peerMessagesRoot(chatId)}${messageId}/`,
+      body,
+    );
+  }
+
+  deletePeerMessage(chatId: number, messageId: number): Observable<void> {
+    return this.http.delete<void>(`${this.peerMessagesRoot(chatId)}${messageId}/`);
   }
 
   listChatArtifacts(

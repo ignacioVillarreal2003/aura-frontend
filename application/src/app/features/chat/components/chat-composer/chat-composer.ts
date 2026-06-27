@@ -243,7 +243,9 @@ export class ChatComposer implements OnDestroy {
     }
     if (mode === 'document-summary') return this.hasDocs() && this.docsReady();
     if (mode === 'document-action') return this.hasDocs() && this.docsReady() && this.genMessage().trim().length > 0;
-    return this.genMessage().trim().length > 0;
+    // Resto de artefactos: alcanza con texto, o con documentos adjuntos listos
+    // (permite generar solo desde el documento, sin prompt).
+    return this.genMessage().trim().length > 0 || (this.hasDocs() && this.docsReady());
   });
 
   readonly voiceDisabled = computed(() =>
@@ -261,14 +263,25 @@ export class ChatComposer implements OnDestroy {
   }
 
   setComposerMode(mode: ComposerMode): void {
+    const previous = this.composerMode();
+    if (mode !== previous) {
+      // Conservá el texto tipeado al cruzar entre el textarea de chat (`text`)
+      // y el de herramientas (`genMessage`) para que no se pierda al cambiar de modo.
+      const carried = previous === 'chat' ? this.text() : this.genMessage();
+      if (mode === 'chat') {
+        this.text.set(carried);
+      } else {
+        this.genMessage.set(carried);
+      }
+    }
     this.composerMode.set(mode);
-    this.genMessage.set('');
     this.genDocumentActionType.set('');
     this.modeDropdownOpen.set(false);
     this.actionMenuOpen.set(false);
     this.composerModeChange.emit(mode);
     if (mode === 'chat') {
       setTimeout(() => this.messageBox()?.nativeElement.focus(), 50);
+      queueMicrotask(() => this.autosizeTextarea());
     }
   }
 
