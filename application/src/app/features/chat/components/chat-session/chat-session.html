@@ -178,6 +178,15 @@
                     </button>
                     <button
                       type="button"
+                      class="message-action-btn"
+                      [class.message-action-btn--active]="copiedMessageId() === message.id"
+                      [disabled]="isProcessing(message.id)"
+                      [title]="copiedMessageId() === message.id ? 'Copiado' : 'Copiar'"
+                      (click)="copyMessage(message)">
+                      <i [ngClass]="['pi', copiedMessageId() === message.id ? 'pi-check' : 'pi-copy']" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
                       class="message-action-btn message-action-btn--danger"
                       [disabled]="isProcessing(message.id)"
                       title="Eliminar"
@@ -309,6 +318,15 @@
                         [title]="message.is_bookmarked ? 'Quitar de guardados' : 'Guardar'"
                         (click)="toggleBookmark(message)">
                         <i [ngClass]="['pi', message.is_bookmarked ? 'pi-bookmark-fill' : 'pi-bookmark']" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="message-action-btn"
+                        [class.message-action-btn--active]="copiedMessageId() === message.id"
+                        [disabled]="isProcessing(message.id)"
+                        [title]="copiedMessageId() === message.id ? 'Copiado' : 'Copiar'"
+                        (click)="copyMessage(message)">
+                        <i [ngClass]="['pi', copiedMessageId() === message.id ? 'pi-check' : 'pi-copy']" aria-hidden="true"></i>
                       </button>
                       <button
                         type="button"

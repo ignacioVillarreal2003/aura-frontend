@@ -962,6 +962,7 @@ export type AuraChatWsServerMessage =
   | {
       readonly type: 'user_message';
       readonly id: number;
+      readonly artifact_id?: number | null;
       readonly message: string;
       readonly sender_type: MessageSenderType;
       readonly created_by: number;
@@ -982,6 +983,7 @@ export type AuraChatWsServerMessage =
       readonly question: string;
       readonly fragments: readonly ChatFragment[];
       readonly id?: number;
+      readonly artifact_id?: number | null;
       readonly sender_type?: MessageSenderType;
       readonly created_by?: number;
       readonly created_at?: IsoDateTimeString;

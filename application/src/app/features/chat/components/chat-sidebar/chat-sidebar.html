@@ -69,7 +69,8 @@
                         type="button"
                         class="sidebar-link sidebar-link--chat"
                         [class.is-active]="activeId() === '' + c.id"
-                        [routerLink]="['/main-container', 'chat', c.id]">
+                        [routerLink]="['/main-container', 'chat', c.id]"
+                        (click)="onChatClick(c.id)">
                         <i [ngClass]="['pi', c.is_pinned ? 'pi-thumbtack' : 'pi-comments']" aria-hidden="true"></i>
                         <span class="sidebar-link__text">{{ c.name }}</span>
                         @if (c.is_locked) {

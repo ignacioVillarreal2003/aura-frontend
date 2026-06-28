@@ -1,7 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, Subject, catchError, map, of, shareReplay, switchMap, takeUntil, throwError, timer } from 'rxjs';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
 import { ToastService } from '@core/components/toast-service';
@@ -32,6 +33,14 @@ interface PendingDocument {
   status: string;
 }
 
+/** Documento adjunto en la pantalla de inicio: ya subido al chat y en proceso. */
+interface SessionDocument {
+  id: number;
+  name: string;
+  status: string;
+  created_at: string;
+}
+
 @Component({
   selector: 'app-chat-home',
   standalone: true,
@@ -39,23 +48,47 @@ interface PendingDocument {
   templateUrl: './chat-home.html',
   styleUrls: ['./chat-home.css'],
 })
-export class ChatHome {
+export class ChatHome implements OnDestroy {
   private readonly router    = inject(Router);
   private readonly api       = inject(AuraChatServiceHttp);
   private readonly docHttp   = inject(AuraDocumentProcessingServiceHttp);
   private readonly toast     = inject(ToastService);
   private readonly userState = inject(UserState);
   private readonly handoff   = inject(ChatComposerHandoffService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly perms = computed(() => this.userState.user()?.permissions ?? []);
 
   readonly submitting   = signal(false);
-  readonly pendingFiles = signal<File[]>([]);
   readonly composerMode = signal<ComposerMode>('chat');
 
-  /** Unified chips for the composer. Local files are always "ready". */
+  /**
+   * El chat se crea de forma perezosa: apenas adjuntás un documento (para tener
+   * un id contra el cual subirlo y procesarlo), o al enviar el primer mensaje si
+   * no adjuntaste nada. Una vez creado se reutiliza el mismo id.
+   */
+  private readonly chatId = signal<number | null>(null);
+  private chatCreate$: Observable<number> | null = null;
+
+  /** Documentos ya subidos al chat nuevo; se procesan con polling, igual que en sesión. */
+  readonly sessionDocuments = signal<SessionDocument[]>([]);
+  private readonly uploadingCount = signal(0);
+  readonly documentUploading = computed(() => this.uploadingCount() > 0);
+  private readonly _docPolls = new Map<number, Subject<void>>();
+
+  /** Chips para el composer, con el estado real de procesamiento. */
   readonly attachedDocs = computed<ComposerDoc[]>(() =>
-    this.pendingFiles().map((f) => ({ id: f.name, name: f.name, status: 'ready' as const })),
+    this.sessionDocuments().map((d) => ({
+      id: d.id,
+      name: d.name,
+      status: d.status === 'processed' ? 'ready' : d.status === 'failed' ? 'failed' : 'processing',
+    })),
+  );
+  readonly hasDocs = computed(() => this.sessionDocuments().length > 0);
+  readonly allDocsReady = computed(() => this.sessionDocuments().every((d) => d.status === 'processed'));
+  /** Bloquea el envío mientras se sube o procesa algún documento (estado `uploaded`). */
+  readonly sendBlocked = computed(() =>
+    this.documentUploading() || this.sessionDocuments().some((d) => d.status === 'uploaded'),
   );
 
   readonly welcomeSubtitle = computed(() => {
@@ -72,16 +105,104 @@ export class ChatHome {
     }
   });
 
+  // ── Chat perezoso ──────────────────────────────────────────────
+  /** Devuelve el id del chat, creándolo una sola vez si hace falta. */
+  private ensureChat(preferredName: string): Observable<number> {
+    const id = this.chatId();
+    if (id != null) return of(id);
+    if (!this.chatCreate$) {
+      const name = preferredName.slice(0, 80).replace(/\s+/g, ' ').trim() || 'Nuevo chat';
+      this.chatCreate$ = this.api.createChat({ name }).pipe(
+        map((chat) => {
+          this.chatId.set(chat.id);
+          return chat.id;
+        }),
+        catchError((err) => {
+          this.chatCreate$ = null;
+          return throwError(() => err);
+        }),
+        shareReplay(1),
+      );
+    }
+    return this.chatCreate$;
+  }
+
   // ── Files ──────────────────────────────────────────────────────
   onFilesSelected(files: File[]): void {
-    this.pendingFiles.update((current) => {
-      const existingNames = new Set(current.map((f) => f.name));
-      return [...current, ...files.filter((f) => !existingNames.has(f.name))];
+    const existingNames = new Set(this.sessionDocuments().map((d) => d.name));
+    const fresh = files.filter((f) => !existingNames.has(f.name));
+    if (fresh.length === 0) return;
+    // Creá el chat (si no existe) y subí cada archivo contra su id, arrancando el
+    // procesamiento de inmediato — como cuando adjuntás dentro de un chat.
+    this.ensureChat(fresh[0].name).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (chatId) => fresh.forEach((file) => this.uploadDocument(file, chatId)),
+      error: () => this.toast.show('No se pudo crear el chat para subir el documento.', 'error'),
     });
   }
 
   onRemoveDoc(doc: ComposerDoc): void {
-    this.pendingFiles.update((list) => list.filter((f) => f.name !== doc.id));
+    const id = Number(doc.id);
+    if (!Number.isFinite(id)) return;
+    this.stopDocumentPolling(id);
+    this.sessionDocuments.update((docs) => docs.filter((d) => d.id !== id));
+    this.docHttp.deleteDocument(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      error: () => this.toast.show('No se pudo eliminar el documento del servidor.', 'error'),
+    });
+  }
+
+  private uploadDocument(file: File, chatId: number): void {
+    this.uploadingCount.update((n) => n + 1);
+    let upload$;
+    try {
+      upload$ = this.docHttp.createDocumentFromInput({ file, chat_id: chatId, prefer_docling: false });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Archivo inválido.';
+      this.toast.show(msg, 'error');
+      this.uploadingCount.update((n) => Math.max(0, n - 1));
+      return;
+    }
+    upload$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => {
+        this.sessionDocuments.update((d) => [
+          ...d,
+          { id: res.id, name: res.name, status: res.status, created_at: new Date().toISOString() },
+        ]);
+        this.uploadingCount.update((n) => Math.max(0, n - 1));
+        this.startDocumentPolling(res.id);
+      },
+      error: () => {
+        this.toast.show('Error al subir el documento.', 'error');
+        this.uploadingCount.update((n) => Math.max(0, n - 1));
+      },
+    });
+  }
+
+  private startDocumentPolling(docId: number): void {
+    this.stopDocumentPolling(docId);
+    const stop$ = new Subject<void>();
+    this._docPolls.set(docId, stop$);
+
+    timer(1500, 2500).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      takeUntil(stop$),
+      switchMap(() => this.docHttp.getDocumentStatus(docId)),
+    ).subscribe({
+      next: (doc) => {
+        this.sessionDocuments.update((docs) =>
+          docs.map((d) => (d.id === docId ? { ...d, status: doc.status } : d)),
+        );
+        if (doc.status === 'processed' || doc.status === 'failed') {
+          this.stopDocumentPolling(docId);
+          if (doc.status === 'failed') this.toast.show('Error al procesar el documento.', 'error');
+        }
+      },
+      error: () => this.stopDocumentPolling(docId),
+    });
+  }
+
+  private stopDocumentPolling(docId: number): void {
+    const stop$ = this._docPolls.get(docId);
+    if (stop$) { stop$.next(); stop$.complete(); this._docPolls.delete(docId); }
   }
 
   // ── Submit handlers ────────────────────────────────────────────
@@ -95,7 +216,7 @@ export class ChatHome {
       if (payload.retrieveContext) routerState['pendingRetrieveContext'] = true;
       if (payload.processDocuments) routerState['pendingProcessDocuments'] = true;
     }
-    this.createChatAndNavigate(payload.text, routerState);
+    this.finalizeAndNavigate(payload.text, routerState);
   }
 
   onGenerate(payload: ComposerGenerate): void {
@@ -106,55 +227,36 @@ export class ChatHome {
       message: payload.message,
       ...(payload.mode === 'report' ? { type: payload.reportType } : {}),
     };
-    this.createChatAndNavigate(payload.message, { pendingGeneration: gen });
+    this.finalizeAndNavigate(payload.message, { pendingGeneration: gen });
   }
 
   onAudioCaptured(audio: ComposerAudio): void {
-    // Same model as everything else: create the chat first, then let the new
-    // chat process the recording exactly like an in-session one.
+    // Mismo modelo: asegurá el chat y dejá que la sesión procese la grabación
+    // exactamente como una hecha dentro del chat.
     this.handoff.setPendingAudio(audio);
-    this.createChatAndNavigate('', {});
+    this.finalizeAndNavigate('', {});
   }
 
-  private createChatAndNavigate(seed: string, routerState: Record<string, unknown>): void {
-    const files = this.pendingFiles();
-    const chatName = seed.slice(0, 80).replace(/\s+/g, ' ').trim()
-      || files[0]?.name.replace(/\.[^.]+$/, '').slice(0, 80)
-      || 'Nuevo chat';
-
+  /**
+   * Asegura el chat (creándolo si todavía no existe) y navega a la sesión,
+   * sembrando los documentos ya subidos para que el primer mensaje/artefacto los
+   * adjunte. El chat suele estar creado de antes si adjuntaste un documento.
+   */
+  private finalizeAndNavigate(seed: string, routerState: Record<string, unknown>): void {
     this.submitting.set(true);
-
-    this.api.createChat({ name: chatName }).pipe(
-      switchMap((chat) => {
-        if (files.length === 0) return of({ chat, docs: [] as PendingDocument[] });
-        const uploads = files.map((file) => {
-          try {
-            return this.docHttp.createDocumentFromInput({
-              file, chat_id: chat.id, prefer_docling: false,
-            }).pipe(catchError(() => of(null)));
-          } catch {
-            return of(null);
-          }
-        });
-        return forkJoin(uploads).pipe(
-          map((results) => ({
-            chat,
-            docs: results
-              .filter((r): r is NonNullable<typeof r> => r != null)
-              .map((r) => ({ id: r.id, name: r.name, status: r.status })),
-          })),
-        );
-      }),
-    ).subscribe({
-      next: ({ chat, docs }) => {
+    const nameHint = seed || this.sessionDocuments()[0]?.name || 'Nuevo chat';
+    this.ensureChat(nameHint).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (chatId) => {
         this.submitting.set(false);
-        this.pendingFiles.set([]);
-        // Pasá los documentos recién subidos a la sesión para que el primer
-        // mensaje/artefacto los adjunte (sessionDocuments arranca vacío en la
-        // sesión nueva, así que hay que sembrarlos vía el navigation state).
+        const docs: PendingDocument[] = this.sessionDocuments().map((d) => ({
+          id: d.id, name: d.name, status: d.status,
+        }));
+        // La sesión retoma el polling de los que sigan en proceso.
+        this.sessionDocuments().forEach((d) => this.stopDocumentPolling(d.id));
+        this.sessionDocuments.set([]);
         const state = docs.length > 0 ? { ...routerState, pendingDocuments: docs } : routerState;
         void this.router.navigate(
-          ['/main-container', 'chat', String(chat.id)],
+          ['/main-container', 'chat', String(chatId)],
           Object.keys(state).length > 0 ? { state } : {},
         );
       },
@@ -163,5 +265,10 @@ export class ChatHome {
         this.toast.show('No se pudo crear el chat.', 'error');
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    this._docPolls.forEach((s) => { s.next(); s.complete(); });
+    this._docPolls.clear();
   }
 }

@@ -65,12 +65,36 @@ export class ChatSidebar implements OnInit {
       .subscribe(() => this.reloadChats());
   }
 
+  /** Id numérico del chat activo (la ruta lo expone como string), o null. */
+  private activeChatId(): number | null {
+    const raw = this.activeId();
+    if (raw == null || raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  /** Limpia el indicador de no leídos localmente para un chat dado. */
+  private clearUnreadFor(chatId: number): void {
+    this.chats.update((list) =>
+      list.map((c) => (c.id === chatId && c.unread_count > 0 ? { ...c, unread_count: 0 } : c)),
+    );
+  }
+
+  /** Apenas se abre un chat, ocultá el punto rojo sin esperar al backend. */
+  onChatClick(chatId: number): void {
+    this.clearUnreadFor(chatId);
+  }
+
   reloadChats(): void {
     this.nextUrl = null;
     this.chatHttp.listChats({ page_size: 15 }).subscribe({
       next: (page) => {
         this.chats.set([...page.results]);
         this.nextUrl = page.next;
+        // El chat que estás viendo ya está leído: no dejes que una recarga
+        // disparada antes de que el backend confirme reintroduzca el punto.
+        const active = this.activeChatId();
+        if (active != null) this.clearUnreadFor(active);
       },
       error: () => {
         this.chats.set([]);
@@ -90,6 +114,8 @@ export class ChatSidebar implements OnInit {
         this.chats.update((curr) => [...curr, ...fresh]);
         this.nextUrl = page.next;
         this.loadingMore.set(false);
+        const active = this.activeChatId();
+        if (active != null) this.clearUnreadFor(active);
       },
       error: () => {
         this.loadingMore.set(false);

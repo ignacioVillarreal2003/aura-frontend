@@ -155,6 +155,8 @@ export class ChatSession implements OnDestroy {
   readonly pendingDeleteMessage = signal<ChatMessage | null>(null);
   readonly exportingMessageId = signal<number | null>(null);
   readonly exportDropdownId = signal<number | null>(null);
+  readonly copiedMessageId = signal<number | null>(null);
+  private copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly hasMoreMessages = signal(false);
   readonly loadingOlderMessages = signal(false);
@@ -908,6 +910,10 @@ export class ChatSession implements OnDestroy {
       clearInterval(this._docReadyWaitHandle);
       this._docReadyWaitHandle = null;
     }
+    if (this.copiedTimer != null) {
+      clearTimeout(this.copiedTimer);
+      this.copiedTimer = null;
+    }
   }
 
   private clearTypingTimers(): void {
@@ -1030,6 +1036,46 @@ export class ChatSession implements OnDestroy {
       active ? next.add(id) : next.delete(id);
       return next;
     });
+  }
+
+  /** Texto a copiar: el cuerpo del mensaje, o la descripción/título si es un artefacto. */
+  private copyTextFor(message: ChatMessage): string {
+    if (message.artifactType === 'MESSAGE') return message.message ?? '';
+    return message.artifactDescription || message.artifactTitle || message.message || '';
+  }
+
+  copyMessage(message: ChatMessage): void {
+    const text = this.copyTextFor(message);
+    if (!text) return;
+    const done = () => {
+      this.copiedMessageId.set(message.id);
+      if (this.copiedTimer != null) clearTimeout(this.copiedTimer);
+      this.copiedTimer = setTimeout(() => {
+        this.copiedMessageId.set(null);
+        this.copiedTimer = null;
+      }, 1500);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => this._fallbackCopy(text, done));
+    } else {
+      this._fallbackCopy(text, done);
+    }
+  }
+
+  private _fallbackCopy(text: string, done: () => void): void {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done();
+    } catch {
+      this.toast.show('No se pudo copiar.', 'error');
+    }
   }
 
   deleteMessage(message: ChatMessage): void {
@@ -1900,7 +1946,11 @@ export class ChatSession implements OnDestroy {
 
   private async openWebSocketAfterLoad(expectedChatId: number, sessionId: number, pending?: string): Promise<void> {
     if (this.chatId !== expectedChatId || this.wsSessionId !== sessionId) return;
-    const conn = this.wsFactory.open(expectedChatId, this.auth.getToken());
+    // Refrescá el token si está por vencer antes de abrir el WS (que lo toma una
+    // sola vez y no pasa por el interceptor). Cubre el caso de actividad sólo-WS.
+    const token = await firstValueFrom(this.auth.ensureFreshToken());
+    if (this.chatId !== expectedChatId || this.wsSessionId !== sessionId) return;
+    const conn = this.wsFactory.open(expectedChatId, token);
     if (!conn) {
       if (pending) {
         this.toast.show('No hay conexión en tiempo real; enviá de nuevo el mensaje.', 'error');
@@ -1961,13 +2011,23 @@ export class ChatSession implements OnDestroy {
     this.clearTypingTimers();
   }
 
+  /** Avanza el puntero de lectura del chat en el backend (idempotente, errores ignorados). */
+  private markCurrentChatRead(chatId: number): void {
+    this.http.markChatAsRead(chatId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ error: () => { /* no crítico */ } });
+  }
+
   private handleWsMessage(msg: AuraChatWsServerMessage): void {
     const cid = this.chatId;
     if (cid == null) return;
     switch (msg.type) {
       case 'user_message': {
+        // El `id` de la fila debe ser el `artifact_id` (igual que al recargar vía
+        // `_artifactToMessage`); si el eco trae sólo el id del mensaje caería en
+        // un dedup erróneo contra los artifact_id ya cargados y no se mostraría.
         const row: ChatMessage = {
-          id: msg.id,
+          id: msg.artifact_id ?? msg.id,
           chat_id: cid,
           message: msg.message,
           sender_type: msg.sender_type as MessageSenderType,
@@ -1977,9 +2037,14 @@ export class ChatSession implements OnDestroy {
           user_feedback: null,
           thread_reply_count: 0,
           artifactType: 'MESSAGE',
+          messageId: msg.id,
         };
         this.messages.update((list) => (list.some((m) => m.id === row.id) ? list : [...list, row]));
         if (row.created_by != null) this._resolveMessageUsers([row]);
+        // Mensaje de otro participante mientras mirás el chat: queda leído.
+        if (row.created_by != null && row.created_by !== this.currentUserId()) {
+          this.markCurrentChatRead(cid);
+        }
         setTimeout(() => this.scrollToBottom(), 50);
         break;
       }
@@ -2004,12 +2069,15 @@ export class ChatSession implements OnDestroy {
         const text = msg.answer || msg.message || '';
         const sid = this.streamingAssistantId();
         const aiSenderType: MessageSenderType = (msg.sender_type as MessageSenderType | undefined) ?? 'assistant';
-        if (sid != null && msg.id != null) {
+        // Como en `_artifactToMessage`, la fila se identifica por `artifact_id`;
+        // el id del mensaje queda en `messageId` (lo usa la exportación).
+        const completedId = msg.artifact_id ?? msg.id ?? null;
+        if (sid != null && completedId != null) {
           this.messages.update((list) =>
             list.map((m) =>
               m.id === sid
                 ? {
-                    id: msg.id!,
+                    id: completedId,
                     chat_id: cid,
                     message: text,
                     sender_type: aiSenderType,
@@ -2019,6 +2087,7 @@ export class ChatSession implements OnDestroy {
                     user_feedback: null,
                     thread_reply_count: 0,
                     artifactType: 'MESSAGE' as ArtifactType,
+                    messageId: msg.id,
                   }
                 : m
             )
@@ -2031,7 +2100,7 @@ export class ChatSession implements OnDestroy {
           this.messages.update((list) => [
             ...list,
             {
-              id: msg.id ?? Date.now(),
+              id: completedId ?? Date.now(),
               chat_id: cid,
               message: text,
               sender_type: aiSenderType,
@@ -2041,6 +2110,7 @@ export class ChatSession implements OnDestroy {
               user_feedback: null,
               thread_reply_count: 0,
               artifactType: 'MESSAGE' as ArtifactType,
+              messageId: msg.id,
             },
           ]);
         }
@@ -2050,13 +2120,17 @@ export class ChatSession implements OnDestroy {
         this.aiProgressMessage.set(null);
 
         if (msg.fragments?.length) {
-          const fragId = msg.id ?? sid ?? Date.now();
+          const fragId = completedId ?? sid ?? Date.now();
           this.messageFragments.update((m) => {
             const n = new Map(m);
             n.set(fragId as number, msg.fragments);
             return n;
           });
         }
+        // Estás viendo el chat: la respuesta recién llegada ya está leída.
+        // Avanzá el puntero en el backend para que no quede marcado no leído
+        // en la sidebar al salir.
+        this.markCurrentChatRead(cid);
         setTimeout(() => this.scrollToBottom(), 50);
         this.cdr.markForCheck();
         break;

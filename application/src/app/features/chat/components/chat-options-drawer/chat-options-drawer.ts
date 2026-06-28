@@ -12,6 +12,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Observable, Subject, Subscription, debounceTime, distinctUntilChanged, switchMap, take } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuraChatServiceHttp } from '@core/services/http-services/aura-chat-service-http.service';
 import { AuraAuthServiceHttp } from '@core/services/http-services/aura-auth-service-http.service';
 import { AuraDocumentProcessingServiceHttp } from '@core/services/http-services/aura-document-processing-service-http.service';
@@ -826,15 +827,22 @@ export class ChatOptionsDrawer {
     // Reuse the member list to resolve author names and detect the chat owner.
     this.reloadMembers(cid);
     this.loadPeerHistory(cid);
-    const conn = this.wsFactory.open(cid, this.auth.getToken());
-    if (!conn) {
-      this.toastService.show('No se pudo conectar al chat en tiempo real.', 'error');
-      return;
-    }
-    this.peerConn = conn;
-    this.peerSub = conn.messages$.subscribe({
-      next: (msg) => this.handlePeerEvent(msg),
-    });
+    // Refrescá el token si está por vencer antes de abrir el WS (lo toma una sola
+    // vez y no pasa por el interceptor). Cubre el caso de actividad sólo-WS.
+    this.auth.ensureFreshToken()
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe((token) => {
+        if (this.contextChatId() !== cid) return;
+        const conn = this.wsFactory.open(cid, token);
+        if (!conn) {
+          this.toastService.show('No se pudo conectar al chat en tiempo real.', 'error');
+          return;
+        }
+        this.peerConn = conn;
+        this.peerSub = conn.messages$.subscribe({
+          next: (msg) => this.handlePeerEvent(msg),
+        });
+      });
   }
 
   private closePeerChat(): void {

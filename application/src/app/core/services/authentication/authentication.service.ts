@@ -5,6 +5,7 @@ import {
   finalize,
   map,
   of,
+  shareReplay,
   switchMap,
   tap,
   throwError,
@@ -21,9 +22,17 @@ export class AuthenticationService {
   private readonly authHttp = inject(AuraAuthServiceHttp);
   private readonly userState = inject(UserState);
   private readonly accessToken = signal<string | null>(sessionStorage.getItem(SESSION_TOKEN_KEY));
-  private readonly refreshToken = signal<string | null>(null);
+  private readonly refreshToken = signal<string | null>(sessionStorage.getItem(SESSION_REFRESH_KEY));
   private readonly sessionActive = signal(false);
   private readonly sessionDisplayName = signal<string | null>(null);
+
+  /**
+   * Refresh en vuelo compartido. Como el backend usa refresh tokens rotativos de
+   * un solo uso (reusar uno revocado cierra TODAS las sesiones), nunca puede
+   * haber dos `POST /auth/refresh` en paralelo con el mismo token. Distintos
+   * llamadores (interceptor HTTP, stream SSE, guard) comparten esta misma llamada.
+   */
+  private refreshInFlight$: Observable<void> | null = null;
 
   isLoggedIn(): boolean {
     return this.sessionActive();
@@ -31,6 +40,46 @@ export class AuthenticationService {
 
   getToken(): string | null {
     return this.accessToken();
+  }
+
+  /**
+   * Devuelve un access token vigente, refrescándolo antes si está expirado o por
+   * expirar. Pensado para conexiones que toman el token una sola vez y no pasan
+   * por el interceptor HTTP (WebSocket): evita abrir con un token muerto cuando
+   * la única actividad fue por WS durante más que la vida del access token.
+   */
+  ensureFreshToken(): Observable<string | null> {
+    const token = this.accessToken();
+    if (token && !this.isTokenExpiring(token)) {
+      return of(token);
+    }
+    if (!this.refreshToken()) {
+      return of(token);
+    }
+    return this.refreshSession().pipe(
+      map(() => this.accessToken()),
+      catchError(() => of(this.accessToken())),
+    );
+  }
+
+  /** True si el token venció o vence dentro del margen (o si no se puede leer su `exp`). */
+  private isTokenExpiring(token: string, skewSeconds = 30): boolean {
+    const exp = this.tokenExp(token);
+    if (exp == null) return true;
+    return Date.now() >= exp * 1000 - skewSeconds * 1000;
+  }
+
+  private tokenExp(token: string): number | null {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    try {
+      const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
+      const payload = JSON.parse(atob(b64 + pad)) as { exp?: unknown };
+      return typeof payload.exp === 'number' ? payload.exp : null;
+    } catch {
+      return null;
+    }
   }
 
   getRefreshToken(): string | null {
@@ -131,16 +180,27 @@ export class AuthenticationService {
   }
 
   refreshSession(): Observable<void> {
+    // Coalescé llamadas concurrentes en una sola: si ya hay un refresh en vuelo,
+    // devolvé esa misma observación en lugar de disparar otro POST /auth/refresh
+    // (que reutilizaría el refresh token rotativo y cerraría todas las sesiones).
+    if (this.refreshInFlight$) {
+      return this.refreshInFlight$;
+    }
     const refresh = this.refreshToken();
     if (!refresh) {
       return throwError(() => new Error('No refresh token'));
     }
-    return this.authHttp.refresh({ refresh_token: refresh }).pipe(
+    this.refreshInFlight$ = this.authHttp.refresh({ refresh_token: refresh }).pipe(
       tap((res) => {
         this.persistTokenPair(res);
       }),
       map(() => undefined),
+      finalize(() => {
+        this.refreshInFlight$ = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+    return this.refreshInFlight$;
   }
 
   private persistTokenPair(res: { readonly access_token: string; readonly refresh_token: string }): void {
