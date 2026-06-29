@@ -3,11 +3,11 @@
  */
 export const environment = {
   production: true,
-  chatApiUrl: '',
+  chatApiUrl: '/chat',
   authenticationApiUrl: '',
-  documentProcessingUrl: '',
-  toolsApiUrl: '',
-  notificationApiUrl: '',
-  llmApiUrl: '',
-  adminUrl: '',
+  documentProcessingUrl: '/processing',
+  toolsApiUrl: '/processing',
+  notificationApiUrl: '/notifications',
+  llmApiUrl: '/llm',
+  adminUrl: '/admin/',
 };

@@ -68,7 +68,11 @@ function buildOutboundPayload(msg: OutboundMessage): AuraChatWsClientMessage {
 function buildChatWebSocketUrl(chatApiHttpBase: string, chatId: number, token: string): string {
   const u = new URL(chatApiHttpBase);
   u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:';
-  u.pathname = `/ws/chat/${chatId}/`;
+  
+  // Extract path prefix if present (e.g. "/chat") and append WS path
+  const pathPrefix = u.pathname.replace(/\/$/, '');
+  u.pathname = `${pathPrefix}/ws/chat/${chatId}/`;
+  
   u.search = '';
   u.hash = '';
   u.searchParams.set('token', token);
@@ -80,7 +84,12 @@ export class ChatWebSocketService {
   private readonly toast = inject(ToastService);
 
   open(chatId: number, token: string | null): ChatSocketConnection | null {
-    const base = environment.chatApiUrl?.trim();
+    let base = environment.chatApiUrl?.trim();
+    if (!base) {
+      base = typeof window !== 'undefined' ? window.location.origin : '';
+    } else if (base.startsWith('/')) {
+      base = typeof window !== 'undefined' ? `${window.location.origin}${base}` : base;
+    }
     if (!base || !token) {
       return null;
     }
