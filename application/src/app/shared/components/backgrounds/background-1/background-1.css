@@ -1,62 +1,73 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .background-1 {
   position: relative;
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: var(--background);
+  isolation: isolate;
+  /* Lienzo base: shell cálido (#1E1B18) que se aclara apenas hacia el
+     contenido. Da profundidad sin competir con el aurora. */
+  background: radial-gradient(135% 135% at 100% 0%, #16130f 0%, var(--background) 58%);
 }
 
-.background-1__layer {
+/* Aurora primario — bloom violeta/índigo (Thought Violet) anclado abajo a la
+   izquierda, justo donde se apoya el wordmark "Aura". */
+.background-1__aurora {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 46% at 20% 82%, rgba(124, 58, 237, 0.40), transparent 70%),
+    radial-gradient(42% 52% at 6% 98%, rgba(99, 102, 241, 0.32), transparent 72%),
+    radial-gradient(34% 44% at 34% 70%, rgba(56, 120, 255, 0.20), transparent 76%);
+  filter: blur(60px) saturate(125%);
+  animation: aurora-drift-1 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Aurora secundario — más frío, más lento y más grande, para dar parallax
+   y que la luz no se sienta plana. */
+.background-1__aurora--secondary {
+  background:
+    radial-gradient(46% 56% at 12% 64%, rgba(165, 180, 252, 0.14), transparent 74%),
+    radial-gradient(40% 50% at 42% 100%, rgba(124, 58, 237, 0.18), transparent 72%);
+  filter: blur(85px) saturate(115%);
+  opacity: 0.85;
+  animation: aurora-drift-2 24s ease-in-out infinite alternate;
+}
+
+/* Viñeta: oscurece los bordes y desvanece la luz hacia arriba-derecha, así
+   el bloom se concentra detrás del cartel y el panel del formulario queda
+   limpio. */
+.background-1__vignette {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  overflow: hidden;
-  background-image:
-    repeating-linear-gradient(
-      100deg,
-      #0f67fb 10%,
-      #558bff 15%,
-      #6697d3 20%,
-      #5d9ff1 25%,
-      #aae1ff 30%
-    ),
-    repeating-linear-gradient(
-      100deg,
-      rgba(0, 0, 0, 0.9) 0%,
-      rgba(0, 0, 0, 0.9) 15%,
-      rgba(0, 0, 0, 0) 18%,
-      rgba(0, 0, 0, 0) 20%,
-      rgba(0, 0, 0, 0.85) 28%,
-      rgba(0, 0, 0, 1) 40%
-    );
-  background-size: 300% 200%;
-  animation: auroraMove 45s ease-in-out infinite;
-  mask-image: radial-gradient(
-    ellipse at 0% 0%,
-    rgb(30, 27, 24) 15%,
-    transparent 70%
-  );
+  background:
+    radial-gradient(130% 125% at 8% 100%, transparent 38%, rgba(15, 13, 11, 0.55) 82%),
+    radial-gradient(120% 100% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.40) 100%);
 }
 
-.background-1__blur-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  backdrop-filter: blur(30px) saturate(120%);
-  z-index: 2;
+@keyframes aurora-drift-1 {
+  0%   { transform: translate3d(-4%, 3%, 0) scale(1); }
+  50%  { transform: translate3d(7%, -6%, 0) scale(1.14); }
+  100% { transform: translate3d(12%, -9%, 0) scale(1.1); }
 }
 
-@keyframes auroraMove {
-  0%, 100% {
-    background-position: 50% 50%, 50% 50%;
-  }
-  50% {
-    background-position: 100% 100%, 80% 60%;
-  }
+@keyframes aurora-drift-2 {
+  0%   { transform: translate3d(4%, -3%, 0) scale(1.05); }
+  50%  { transform: translate3d(-9%, 7%, 0) scale(1.2); }
+  100% { transform: translate3d(-13%, 10%, 0) scale(1.16); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .background-1__layer {
+  .background-1__aurora,
+  .background-1__aurora--secondary {
     animation: none;
   }
 }

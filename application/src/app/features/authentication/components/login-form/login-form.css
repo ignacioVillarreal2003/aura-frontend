@@ -9,12 +9,24 @@
   width: 100%;
   height: 100%;
   padding: 40px;
-  background-color: var(--background);
+  /* Capa "raised" (algo más fría que el shell cálido del fondo): separa el
+     panel del aurora sin necesitar un borde marcado. */
+  background-color: var(--surface-raised, var(--background));
+  border-left: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  box-shadow: -24px 0 60px -30px rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   gap: 40px;
+}
+
+/* En mobile el panel ocupa todo: no hay aurora al lado que separar. */
+@media (max-width: 768px) {
+  .login-form {
+    border-left: none;
+    box-shadow: none;
+  }
 }
 
 .login-form__container {
