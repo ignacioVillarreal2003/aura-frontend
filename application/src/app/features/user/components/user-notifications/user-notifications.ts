@@ -1,5 +1,5 @@
 import { Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuraNotificationServiceHttp } from '@core/services/http-services/aura-notification-service-http.service';
 import { NotificationSseService } from '@core/services/notification/notification-sse.service';
@@ -29,6 +29,7 @@ export class UserNotifications implements OnInit, OnDestroy {
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // ── Inbox state ────────────────────────────────────────────────────────────
   // Which view is shown is decided by the route (sidebar entries), not in-component tabs.
@@ -314,5 +315,22 @@ export class UserNotifications implements OnInit, OnDestroy {
     const d = new Date(iso);
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  handleLinkClick(event: MouseEvent, url: string): void {
+    if (!url) return;
+    try {
+      const origin = window.location.origin;
+      if (url.startsWith(origin) || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+        event.preventDefault();
+        let path = url;
+        if (url.startsWith(origin)) {
+          path = url.substring(origin.length);
+        }
+        void this.router.navigateByUrl(path);
+      }
+    } catch (e) {
+      // Fallback to default browser navigation if anything fails
+    }
   }
 }

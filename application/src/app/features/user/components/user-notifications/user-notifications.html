@@ -82,7 +82,7 @@
                 </div>
                 <p class="notif-message">{{ n.message }}</p>
                 @if (n.link_url) {
-                  <a class="notif-link" [href]="n.link_url" target="_blank" rel="noopener">
+                  <a class="notif-link" [href]="n.link_url" target="_blank" rel="noopener" (click)="handleLinkClick($event, n.link_url)">
                     <i class="pi pi-external-link"></i> Abrir
                   </a>
                 }
