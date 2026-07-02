@@ -2,6 +2,12 @@
   width: 100%;
   height: 100vh;
   position: relative;
+  /* Stacking context propio: sin esto, un z-index negativo en el fondo se
+     pinta por detrás del background-color opaco del <body> y queda tapado
+     (se veía todo negro). Con isolation el fondo (z-index 0) y el contenido
+     (z-index 1) quedan contenidos y por encima del body. */
+  isolation: isolate;
+  overflow: hidden;
 }
 
 .auth-page__background {
@@ -10,7 +16,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  z-index: -1;
+  z-index: 0;
 }
 
 .auth-page__content {
@@ -29,7 +35,7 @@
   display: flex;
   align-items: end;
   justify-content: start;
-  padding: 20px;
+  padding: clamp(24px, 4vw, 56px);
 }
 
 .auth-page__title {
@@ -38,6 +44,12 @@
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  line-height: 0.95;
+  /* Glow tenue para que el wordmark se asiente como luz sobre el aurora,
+     no como texto pegado encima. */
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.45),
+    0 0 40px rgba(124, 58, 237, 0.35);
 }
 
 .auth-page__title span {
